@@ -1,26 +1,455 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* =============================================================================
+   dropby design system: one retro theme
+   -----------------------------------------------------------------------------
+   Look: a 16-bit DOS puzzle game. Black starfield, bevelled stone and steel
+   tiles, and glowing beams for time blocks.
+
+   Meaning of colour (never changes anywhere in the app):
+     blue  = Free       "I'm available"      solid beam
+     green = Join me    "I'm hosting"        dashed beam + emoji
+     gold  = Locked in  "someone is joining" double beam + lock
+
+   Each state also has its own beam pattern, so the difference does not rely
+   on colour alone. Text colours all meet WCAG AA (4.5:1) on their background.
+
+   To restyle the app, start with the tokens in @theme below.
+   ============================================================================= */
+
+@theme {
+  /* surfaces */
+  --color-void: #03040a;
+  --color-panel: #0e111b;
+  --color-panel-2: #171b2a;
+  --color-panel-3: #232941;
+  --color-line: #313957;
+  --color-edge-hi: #55608a;
+  --color-edge-lo: #000000;
+
+  /* text */
+  --color-ink: #f0eee2;
+  --color-ink-dim: #b3b9c9;
+  --color-ink-faint: #868da3;
+
+  /* stone tiles (buttons, labels) */
+  --color-stone: #a3a7b1;
+  --color-stone-hi: #e4e6ea;
+  --color-stone-lo: #50545f;
+  --color-stone-ink: #0a0c12;
+
+  /* meaning */
+  --color-free: #49b6ff;
+  --color-free-hi: #e2f4ff;
+  --color-free-lo: #0c64ad;
+  --color-join: #40e081;
+  --color-join-hi: #e3ffec;
+  --color-join-lo: #0d7d3c;
+  --color-locked: #ffc93a;
+  --color-locked-hi: #fff5d1;
+  --color-locked-lo: #9b6c00;
+  --color-danger: #ff7272;
+
+  --font-display: var(--font-press-start), ui-monospace, monospace;
+  --font-body: var(--font-vt323), ui-monospace, "Courier New", monospace;
+
+  --animate-blink: blink 1.1s steps(2, start) infinite;
+  --animate-pop: pop 0.16s steps(4, end);
+  --animate-shake: shake 0.3s steps(6, end);
+  --animate-rise: rise 0.2s steps(5, end);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@keyframes blink {
+  50% { opacity: 0.35; }
+}
+@keyframes pop {
+  from { transform: scale(0.92); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes rise {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.9; }
+  50% { opacity: 0.55; }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* -----------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+html {
+  color-scheme: dark;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--color-ink);
+  font-family: var(--font-body);
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+  background-color: var(--color-void);
+  /* subtle stars: a few sparse layers of single pixels */
+  background-image:
+    radial-gradient(1px 1px at 23px 41px, rgb(255 255 255 / 0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 151px 97px, rgb(255 255 255 / 0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 87px 173px, rgb(190 215 255 / 0.6) 50%, transparent 51%),
+    radial-gradient(2px 2px at 211px 29px, rgb(255 240 200 / 0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 301px 233px, rgb(255 255 255 / 0.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 59px 311px, rgb(200 220 255 / 0.35) 50%, transparent 51%);
+  background-size: 260px 260px, 340px 340px, 290px 290px, 470px 470px, 410px 410px, 370px 370px;
+  background-attachment: fixed;
+  min-height: 100dvh;
+  -webkit-font-smoothing: none;
+  font-smooth: never;
+  overscroll-behavior-y: none;
+}
+
+h1, h2, h3, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0;
+  line-height: 1.5;
+}
+
+::selection {
+  background: var(--color-free);
+  color: #000;
+}
+
+/* A visible focus ring everywhere, for keyboard users. */
+:focus-visible {
+  outline: 2px solid var(--color-locked);
+  outline-offset: 2px;
+}
+
+button, [role="button"], a, summary, label[for], select {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* thin retro scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-stone-lo) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Surfaces
+   -------------------------------------------------------------------------- */
+@layer components {
+  /* granite speckle shared by stone surfaces */
+  .speckle {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='48' height='48' filter='url(%23n)' opacity='0.5'/></svg>");
+  }
+
+  /* Raised stone tile: buttons, day labels, chips. */
+  .tile {
+    background-color: var(--color-stone);
+    color: var(--color-stone-ink);
+    border: 2px solid;
+    border-color: var(--color-stone-hi) var(--color-stone-lo) var(--color-stone-lo) var(--color-stone-hi);
+    box-shadow: 0 0 0 2px #000;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='48' height='48' filter='url(%23n)' opacity='0.45'/></svg>");
+  }
+
+  /* Dark raised panel: cards, dialogs, the header. */
+  .panel {
+    background-color: var(--color-panel);
+    border: 2px solid;
+    border-color: var(--color-edge-hi) var(--color-edge-lo) var(--color-edge-lo) var(--color-edge-hi);
+    box-shadow: 0 0 0 2px #000;
+  }
+
+  /* Recessed slot: inputs and the calendar tracks. */
+  .slot {
+    background-color: #05070d;
+    border: 2px solid;
+    border-color: #000 var(--color-line) var(--color-line) #000;
+  }
+
+  /* Steel mesh frame around the calendar board. */
+  .mesh {
+    background-color: #3a3d47;
+    background-image:
+      repeating-linear-gradient(45deg, rgb(255 255 255 / 0.16) 0 2px, transparent 2px 6px),
+      repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.45) 0 2px, transparent 2px 6px);
+    border: 2px solid;
+    border-color: #8f93a0 #1b1d24 #1b1d24 #8f93a0;
+    box-shadow: 0 0 0 2px #000;
+  }
+
+  /* ---------------------------------------------------------------------------
+     Buttons
+     ------------------------------------------------------------------------ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 44px; /* comfortable touch target */
+    padding: 0.35rem 0.9rem;
+    font-family: var(--font-body);
+    font-size: 20px;
+    line-height: 1;
+    text-decoration: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: filter 0.08s steps(2);
+  }
+  .btn:hover:not(:disabled) {
+    filter: brightness(1.1);
+  }
+  .btn:active:not(:disabled) {
+    transform: translate(1px, 1px);
+    border-color: var(--color-stone-lo) var(--color-stone-hi) var(--color-stone-hi) var(--color-stone-lo);
+  }
+  .btn:disabled {
+    filter: grayscale(0.6) brightness(0.65);
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0.2rem 0.6rem;
+    font-size: 18px;
+  }
+  /* coloured tiles: bright fill, black text (all ≥ 8:1) */
+  .tile-free { background-color: var(--color-free); border-color: var(--color-free-hi) var(--color-free-lo) var(--color-free-lo) var(--color-free-hi); }
+  .tile-join { background-color: var(--color-join); border-color: var(--color-join-hi) var(--color-join-lo) var(--color-join-lo) var(--color-join-hi); }
+  .tile-locked { background-color: var(--color-locked); border-color: var(--color-locked-hi) var(--color-locked-lo) var(--color-locked-lo) var(--color-locked-hi); }
+  .tile-danger { background-color: var(--color-danger); border-color: #ffd0d0 #8d1f1f #8d1f1f #ffd0d0; }
+  .tile-dark {
+    background-color: var(--color-panel-3);
+    background-image: none;
+    color: var(--color-ink);
+    border-color: var(--color-edge-hi) #000 #000 var(--color-edge-hi);
+  }
+
+  /* text-like button */
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 36px;
+    padding: 0.1rem 0.4rem;
+    color: var(--color-ink-dim);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 4px;
+  }
+  .btn-ghost:hover {
+    color: var(--color-ink);
+  }
+
+  /* ---------------------------------------------------------------------------
+     Form fields
+     ------------------------------------------------------------------------ */
+  .field {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.4rem 0.7rem;
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    font-size: 22px;
+    line-height: 1.1;
+    background-color: #05070d;
+    border: 2px solid;
+    border-color: #000 var(--color-line) var(--color-line) #000;
+    border-radius: 0;
+    box-shadow: 0 0 0 2px #000;
+    appearance: none;
+  }
+  .field::placeholder {
+    color: var(--color-ink-faint);
+  }
+  .field:focus-visible {
+    outline: 2px solid var(--color-free);
+    outline-offset: 0;
+  }
+  select.field {
+    padding-right: 2rem;
+    background-image: linear-gradient(45deg, transparent 50%, var(--color-ink-dim) 50%), linear-gradient(135deg, var(--color-ink-dim) 50%, transparent 50%);
+    background-position: calc(100% - 18px) 55%, calc(100% - 12px) 55%;
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+  }
+  .label {
+    display: block;
+    margin-bottom: 0.3rem;
+    color: var(--color-ink-dim);
+    font-family: var(--font-display);
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ---------------------------------------------------------------------------
+     Beams: time blocks on the calendar
+     ------------------------------------------------------------------------ */
+  .beam {
+    --c: var(--color-free);
+    --hi: var(--color-free-hi);
+    --lo: var(--color-free-lo);
+    position: absolute;
+    border-top: 2px solid var(--c);
+    border-bottom: 2px solid var(--c);
+    background:
+      /* white-hot core */
+      linear-gradient(to bottom, transparent calc(50% - 2px), var(--hi) calc(50% - 2px), var(--hi) calc(50% + 2px), transparent calc(50% + 2px)),
+      /* coloured glow body */
+      linear-gradient(to bottom,
+        color-mix(in srgb, var(--c) 14%, #000),
+        color-mix(in srgb, var(--c) 46%, #000) 50%,
+        color-mix(in srgb, var(--c) 14%, #000));
+    box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
+  }
+  .beam-join {
+    --c: var(--color-join);
+    --hi: var(--color-join-hi);
+    --lo: var(--color-join-lo);
+    /* dashed core distinguishes hosting from free without relying on colour */
+    background:
+      repeating-linear-gradient(to right, var(--hi) 0 10px, transparent 10px 16px) center / 100% 4px no-repeat,
+      linear-gradient(to bottom,
+        color-mix(in srgb, var(--c) 14%, #000),
+        color-mix(in srgb, var(--c) 46%, #000) 50%,
+        color-mix(in srgb, var(--c) 14%, #000));
+  }
+  .beam-locked {
+    --c: var(--color-locked);
+    --hi: var(--color-locked-hi);
+    --lo: var(--color-locked-lo);
+    /* double core */
+    background:
+      linear-gradient(to bottom,
+        transparent calc(50% - 5px), var(--hi) calc(50% - 5px), var(--hi) calc(50% - 2px),
+        transparent calc(50% - 2px), transparent calc(50% + 2px),
+        var(--hi) calc(50% + 2px), var(--hi) calc(50% + 5px), transparent calc(50% + 5px)),
+      linear-gradient(to bottom,
+        color-mix(in srgb, var(--c) 14%, #000),
+        color-mix(in srgb, var(--c) 46%, #000) 50%,
+        color-mix(in srgb, var(--c) 14%, #000));
+  }
+  /* A friend's event: hollow, so it reads as "theirs, not mine". */
+  .beam-hollow {
+    background: color-mix(in srgb, var(--c) 10%, #000);
+    border: 2px dashed var(--c);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+  /* The block being drawn or dragged. */
+  .beam-ghost {
+    opacity: 0.85;
+    outline: 2px dashed var(--color-ink);
+    outline-offset: 2px;
+  }
+
+  /* Emitter caps at both ends of a beam: a steel cube with a coloured lens. */
+  .cap {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 12px;
+    background-color: #9a9ea9;
+    border: 2px solid;
+    border-color: #e6e8ee #3f434d #3f434d #e6e8ee;
+    box-shadow: 0 0 0 1px #000;
+  }
+  .cap::after {
+    content: "";
+    position: absolute;
+    inset: 25% 1px;
+    background: var(--c);
+    box-shadow: inset 1px 1px 0 var(--hi), inset -1px -1px 0 var(--lo);
+  }
+
+  /* Thin beam under friends' avatars: where they are free. */
+  .wire {
+    position: absolute;
+    height: 4px;
+    background: var(--color-free);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--color-free) 70%, transparent);
+  }
+
+  /* small label plate that sits on a beam */
+  .plate {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    max-width: 100%;
+    padding: 0 0.3rem;
+    color: var(--color-ink);
+    font-size: 16px;
+    line-height: 1.1;
+    white-space: nowrap;
+    background: rgb(3 4 10 / 0.82);
+    border: 1px solid color-mix(in srgb, var(--c, var(--color-line)) 60%, #000);
+  }
+
+  /* ---------------------------------------------------------------------------
+     Misc
+     ------------------------------------------------------------------------ */
+  .pixelated {
+    image-rendering: pixelated;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-family: var(--font-display);
+    font-size: 8px;
+    line-height: 1;
+    color: #000;
+    background: var(--color-locked);
+    border: 2px solid #000;
+  }
+  .divider {
+    height: 2px;
+    background: #000;
+    border-bottom: 2px solid var(--color-line);
+  }
+  .link {
+    color: var(--color-free);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .link:hover {
+    color: var(--color-free-hi);
+  }
+}
+
+/* Native <dialog> used for sheets and modals. */
+dialog {
+  color: inherit;
+  max-width: none;
+  max-height: none;
+}
+dialog::backdrop {
+  background: rgb(0 0 0 / 0.72);
+  /* scanlines */
+  background-image: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.35) 2px 4px);
+}
+
+/* While a block is being dragged: no text selection, no touch scrolling. */
+.dragging,
+.dragging * {
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  cursor: grabbing !important;
 }
