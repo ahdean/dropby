@@ -9,6 +9,6 @@ import { AppProviders } from "@/components/shell/AppProviders";
 export const instant = false;
 
 /** Layout for every signed-in page. The request proxy has already checked the session. */
-export default function AppLayout({ children }: LayoutProps<"/">) {
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return <AppProviders>{children}</AppProviders>;
 }

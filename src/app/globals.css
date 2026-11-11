@@ -453,3 +453,86 @@ dialog::backdrop {
   -webkit-user-select: none !important;
   cursor: grabbing !important;
 }
+
+/* -----------------------------------------------------------------------------
+   Calendar tracks
+   -------------------------------------------------------------------------- */
+@layer components {
+  /* Week grid: hour lines (strong) and half-hour lines (faint). --hours is set on the grid. */
+  .track {
+    background-image:
+      linear-gradient(to right, rgb(49 57 87 / 0.8) 0 2px, transparent 2px),
+      linear-gradient(to right, rgb(49 57 87 / 0.32) 0 1px, transparent 1px);
+    background-size:
+      calc(100% / var(--hours, 18)) 100%,
+      calc(100% / (var(--hours, 18) * 2)) 100%;
+  }
+  .track-weekend {
+    background-color: rgb(35 41 65 / 0.28);
+  }
+
+  /* Day view: the same lines, running across. */
+  .vtrack {
+    background-image:
+      linear-gradient(to bottom, rgb(49 57 87 / 0.8) 0 2px, transparent 2px),
+      linear-gradient(to bottom, rgb(49 57 87 / 0.32) 0 1px, transparent 1px);
+    background-size:
+      100% calc(100% / var(--hours, 18)),
+      100% calc(100% / (var(--hours, 18) * 2));
+  }
+
+  /* A block that is being drawn and has no type yet. */
+  .beam-new {
+    --c: var(--color-ink);
+    --hi: #ffffff;
+    --lo: #8a8a8a;
+  }
+
+  /* Vertical beams (day view): same three patterns, turned 90 degrees. */
+  .vbeam {
+    border-top: 0;
+    border-bottom: 0;
+    border-left: 2px solid var(--c);
+    border-right: 2px solid var(--c);
+    background:
+      linear-gradient(to right, transparent calc(50% - 2px), var(--hi) calc(50% - 2px), var(--hi) calc(50% + 2px), transparent calc(50% + 2px)),
+      linear-gradient(to right,
+        color-mix(in srgb, var(--c) 14%, #000),
+        color-mix(in srgb, var(--c) 46%, #000) 50%,
+        color-mix(in srgb, var(--c) 14%, #000));
+  }
+  .vbeam.beam-join {
+    background:
+      repeating-linear-gradient(to bottom, var(--hi) 0 10px, transparent 10px 16px) center / 4px 100% no-repeat,
+      linear-gradient(to right,
+        color-mix(in srgb, var(--c) 14%, #000),
+        color-mix(in srgb, var(--c) 46%, #000) 50%,
+        color-mix(in srgb, var(--c) 14%, #000));
+  }
+  .vbeam.beam-locked {
+    background:
+      linear-gradient(to right,
+        transparent calc(50% - 5px), var(--hi) calc(50% - 5px), var(--hi) calc(50% - 2px),
+        transparent calc(50% - 2px), transparent calc(50% + 2px),
+        var(--hi) calc(50% + 2px), var(--hi) calc(50% + 5px), transparent calc(50% + 5px)),
+      linear-gradient(to right,
+        color-mix(in srgb, var(--c) 14%, #000),
+        color-mix(in srgb, var(--c) 46%, #000) 50%,
+        color-mix(in srgb, var(--c) 14%, #000));
+  }
+  .beam-hollow,
+  .vbeam.beam-hollow {
+    background: color-mix(in srgb, var(--c) 10%, #000);
+    border: 2px dashed var(--c);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+  .vbeam .cap::after {
+    inset: 1px 25%;
+  }
+  .vwire {
+    position: absolute;
+    width: 4px;
+    background: var(--color-free);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--color-free) 70%, transparent);
+  }
+}

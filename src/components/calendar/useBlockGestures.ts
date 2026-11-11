@@ -83,8 +83,11 @@ export function useBlockGestures(options: Options) {
   }, []);
 
   const resolveTarget = useCallback((element: Element | null): Target | null => {
-    const el = element?.closest<HTMLElement>("[data-gesture]");
-    if (!el) return null;
+    // The nearest gesture element, unless something clickable (a friend's
+    // event, a stack of avatars) sits between it and the pointer: those handle
+    // their own clicks and must not also count as a tap on the track behind.
+    const el = element?.closest<HTMLElement>("[data-gesture], button, a, input, select, textarea");
+    if (!el || !el.dataset.gesture) return null;
     const kind = el.dataset.gesture;
     if (kind === "empty") return { kind: "empty" };
     const item = el.dataset.item ? opts.current.itemByKey(el.dataset.item) : undefined;
