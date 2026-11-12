@@ -8,6 +8,12 @@ A social availability calendar. Friends show when they're **free** and when they
 
 Built with Next.js (App Router), TypeScript, Tailwind, and Supabase (database, sign-in, file storage, live updates). Hosted on Vercel.
 
+![The calendar: days down, hours across, with friends' avatars over the time they are free](docs/screenshots/calendar.png)
+
+| A hosted event | On a phone |
+| --- | --- |
+| ![Event page with RSVP and chat](docs/screenshots/event.png) | ![The same grid on a phone](docs/screenshots/phone.png) |
+
 ---
 
 ## Contents
