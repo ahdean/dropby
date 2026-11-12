@@ -1,0 +1,51 @@
+<!doctype html>
+<!--
+  Shown by the service worker (public/sw.js) when a page is opened with no
+  connection. Deliberately self-contained: no scripts, styles or fonts from the
+  network, because there is no network.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#03040a" />
+    <title>Offline · dropby</title>
+    <style>
+      html, body { height: 100%; margin: 0; }
+      body {
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+        padding: 24px; box-sizing: border-box; text-align: center;
+        color: #f0eee2; background: #03040a;
+        font: 18px/1.4 ui-monospace, "Courier New", monospace;
+      }
+      .mark { display: flex; align-items: center; gap: 12px; font-weight: bold; font-size: 22px; letter-spacing: 1px; }
+      .tile {
+        width: 52px; height: 52px; background: #49b6ff; box-shadow: 0 0 0 2px #000;
+        border: 2px solid; border-color: #e2f4ff #0c64ad #0c64ad #e2f4ff;
+        display: flex; align-items: center; justify-content: center;
+      }
+      h1 { margin: 0; font-size: 20px; color: #ffc93a; }
+      p { margin: 0; max-width: 22em; color: #b3b9c9; }
+      a {
+        display: inline-block; min-height: 44px; line-height: 44px; padding: 0 18px;
+        color: #0a0c12; background: #49b6ff; text-decoration: none; font: inherit;
+        border: 2px solid; border-color: #e2f4ff #0c64ad #0c64ad #e2f4ff; box-shadow: 0 0 0 2px #000;
+      }
+      a:focus-visible { outline: 2px solid #ffc93a; outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <div class="mark">
+      <span class="tile" aria-hidden="true">
+        <svg viewBox="0 0 12 12" width="30" height="30" fill="#0a0c12" shape-rendering="crispEdges">
+          <path d="M2 0h8v2h-8zM2 2h2v8h-2zM8 2h2v8h-2zM6 5h1v2h-1zM0 10h12v2h-12z" />
+        </svg>
+      </span>
+      dropby
+    </div>
+    <h1>You're offline</h1>
+    <p>dropby needs a connection to show what your friends are up to. Check your signal and try again.</p>
+    <!-- A plain link to the page that was requested: tapping it retries. -->
+    <a href="">Try again</a>
+  </body>
+</html>

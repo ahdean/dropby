@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { INVITE_COOKIE } from "@/lib/constants";
 import { occurrenceAt } from "@/lib/recurrence";
 import { describeWhen } from "@/lib/share";
-import { deviceZone, zoneAbbreviation } from "@/lib/time";
+import { useDeviceZone } from "@/lib/hooks";
+import { zoneAbbreviation } from "@/lib/time";
 import type { InvitePreview } from "@/lib/types";
 
 /**
@@ -17,10 +18,9 @@ import type { InvitePreview } from "@/lib/types";
  */
 export function InviteCard({ token, preview }: { token: string; preview: InvitePreview | null }) {
   // The time zone is only known in the browser.
-  const [zone, setZone] = useState<string | null>(null);
+  const zone = useDeviceZone();
 
   useEffect(() => {
-    setZone(deviceZone());
     if (preview) {
       // Kept for a day: long enough to sign up, short enough not to surprise anyone later.
       document.cookie = `${INVITE_COOKIE}=${encodeURIComponent(token)}; path=/; max-age=86400; samesite=lax`;

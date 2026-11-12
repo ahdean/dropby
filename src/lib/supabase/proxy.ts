@@ -5,7 +5,7 @@ import { safeNextPath } from "../navigation";
 import { sessionCookieOptions } from "./cookies";
 
 /** Pages a signed-out visitor may open. Everything else needs a session. */
-const PUBLIC_PATHS = [/^\/login$/, /^\/i\/[^/]+$/, /^\/offline$/, /^\/setup$/];
+const PUBLIC_PATHS = [/^\/login$/, /^\/i\/[^/]+$/, /^\/setup$/];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((pattern) => pattern.test(pathname));

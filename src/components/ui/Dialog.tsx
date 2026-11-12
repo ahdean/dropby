@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { IconButton } from "./Button";
 
 /**
@@ -26,33 +26,35 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
+  // Set while we close the native dialog ourselves, so its "close" event is
+  // not mistaken for the person dismissing it.
+  const closingQuietly = useRef(false);
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
-  // Next.js keeps the previous page alive (hidden) after a navigation so it can
-  // be restored instantly. A modal left open there would still block the whole
-  // screen, so close it, and tell the owner, whenever this page is hidden.
-  const onCloseRef = useRef(onClose);
-  onCloseRef.current = onClose;
-  useLayoutEffect(() => {
-    const dialog = ref.current;
     return () => {
-      if (dialog?.open) {
+      // Runs when `open` turns false, when the dialog is removed, and when
+      // Next.js hides this page after a navigation (it keeps recent pages
+      // alive so "back" is instant). A modal left open would block the whole
+      // screen from behind, so always release it here. If the page comes back
+      // with `open` still true, the effect above shows it again.
+      if (dialog.open) {
+        closingQuietly.current = true;
         dialog.close();
-        onCloseRef.current();
       }
     };
-  }, []);
+  }, [open]);
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onClose={() => {
+        if (closingQuietly.current) closingQuietly.current = false;
+        else onClose();
+      }}
       onCancel={(event) => {
         // Esc: let the owner decide (it may want to confirm discarding changes).
         event.preventDefault();

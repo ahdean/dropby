@@ -77,16 +77,15 @@ export function CalendarScreen() {
   const maxDay = addDays(range.endDay, -1);
 
   // --- what is on screen ----------------------------------------------------
-  const [view, setView] = useState<CalendarView>("grid");
+  // This screen only ever renders in the browser (after the session is known),
+  // so reading the saved preference while initialising is safe.
+  const [view, setView] = useState<CalendarView>(() =>
+    typeof window !== "undefined" && window.localStorage.getItem(VIEW_STORAGE_KEY) === "day" ? "day" : "grid",
+  );
   const [weekOffset, setWeekOffset] = useState(0);
   const [weeksShown, setWeeksShown] = useState(INITIAL_WEEKS);
   const [selectedDay, setSelectedDay] = useState<DayKey>(today);
   const [focusDay, setFocusDay] = useState<DayKey | null>(null);
-
-  useEffect(() => {
-    const stored = window.localStorage.getItem(VIEW_STORAGE_KEY);
-    if (stored === "day" || stored === "grid") setView(stored);
-  }, []);
 
   const changeView = (next: CalendarView) => {
     setView(next);
@@ -95,14 +94,17 @@ export function CalendarScreen() {
 
   // A link such as /?day=2026-11-20 (from a notification) jumps to that day.
   const dayParam = searchParams.get("day");
-  useEffect(() => {
-    if (!dayParam || !/^\d{4}-\d{2}-\d{2}$/.test(dayParam) || dayParam < minDay || dayParam > maxDay) return;
-    const offset = Math.round(diffDays(range.thisWeek, startOfWeek(dayParam)) / 7);
-    setWeekOffset(offset);
-    setWeeksShown(INITIAL_WEEKS);
-    setSelectedDay(dayParam);
-    setFocusDay(dayParam);
-  }, [dayParam, minDay, maxDay, range.thisWeek]);
+  const [handledDayParam, setHandledDayParam] = useState<string | null>(null);
+  if (dayParam !== handledDayParam) {
+    // Adjust what is shown as soon as the link changes (React's "store the previous value" pattern).
+    setHandledDayParam(dayParam);
+    if (dayParam && /^\d{4}-\d{2}-\d{2}$/.test(dayParam) && dayParam >= minDay && dayParam <= maxDay) {
+      setWeekOffset(Math.round(diffDays(range.thisWeek, startOfWeek(dayParam)) / 7));
+      setWeeksShown(INITIAL_WEEKS);
+      setSelectedDay(dayParam);
+      setFocusDay(dayParam);
+    }
+  }
 
   const firstDay = addDays(range.thisWeek, weekOffset * 7);
   const weeksAvailable = MAX_WEEKS_AHEAD - weekOffset;
@@ -119,6 +121,7 @@ export function CalendarScreen() {
   );
 
   const loadMore = useCallback(() => setWeeksShown((n) => n + 1), []);
+  const hasOwnBlocks = useMemo(() => blocks.some((b) => b.owner_id === userId), [blocks, userId]);
 
   const connections = useMemo(
     () =>
@@ -262,6 +265,13 @@ export function CalendarScreen() {
         {isError && (
           <p className="mb-2 text-danger" role="alert">
             Could not load the calendar. Check your connection; it will retry by itself.
+          </p>
+        )}
+        {!isLoading && !isError && !hasOwnBlocks && (
+          <p className="mb-2 px-1 text-ink-dim" role="note">
+            Your calendar is empty. Drag across a day to mark when you&apos;re free or hosting
+            <span className="sm:hidden"> (on a phone: press, hold, then drag)</span>, or use{" "}
+            <span className="text-free">+ New</span>.
           </p>
         )}
         {view === "grid" ? (

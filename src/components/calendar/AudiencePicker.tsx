@@ -95,7 +95,7 @@ export function AudiencePicker({
                 >
                   {on && <PixelIcon name="check" size={12} />}
                   {group.name}
-                  <span className={on ? "text-stone-ink/70" : "text-ink-faint"}>({group.member_ids.length})</span>
+                  <span className={on ? "text-stone-ink" : "text-ink-dim"}>({group.member_ids.length})</span>
                 </button>
               );
             })}

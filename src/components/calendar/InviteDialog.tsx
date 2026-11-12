@@ -24,11 +24,22 @@ import type { CalendarBlock } from "@/lib/types";
  */
 export function InviteDialog({
   open,
+  ...rest
+}: {
+  open: boolean;
+  onClose: () => void;
+  block: CalendarBlock | null;
+  occurrence?: number;
+}) {
+  // Mounted fresh each time, so every opening makes exactly one new link.
+  return open ? <InviteDialogOpen {...rest} /> : null;
+}
+
+function InviteDialogOpen({
   onClose,
   block,
   occurrence = 0,
 }: {
-  open: boolean;
   onClose: () => void;
   block: CalendarBlock | null;
   occurrence?: number;
@@ -41,18 +52,13 @@ export function InviteDialog({
 
   const [token, setToken] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
-  const [canShare, setCanShare] = useState(false);
-  const existing = useInvites(blockId, open);
+  // Phones offer a system share sheet; most computers do not.
+  const canShare = typeof navigator !== "undefined" && typeof navigator.share === "function";
+  const existing = useInvites(blockId, true);
 
   // One new link each time the dialog is opened.
   useEffect(() => {
-    if (!open) {
-      setToken(null);
-      setFailure(null);
-      return;
-    }
     let cancelled = false;
-    setCanShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
     createInvite(blockId, occurrence)
       .then((created) => {
         if (cancelled) return;
@@ -63,7 +69,7 @@ export function InviteDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, blockId, occurrence, queryClient]);
+  }, [blockId, occurrence, queryClient]);
 
   const origin = getSiteUrl() ?? (typeof window !== "undefined" ? window.location.origin : "");
   const url = token ? inviteUrl(origin, token) : "";
@@ -101,7 +107,7 @@ export function InviteDialog({
   const olderLinks = (existing.data ?? []).filter((invite) => invite.token !== token);
 
   return (
-    <Dialog open={open} onClose={onClose} title={block ? "Invite by text" : "Invite a friend"}>
+    <Dialog open onClose={onClose} title={block ? "Invite by text" : "Invite a friend"}>
       <div className="space-y-4">
         {failure && <p className="text-danger" role="alert">{failure}</p>}
         {!token && !failure && <p className="animate-blink text-ink-dim" role="status">Making a link…</p>}

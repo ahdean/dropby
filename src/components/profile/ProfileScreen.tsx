@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { errorMessage, useFeedback } from "@/components/ui/Feedback";
@@ -33,10 +33,9 @@ export function ProfileScreen() {
   const removeAvatar = useRemoveAvatar();
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState("");
-  useEffect(() => {
-    if (me) setName(me.name);
-  }, [me]);
+  // What is typed, or the saved name until the person starts typing.
+  const [draftName, setName] = useState<string | null>(null);
+  const name = draftName ?? me?.name ?? "";
 
   const [password, setPassword] = useState("");
   const [passwordAgain, setPasswordAgain] = useState("");
@@ -48,7 +47,13 @@ export function ProfileScreen() {
     if (name.trim() === "") return;
     updateProfile.mutate(
       { name: name.trim() },
-      { onSuccess: () => toast("Name saved", "success"), onError: (error) => toastError(error) },
+      {
+        onSuccess: () => {
+          setName(null);
+          toast("Name saved", "success");
+        },
+        onError: (error) => toastError(error),
+      },
     );
   };
 

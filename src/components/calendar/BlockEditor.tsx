@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
+import { useId, useMemo, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
@@ -78,17 +78,7 @@ function timeOptions(from: number, to: number, current: number): number[] {
   return [...options].filter((m) => m >= Math.min(from, current) && m <= Math.max(to, current)).sort((a, b) => a - b);
 }
 
-export function BlockEditor({
-  state,
-  zone,
-  blocks,
-  connections,
-  groups,
-  minDay,
-  maxDay,
-  onClose,
-  onSaved,
-}: {
+interface EditorProps {
   state: EditorState | null;
   zone: string;
   /** Every block on the calendar; the viewer's own are used to detect overlaps. */
@@ -100,40 +90,54 @@ export function BlockEditor({
   onClose: () => void;
   /** Called after a successful save. `invite` asks the parent to open "Invite by text". */
   onSaved: (result: { blockId: string; occurrence: number; invite: boolean }) => void;
-}) {
+}
+
+/**
+ * The form for creating or editing a block. It is mounted fresh each time it
+ * opens, so it always starts from the block (or the dragged range) it was
+ * opened for.
+ */
+export function BlockEditor(props: EditorProps) {
+  if (!props.state) return null;
+  return <EditorDialog {...props} state={props.state} />;
+}
+
+function EditorDialog({
+  state,
+  zone,
+  blocks,
+  connections,
+  groups,
+  minDay,
+  maxDay,
+  onClose,
+  onSaved,
+}: EditorProps & { state: EditorState }) {
   const { userId } = useSession();
   const actions = useBlockActions();
   const { toast, toastError, confirm, choose } = useFeedback();
   const ids = useId();
 
-  const [form, setForm] = useState<Form | null>(null);
+  const [form, setForm] = useState<Form>(() => initialForm(state, zone));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Load the form whenever the editor is opened for something new.
-  useEffect(() => {
-    setForm(state ? initialForm(state, zone) : null);
-    setError(null);
-    setBusy(false);
-  }, [state, zone]);
+  const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => ({ ...f, [key]: value }));
 
-  const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => (f ? { ...f, [key]: value } : f));
-
-  const editing = state?.mode === "edit" ? state : null;
-  const isJoin = form?.type === "join";
+  const editing = state.mode === "edit" ? state : null;
+  const isJoin = form.type === "join";
 
   const startOptions = useMemo(
-    () => (form ? timeOptions(DAY_START_MIN, DAY_END_MIN - MIN_BLOCK_MINUTES, form.startMin) : []),
-    [form],
+    () => timeOptions(DAY_START_MIN, DAY_END_MIN - MIN_BLOCK_MINUTES, form.startMin),
+    [form.startMin],
   );
   const endOptions = useMemo(
-    () => (form ? timeOptions(form.startMin + MIN_BLOCK_MINUTES, DAY_END_MIN, form.endMin) : []),
-    [form],
+    () => timeOptions(form.startMin + MIN_BLOCK_MINUTES, DAY_END_MIN, form.endMin),
+    [form.startMin, form.endMin],
   );
 
   const changeStart = (startMin: number) =>
     setForm((f) => {
-      if (!f) return f;
       const length = Math.max(MIN_BLOCK_MINUTES, f.endMin - f.startMin);
       return { ...f, startMin, endMin: Math.min(DAY_END_MIN, startMin + length) };
     });
@@ -170,7 +174,6 @@ export function BlockEditor({
   });
 
   const save = async (invite: boolean) => {
-    if (!form || !state) return;
     const problem = validate(form);
     setError(problem);
     if (problem) return;
@@ -258,137 +261,133 @@ export function BlockEditor({
 
   return (
     <Dialog
-      open={state !== null && form !== null}
+      open
       onClose={onClose}
       title={editing ? "Edit block" : "New block"}
       footer={
-        form && (
-          <>
-            {editing && (
-              <Button variant="danger" icon="trash" onClick={remove} disabled={busy} className="mr-auto">
-                Delete
-              </Button>
-            )}
-            <Button variant="dark" icon="send" onClick={() => save(true)} disabled={busy}>
-              {editing ? "Save & invite by text" : "Save & invite"}
+        <>
+          {editing && (
+            <Button variant="danger" icon="trash" onClick={remove} disabled={busy} className="mr-auto">
+              Delete
             </Button>
-            <Button type="submit" form={`${ids}-form`} variant={isJoin ? "join" : "free"} icon="check" busy={busy}>
-              Save
-            </Button>
-          </>
-        )
+          )}
+          <Button variant="dark" icon="send" onClick={() => save(true)} disabled={busy}>
+            {editing ? "Save & invite by text" : "Save & invite"}
+          </Button>
+          <Button type="submit" form={`${ids}-form`} variant={isJoin ? "join" : "free"} icon="check" busy={busy}>
+            Save
+          </Button>
+        </>
       }
     >
-      {form && (
-        <form id={`${ids}-form`} onSubmit={submit} className="space-y-5">
-          <div>
-            <div className="label">What is it?</div>
-            <Segmented
-              label="Block type"
-              value={form.type}
-              onChange={(type) => set("type", type)}
-              options={[
-                { value: "free", label: "Free", activeClass: "tile-free" },
-                { value: "join", label: "Join me", activeClass: "tile-join" },
-              ]}
-            />
-            <p className="mt-2 text-[17px] text-ink-faint">
-              {isJoin ? "You're hosting something and friends can join." : "You're available. Friends see your face over this time."}
-            </p>
-          </div>
+      <form id={`${ids}-form`} onSubmit={submit} className="space-y-5">
+        <div>
+          <div className="label">What is it?</div>
+          <Segmented
+            label="Block type"
+            value={form.type}
+            onChange={(type) => set("type", type)}
+            options={[
+              { value: "free", label: "Free", activeClass: "tile-free" },
+              { value: "join", label: "Join me", activeClass: "tile-join" },
+            ]}
+          />
+          <p className="mt-2 text-[17px] text-ink-faint">
+            {isJoin ? "You're hosting something and friends can join." : "You're available. Friends see your face over this time."}
+          </p>
+        </div>
 
-          <fieldset className="space-y-3">
-            <legend className="label">When</legend>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2">
-                <label htmlFor={`${ids}-day`} className="sr-only">Date</label>
-                <input
-                  id={`${ids}-day`}
-                  type="date"
-                  className="field"
-                  value={form.dayKey}
-                  min={minDay}
-                  max={maxDay}
-                  required
-                  onChange={(e) => e.target.value && set("dayKey", e.target.value)}
-                />
-              </div>
-              <div>
-                <label htmlFor={`${ids}-start`} className="label">From</label>
-                <select id={`${ids}-start`} className="field" value={form.startMin} onChange={(e) => changeStart(Number(e.target.value))}>
-                  {startOptions.map((m) => (
-                    <option key={m} value={m}>{formatMinutes(m)}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label htmlFor={`${ids}-end`} className="label">To</label>
-                <select id={`${ids}-end`} className="field" value={form.endMin} onChange={(e) => set("endMin", Number(e.target.value))}>
-                  {endOptions.map((m) => (
-                    <option key={m} value={m}>{formatMinutes(m)}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <Segmented
-              label="Repeat"
-              value={form.repeat ? "weekly" : "once"}
-              onChange={(v) => set("repeat", v === "weekly")}
-              options={[
-                { value: "once", label: "One-off" },
-                { value: "weekly", label: "Repeat weekly" },
-              ]}
-            />
-            <p className="text-[17px] text-ink-faint">
-              {form.repeat ? `Every ${formatDayKey(form.dayKey, "long").split(",")[0]} at this time.` : formatDayKey(form.dayKey, "long")}
-            </p>
-          </fieldset>
-
-          {isJoin ? (
-            <fieldset className="space-y-3">
-              <legend className="label">The plan</legend>
-              <div>
-                <div className="label">Emoji (required)</div>
-                <EmojiPicker value={form.emoji} onChange={(emoji) => set("emoji", emoji)} />
-              </div>
-              <div>
-                <label htmlFor={`${ids}-title`} className="label">Title</label>
-                <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="Pizza night" onChange={(e) => set("title", e.target.value)} />
-              </div>
-              <div>
-                <label htmlFor={`${ids}-location`} className="label">Where</label>
-                <input id={`${ids}-location`} className="field" value={form.location} maxLength={200} placeholder="My place, 12 Elm St" onChange={(e) => set("location", e.target.value)} />
-              </div>
-              <div>
-                <label htmlFor={`${ids}-description`} className="label">Details</label>
-                <textarea id={`${ids}-description`} className="field" rows={3} value={form.description} maxLength={2000} placeholder="Bring a topping!" onChange={(e) => set("description", e.target.value)} />
-              </div>
-              <Switch
-                checked={form.rsvp}
-                onChange={(rsvp) => set("rsvp", rsvp)}
-                label="Ask for RSVPs"
-                hint={`Guests answer "I'm in" or "Can't make it".`}
+        <fieldset className="space-y-3">
+          <legend className="label">When</legend>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label htmlFor={`${ids}-day`} className="sr-only">Date</label>
+              <input
+                id={`${ids}-day`}
+                type="date"
+                className="field"
+                value={form.dayKey}
+                min={minDay}
+                max={maxDay}
+                required
+                onChange={(e) => e.target.value && set("dayKey", e.target.value)}
               />
-            </fieldset>
-          ) : (
-            <div>
-              <label htmlFor={`${ids}-note`} className="label">Note (optional)</label>
-              <input id={`${ids}-note`} className="field" value={form.title} maxLength={80} placeholder="Down for anything" onChange={(e) => set("title", e.target.value)} />
             </div>
-          )}
+            <div>
+              <label htmlFor={`${ids}-start`} className="label">From</label>
+              <select id={`${ids}-start`} className="field" value={form.startMin} onChange={(e) => changeStart(Number(e.target.value))}>
+                {startOptions.map((m) => (
+                  <option key={m} value={m}>{formatMinutes(m)}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor={`${ids}-end`} className="label">To</label>
+              <select id={`${ids}-end`} className="field" value={form.endMin} onChange={(e) => set("endMin", Number(e.target.value))}>
+                {endOptions.map((m) => (
+                  <option key={m} value={m}>{formatMinutes(m)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <Segmented
+            label="Repeat"
+            value={form.repeat ? "weekly" : "once"}
+            onChange={(v) => set("repeat", v === "weekly")}
+            options={[
+              { value: "once", label: "One-off" },
+              { value: "weekly", label: "Repeat weekly" },
+            ]}
+          />
+          <p className="text-[17px] text-ink-faint">
+            {form.repeat ? `Every ${formatDayKey(form.dayKey, "long").split(",")[0]} at this time.` : formatDayKey(form.dayKey, "long")}
+          </p>
+        </fieldset>
 
-          <fieldset>
-            <legend className="label">Shared with</legend>
-            <AudiencePicker value={form.audience} onChange={(audience) => set("audience", audience)} connections={connections} groups={groups} />
+        {isJoin ? (
+          <fieldset className="space-y-3">
+            <legend className="label">The plan</legend>
+            <div>
+              <div className="label">Emoji (required)</div>
+              <EmojiPicker value={form.emoji} onChange={(emoji) => set("emoji", emoji)} />
+            </div>
+            <div>
+              <label htmlFor={`${ids}-title`} className="label">Title</label>
+              <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="Pizza night" onChange={(e) => set("title", e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor={`${ids}-location`} className="label">Where</label>
+              <input id={`${ids}-location`} className="field" value={form.location} maxLength={200} placeholder="My place, 12 Elm St" onChange={(e) => set("location", e.target.value)} />
+            </div>
+            <div>
+              <label htmlFor={`${ids}-description`} className="label">Details</label>
+              <textarea id={`${ids}-description`} className="field" rows={3} value={form.description} maxLength={2000} placeholder="Bring a topping!" onChange={(e) => set("description", e.target.value)} />
+            </div>
+            <Switch
+              checked={form.rsvp}
+              onChange={(rsvp) => set("rsvp", rsvp)}
+              label="Ask for RSVPs"
+              hint={`Guests answer "I'm in" or "Can't make it".`}
+            />
           </fieldset>
+        ) : (
+          <div>
+            <label htmlFor={`${ids}-note`} className="label">Note (optional)</label>
+            <input id={`${ids}-note`} className="field" value={form.title} maxLength={80} placeholder="Down for anything" onChange={(e) => set("title", e.target.value)} />
+          </div>
+        )}
 
-          {error && (
-            <p className="text-danger" role="alert">
-              {error}
-            </p>
-          )}
-        </form>
-      )}
+        <fieldset>
+          <legend className="label">Shared with</legend>
+          <AudiencePicker value={form.audience} onChange={(audience) => set("audience", audience)} connections={connections} groups={groups} />
+        </fieldset>
+
+        {error && (
+          <p className="text-danger" role="alert">
+            {error}
+          </p>
+        )}
+      </form>
     </Dialog>
   );
 }

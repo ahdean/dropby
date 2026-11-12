@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { INVITE_COOKIE } from "@/lib/constants";
+import { useBrowserValue } from "@/lib/hooks";
 import { safeNextPath } from "@/lib/navigation";
 import { formatUsPhone, formatUsPhoneInput, isValidUsPhone } from "@/lib/phone";
 import { requestCode, signInWithPassword, verifyCode } from "./actions";
@@ -25,13 +26,9 @@ export function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [devCode, setDevCode] = useState<string | null>(null);
-  const [hasInvite, setHasInvite] = useState(false);
+  const hasInvite = useBrowserValue(() => document.cookie.split("; ").some((c) => c.startsWith(`${INVITE_COOKIE}=`)));
   const [pending, startTransition] = useTransition();
   const codeRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setHasInvite(document.cookie.split("; ").some((c) => c.startsWith(`${INVITE_COOKIE}=`)));
-  }, []);
 
   useEffect(() => {
     if (step === "code") codeRef.current?.focus();

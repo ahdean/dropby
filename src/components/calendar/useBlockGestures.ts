@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type RefObject,
+} from "react";
 import { DAY_END_MIN, DEFAULT_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { moveInterval, rangeFromDrag, resizeInterval, type Interval } from "@/lib/calendar/intervals";
 import type { CalendarItem } from "@/lib/calendar/model";
@@ -75,7 +83,9 @@ export function useBlockGestures(options: Options) {
   const ghostRef = useRef<Ghost | null>(null);
   // Keep the latest callbacks without re-binding the native listeners.
   const opts = useRef(options);
-  opts.current = options;
+  useLayoutEffect(() => {
+    opts.current = options;
+  });
 
   const updateGhost = useCallback((next: Ghost | null) => {
     ghostRef.current = next;

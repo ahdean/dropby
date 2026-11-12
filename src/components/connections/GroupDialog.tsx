@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -13,31 +13,25 @@ import type { Group, Profile } from "@/lib/types";
  * Create a group, or (for its owner) rename it and change who is in it.
  * Only connections can be added.
  */
-export function GroupDialog({
-  open,
-  group,
-  connections,
-  profiles,
-  onClose,
-}: {
-  open: boolean;
+interface GroupDialogProps {
   /** The group being edited, or null to create a new one. */
   group: Group | null;
   connections: Profile[];
   profiles: Map<string, Profile>;
   onClose: () => void;
-}) {
+}
+
+export function GroupDialog({ open, ...rest }: GroupDialogProps & { open: boolean }) {
+  // Mounted fresh each time, so the form starts from the group as it is now.
+  return open ? <GroupDialogOpen {...rest} /> : null;
+}
+
+function GroupDialogOpen({ group, connections, profiles, onClose }: GroupDialogProps) {
   const actions = useSocialActions();
   const { toast, toastError } = useFeedback();
-  const [name, setName] = useState("");
-  const [memberIds, setMemberIds] = useState<string[]>([]);
+  const [name, setName] = useState(group?.name ?? "");
+  const [memberIds, setMemberIds] = useState<string[]>(group ? group.member_ids.filter((id) => id !== group.owner_id) : []);
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (!open) return;
-    setName(group?.name ?? "");
-    setMemberIds(group ? group.member_ids.filter((id) => id !== group.owner_id) : []);
-  }, [open, group]);
 
   // Existing members who are no longer connections still need a row, so they can be removed.
   const candidates = [
@@ -77,7 +71,7 @@ export function GroupDialog({
 
   return (
     <Dialog
-      open={open}
+      open
       onClose={onClose}
       title={group ? "Edit group" : "New group"}
       footer={

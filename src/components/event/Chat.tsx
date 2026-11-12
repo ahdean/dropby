@@ -64,8 +64,6 @@ export function Chat({
     }
   };
 
-  let lastDay = "";
-
   return (
     <section id="chat" aria-labelledby="chat-heading" className="panel scroll-mt-20">
       <h2 id="chat-heading" className="flex items-center gap-2 border-b-2 border-black bg-panel-2 px-4 py-2 text-[11px] text-join">
@@ -78,12 +76,12 @@ export function Chat({
         {!isLoading && messages.length === 0 && (
           <p className="py-4 text-center text-ink-dim">No messages yet. Say hi, sort out who brings what…</p>
         )}
-        {messages.map((message) => {
+        {messages.map((message, index) => {
           const person = people.get(message.user_id);
           const mine = message.user_id === userId;
           const day = utcToZoned(message.created_at, zone).dayKey;
-          const showDay = day !== lastDay;
-          lastDay = day;
+          // A date heading before the first message of each day.
+          const showDay = index === 0 || utcToZoned(messages[index - 1].created_at, zone).dayKey !== day;
           return (
             <div key={message.id}>
               {showDay && (

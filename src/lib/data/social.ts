@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { getSupabase } from "../supabase/client";
 import type { Group, Mutual } from "../types";
@@ -75,32 +75,30 @@ export function useBlocked() {
   return { ...query, blockedIds: query.data ?? EMPTY_IDS };
 }
 
-/** Anything social changed: refresh everything that depends on who can see whom. */
-function useInvalidateSocial() {
-  const queryClient = useQueryClient();
-  return () =>
-    Promise.all(
-      [keys.connections, keys.groups, keys.mutuals, keys.blocked, keys.profiles, keys.blocks].map((queryKey) =>
-        queryClient.invalidateQueries({ queryKey }),
-      ),
-    );
-}
-
 export function useSocialActions() {
   const { userId } = useSession();
-  const invalidate = useInvalidateSocial();
+  const queryClient = useQueryClient();
 
-  const wrap = <Args extends unknown[]>(fn: (...args: Args) => Promise<void>) =>
-    async (...args: Args) => {
-      try {
-        await fn(...args);
-      } finally {
-        await invalidate();
-      }
-    };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- actions only depend on the user id
   return useMemo(() => {
+    /** Anything social changed: refresh everything that depends on who can see whom. */
+    const invalidate = () =>
+      Promise.all(
+        [keys.connections, keys.groups, keys.mutuals, keys.blocked, keys.profiles, keys.blocks].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey }),
+        ),
+      );
+
+    /** Run the write, then refresh, whether it succeeded or not. */
+    const wrap =
+      <Args extends unknown[]>(fn: (...args: Args) => Promise<void>) =>
+      async (...args: Args) => {
+        try {
+          await fn(...args);
+        } finally {
+          await invalidate();
+        }
+      };
+
     const supabase = getSupabase();
     return {
       /** "Connect" on a mutual. */
@@ -160,10 +158,5 @@ export function useSocialActions() {
         if (error) throw error;
       }),
     };
-  }, [userId]);
-}
-
-/** Convenience for forms that need a pending flag around one of the actions. */
-export function useAction<Args extends unknown[]>(action: (...args: Args) => Promise<void>) {
-  return useMutation({ mutationFn: (args: Args) => action(...args) });
+  }, [queryClient, userId]);
 }
