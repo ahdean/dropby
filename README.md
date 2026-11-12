@@ -323,7 +323,8 @@ public/sw.js             service worker (installable app); public/offline.html i
 | --- | --- |
 | "Almost there" setup page | The Supabase environment variables are missing in Vercel. Add them and redeploy. |
 | "Dev login failed" | `SUPABASE_SECRET_KEY` is missing or wrong, or the Email provider was disabled in Supabase. |
-| "Text messages are not set up yet" | Dev login is off but the Phone provider isn't configured in Supabase (step 4). |
+| "Phone sign-in is not switched on yet" | The Phone provider isn't enabled in Supabase (step 4). Until it is, only the dev code works; password sign-in also needs it. |
+| "The text message could not be sent" | The Phone provider is on but its Twilio details are wrong or the Twilio account can't send. |
 | The code never arrives | Twilio account still in trial, or out of credit. Check **Monitor → Logs** in Twilio and **Authentication → Logs** in Supabase. |
 | Signed in but the calendar says it could not load | The migrations weren't all run, or not in order. Re-run step 1.2. |
 | Changes by friends don't appear until refresh | The last migration file (`…500_storage_realtime.sql`) wasn't run. |

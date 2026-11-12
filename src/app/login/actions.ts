@@ -19,8 +19,11 @@ function friendly(error: { message?: string; code?: string; status?: number } | 
     return "Too many attempts. Wait a minute and try again.";
   }
   if (code === "invalid_credentials") return "Wrong phone number or password.";
-  if (code === "phone_provider_disabled" || code === "sms_send_failed" || /provider|sms/i.test(message)) {
-    return "Text messages are not set up yet. Ask the site owner, or use dev login (see README).";
+  if (code === "phone_provider_disabled" || /logins are disabled|provider is disabled/i.test(message)) {
+    return "Phone sign-in is not switched on yet (README, step 4). Until then, use \"Text me a code\" with the dev code.";
+  }
+  if (code === "sms_send_failed" || /provider|sms/i.test(message)) {
+    return "The text message could not be sent. Check the SMS provider settings (README, step 4).";
   }
   if (code === "weak_password") return "That password is too short.";
   return message || "Something went wrong. Please try again.";

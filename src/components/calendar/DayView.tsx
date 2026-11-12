@@ -104,7 +104,7 @@ export function DayView({
           <div className="flex-1 border-l-2 border-black px-2 py-2">Friends</div>
         </div>
 
-        <div className={`flex ${isPast ? "opacity-55" : ""}`} style={{ height: VISIBLE_HOURS * DAY.hourHeight }}>
+        <div className={`flex ${isPast ? "opacity-70" : ""}`} style={{ height: VISIBLE_HOURS * DAY.hourHeight }}>
           {/* hour labels */}
           <div className="relative shrink-0 border-r-2 border-black bg-panel" style={{ width: DAY.timeColumn }} aria-hidden="true">
             {HOURS.map((hour) => (

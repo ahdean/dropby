@@ -10,7 +10,6 @@ import { GRID, GRID_MIN_WIDTH, fractionOf, laneCenter, minutesAt, percent, rowHe
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
 
 const WEEKDAY_LETTER = ["", "M", "T", "W", "T", "F", "S", "S"];
-const WEEKDAY_NAME = ["", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 const HOURS = Array.from({ length: VISIBLE_HOURS }, (_, i) => DAY_START_HOUR + i);
 
 interface RowProps {
@@ -52,17 +51,18 @@ const DayRow = memo(function DayRow({
   const isWeekend = weekday >= 6;
 
   return (
-    <div role="row" className={`flex ${isPast ? "opacity-55" : ""}`} style={{ height }} data-day-row={day.dayKey}>
+    <div role="row" className={`flex ${isPast ? "opacity-70" : ""}`} style={{ height }} data-day-row={day.dayKey}>
       {/* sticky day label */}
       <div
         role="rowheader"
         className="sticky left-0 z-20 flex shrink-0 items-center justify-center border-b-2 border-r-2 border-black bg-panel"
         style={{ width: GRID.dayColumn }}
       >
-        <span
-          className={`tile flex h-11 w-10 flex-col items-center justify-center leading-none ${isToday ? "tile-locked" : ""}`}
-          aria-label={`${WEEKDAY_NAME[weekday]}, ${formatDayKey(day.dayKey, "long")}${isToday ? ", today" : ""}`}
-        >
+        <span className={`tile flex h-11 w-10 flex-col items-center justify-center leading-none ${isToday ? "tile-locked" : ""}`}>
+          <span className="sr-only">
+            {formatDayKey(day.dayKey, "long")}
+            {isToday ? ", today" : ""}
+          </span>
           <span className="font-display text-[8px]" aria-hidden="true">
             {WEEKDAY_LETTER[weekday]}
           </span>
