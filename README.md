@@ -79,6 +79,8 @@ Open your site. Enter any US mobile number, press **Text me a code**, and type y
 
 > **Changing a setting in Vercel does nothing until you redeploy** (Deployments → ⋯ → Redeploy). This catches everyone once.
 
+If something doesn't work, open `/setup/check` on your site: it lists what is configured and what isn't.
+
 To fill the app with demo people and plans, see [Demo data](#demo-data).
 
 ### Step 4: Twilio, for real text messages
@@ -326,6 +328,8 @@ public/sw.js             service worker (installable app); public/offline.html i
 ---
 
 ## Troubleshooting
+
+**First stop: open `/setup/check` on your site** (for example `https://your-site.vercel.app/setup/check`). It tests every setting and says in plain words what is done, what is still to do, and what is broken. It shows no keys or codes, and it is only available while test sign-in is on.
 
 | What you see | Likely cause and fix |
 | --- | --- |

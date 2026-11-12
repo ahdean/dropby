@@ -39,6 +39,31 @@ export function normalizeSupabaseUrl(raw: string | null | undefined): string | n
   return url.origin;
 }
 
+export type KeyKind = "publishable" | "secret" | "unknown";
+
+/**
+ * Which kind of Supabase API key is this? New-style keys say so in their
+ * prefix; old-style keys are tokens whose payload names the role. Used to
+ * catch the two keys being swapped, which either breaks sign-in or, far
+ * worse, publishes the secret key to every visitor.
+ */
+export function classifyKey(key: string | null | undefined): KeyKind {
+  const text = (key ?? "").trim();
+  if (text.startsWith("sb_publishable_")) return "publishable";
+  if (text.startsWith("sb_secret_")) return "secret";
+  const parts = text.split(".");
+  if (parts.length === 3) {
+    try {
+      const payload = JSON.parse(atob(parts[1].replace(/-/g, "+").replace(/_/g, "/"))) as { role?: string };
+      if (payload.role === "anon") return "publishable";
+      if (payload.role === "service_role") return "secret";
+    } catch {
+      // not a token we recognise
+    }
+  }
+  return "unknown";
+}
+
 /** Null when the Supabase project has not been configured yet. */
 export function getPublicEnv(): PublicEnv | null {
   const supabaseUrl = normalizeSupabaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);

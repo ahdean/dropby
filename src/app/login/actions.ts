@@ -15,7 +15,13 @@ const NOT_CONFIGURED = "dropby is not connected to its database yet. See the REA
 function friendly(error: { message?: string; code?: string; status?: number } | null | undefined): string {
   const code = error?.code ?? "";
   const message = error?.message ?? "";
-  if (code === "otp_expired" || /expired|invalid/i.test(message)) return "That code is wrong or has expired. Try again or request a new one.";
+  // Site configuration problems first: these are not the visitor's fault.
+  if (/invalid path|invalid api key|no api key/i.test(message)) {
+    return "This site is not connected to its database correctly yet. Site owner: open /setup/check to see what to fix.";
+  }
+  if (code === "otp_expired" || /token has expired or is invalid|otp.*(expired|invalid)|invalid.*(otp|token|code)/i.test(message)) {
+    return "That code is wrong or has expired. Try again or request a new one.";
+  }
   if (code === "over_sms_send_rate_limit" || code === "over_request_rate_limit" || error?.status === 429) {
     return "Too many attempts. Wait a minute and try again.";
   }

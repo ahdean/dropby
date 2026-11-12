@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { DevLoginError, explainDevLoginFailure } from "@/lib/auth/dev-login-errors";
-import { normalizeSupabaseUrl } from "@/lib/env";
+import { classifyKey, normalizeSupabaseUrl } from "@/lib/env";
 
 describe("the Supabase address", () => {
   it("is used as-is when it is the bare project address", () => {
@@ -36,6 +36,29 @@ describe("the Supabase address", () => {
     expect(normalizeSupabaseUrl(undefined)).toBeNull();
     expect(normalizeSupabaseUrl("ftp://abcdefghijklmnop.supabase.co")).toBeNull();
     expect(normalizeSupabaseUrl("not a url")).toBeNull();
+  });
+});
+
+describe("telling the two Supabase keys apart", () => {
+  // Old-style keys are tokens whose middle part names the role.
+  const token = (role: string) => `eyJhbGciOiJIUzI1NiJ9.${btoa(JSON.stringify({ role, iss: "supabase" })).replace(/=+$/, "")}.signature`;
+
+  it("recognises new-style keys by their prefix", () => {
+    expect(classifyKey("sb_publishable_abc123")).toBe("publishable");
+    expect(classifyKey("sb_secret_abc123")).toBe("secret");
+    expect(classifyKey("  sb_secret_abc123  ")).toBe("secret");
+  });
+
+  it("recognises old-style keys by the role inside them", () => {
+    expect(classifyKey(token("anon"))).toBe("publishable");
+    expect(classifyKey(token("service_role"))).toBe("secret");
+  });
+
+  it("does not guess about anything else", () => {
+    expect(classifyKey("")).toBe("unknown");
+    expect(classifyKey(null)).toBe("unknown");
+    expect(classifyKey("hello")).toBe("unknown");
+    expect(classifyKey("a.b.c")).toBe("unknown");
   });
 });
 

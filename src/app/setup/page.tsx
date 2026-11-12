@@ -24,6 +24,11 @@ export default function SetupPage() {
             </ul>
           </li>
         </ol>
+        <p>
+          <a href="/setup/check" className="link">
+            See exactly what is missing
+          </a>
+        </p>
         <p className="text-ink-faint">The README in the code repository has every step.</p>
       </div>
     </main>

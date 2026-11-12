@@ -5,7 +5,7 @@ import { safeNextPath } from "../navigation";
 import { sessionCookieOptions } from "./cookies";
 
 /** Pages a signed-out visitor may open. Everything else needs a session. */
-const PUBLIC_PATHS = [/^\/login$/, /^\/i\/[^/]+$/, /^\/setup$/];
+const PUBLIC_PATHS = [/^\/login$/, /^\/i\/[^/]+$/, /^\/setup$/, /^\/setup\/check$/];
 
 function isPublic(pathname: string): boolean {
   return PUBLIC_PATHS.some((pattern) => pattern.test(pathname));
@@ -26,7 +26,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   if (!env) {
     // Not configured yet: show setup instructions instead of a broken app.
-    if (pathname === "/setup") return NextResponse.next({ request });
+    if (pathname === "/setup" || pathname === "/setup/check") return NextResponse.next({ request });
     return NextResponse.redirect(new URL("/setup", request.url));
   }
 
