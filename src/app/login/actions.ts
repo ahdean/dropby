@@ -1,6 +1,7 @@
 "use server";
 
 import { devSignIn } from "@/lib/auth/dev-login";
+import { explainDevLoginFailure } from "@/lib/auth/dev-login-errors";
 import { getDevLogin, getPublicEnv } from "@/lib/env";
 import { normalizeUsPhone } from "@/lib/phone";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -26,22 +27,24 @@ function friendly(error: { message?: string; code?: string; status?: number } | 
     return "The text message could not be sent. Check the SMS provider settings (README, step 4).";
   }
   if (code === "weak_password") return "That password is too short.";
+  if (/fetch failed|network|enotfound/i.test(message)) {
+    return "Could not reach the sign-in service. Check your connection and try again in a moment.";
+  }
   return message || "Something went wrong. Please try again.";
 }
 
 /**
  * Step 1 of sign-in/sign-up: text a one-time code to the phone number.
- * In dev mode no text is sent; the fixed code is returned to show on screen.
+ * In dev mode no text is sent. The dev code itself is never sent to the
+ * browser: it is a shared secret that only the site owner knows.
  */
-export async function requestCode(
-  phoneInput: string,
-): Promise<ActionResult<{ phone: string; devMode: boolean; devCode?: string }>> {
+export async function requestCode(phoneInput: string): Promise<ActionResult<{ phone: string; devMode: boolean }>> {
   if (!getPublicEnv()) return { ok: false, error: NOT_CONFIGURED };
   const phone = normalizeUsPhone(phoneInput);
   if (!phone) return { ok: false, error: BAD_PHONE };
 
   const dev = getDevLogin();
-  if (dev.enabled) return { ok: true, phone, devMode: true, devCode: dev.code };
+  if (dev.enabled) return { ok: true, phone, devMode: true };
 
   const supabase = await createSupabaseServer();
   const { error } = await supabase.auth.signInWithOtp({ phone, options: { channel: "sms" } });
@@ -66,7 +69,7 @@ export async function verifyCode(phoneInput: string, codeInput: string): Promise
       return { ok: true };
     } catch (error) {
       console.error("dev login failed", error);
-      return { ok: false, error: `Dev login failed: ${(error as Error).message}` };
+      return { ok: false, error: explainDevLoginFailure(error) };
     }
   }
 

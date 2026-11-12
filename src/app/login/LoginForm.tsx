@@ -25,7 +25,7 @@ export function LoginForm() {
   const [code, setCode] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [devCode, setDevCode] = useState<string | null>(null);
+  const [devMode, setDevMode] = useState(false);
   const hasInvite = useBrowserValue(() => document.cookie.split("; ").some((c) => c.startsWith(`${INVITE_COOKIE}=`)));
   const [pending, startTransition] = useTransition();
   const codeRef = useRef<HTMLInputElement>(null);
@@ -46,7 +46,7 @@ export function LoginForm() {
       const result = await requestCode(phoneInput);
       if (!result.ok) return setError(result.error);
       setPhone(result.phone);
-      setDevCode(result.devMode ? (result.devCode ?? null) : null);
+      setDevMode(result.devMode);
       setCode("");
       setStep("code");
     });
@@ -120,12 +120,12 @@ export function LoginForm() {
       {step === "code" && (
         <form onSubmit={submitCode} className="space-y-4">
           <p className="text-ink-dim">
-            {devCode ? "Dev mode is on, so no text was sent." : "We texted a code to"}{" "}
+            {devMode ? "Test mode is on, so no text was sent to" : "We texted a code to"}{" "}
             <span className="whitespace-nowrap text-ink">{formatUsPhone(phone)}</span>
           </p>
-          {devCode && (
+          {devMode && (
             <p className="slot px-3 py-2 text-locked" role="status">
-              Dev login: enter <span className="font-display text-[11px]">{devCode}</span>
+              Enter the test code. (Site owner: it is the DEV_LOGIN_CODE you chose in the hosting settings.)
             </p>
           )}
           <div>
@@ -153,7 +153,7 @@ export function LoginForm() {
             <button type="button" className="btn-ghost" onClick={() => { setError(null); setStep("phone"); }}>
               Change number
             </button>
-            {!devCode && (
+            {!devMode && (
               <button type="button" className="btn-ghost" onClick={() => sendCode()} disabled={pending}>
                 Send again
               </button>

@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseAdmin } from "../supabase/admin";
+import { DevLoginError } from "./dev-login-errors";
 
 /**
  * DEV LOGIN: sign someone in by phone number without sending a text.
@@ -39,17 +40,31 @@ export async function devSignIn(supabase: SupabaseClient, phone: string): Promis
   const email = placeholderEmail(phone);
 
   const existing = await findUserByPhone(admin, phone);
+  let userId = existing?.id;
   if (!existing) {
-    const { error } = await admin.auth.admin.createUser({
+    const { data, error } = await admin.auth.admin.createUser({
       phone,
       phone_confirm: true,
       email,
       email_confirm: true,
     });
     if (error) throw error;
+    userId = data.user.id;
   } else if (existing.email !== email) {
     const { error } = await admin.auth.admin.updateUserById(existing.id, { email, email_confirm: true });
     if (error) throw error;
+  }
+
+  // Normally a database trigger creates the profile at sign-up. Make sure it is
+  // there anyway: this covers accounts made before the database was set up, and
+  // it is also the earliest point at which a missing database can be reported.
+  const { error: profileError } = await admin
+    .from("profiles")
+    .upsert({ id: userId }, { onConflict: "id", ignoreDuplicates: true });
+  if (profileError) {
+    throw new DevLoginError(
+      "The database tables are not set up yet. In Supabase, run the files in supabase/migrations in order (README, step 1.2), then try again.",
+    );
   }
 
   const { data: link, error: linkError } = await admin.auth.admin.generateLink({ type: "magiclink", email });

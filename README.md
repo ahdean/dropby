@@ -44,8 +44,8 @@ You need three free accounts: **Supabase** (the database), **Vercel** (the hosti
    - wait for "Success" before doing the next file.
 
    (Developers can instead run `npx supabase link` then `npm run db:push`.)
-3. **Copy three values** for step 2. Open **Project Settings → API Keys** (the URL is under **Project Settings → Data API** or shown on the project home page):
-   - **Project URL**, like `https://abcdefgh.supabase.co`
+3. **Copy three values** for step 2. Open **Project Settings → API Keys** (the URL is also shown on the project's home page and under **Project Settings → Data API**):
+   - **Project URL**, like `https://abcdefgh.supabase.co`. It ends at `.co`. Some pages show a longer version ending in `/rest/v1/`; either works, the app trims it.
    - **Publishable key**, starts with `sb_publishable_` (older projects: the `anon` key)
    - **Secret key**, starts with `sb_secret_` (older projects: the `service_role` key). Treat this like a password.
 4. **Leave these settings at their defaults:**
@@ -73,9 +73,11 @@ From now on, every change pushed to the `main` branch on GitHub is deployed auto
 
 ### Step 3: Try it (dev login)
 
-Open your site. Enter any US mobile number, press **Text me a code**, and type your `DEV_LOGIN_CODE`. No text is sent. You're in.
+Open your site. Enter any US mobile number, press **Text me a code**, and type your `DEV_LOGIN_CODE`. No text is sent, and the code is never shown on screen: only people you give it to can use it. You're in.
 
 > **Dev login is a master key.** While `DEV_LOGIN_ENABLED` is `true`, anyone who knows (or guesses) the code can sign in as any phone number. Use it only for trying things out, don't put real private plans in, and switch it off in step 4.
+
+> **Changing a setting in Vercel does nothing until you redeploy** (Deployments → ⋯ → Redeploy). This catches everyone once.
 
 To fill the app with demo people and plans, see [Demo data](#demo-data).
 
@@ -328,7 +330,11 @@ public/sw.js             service worker (installable app); public/offline.html i
 | What you see | Likely cause and fix |
 | --- | --- |
 | "Almost there" setup page | The Supabase environment variables are missing in Vercel. Add them and redeploy. |
-| "Dev login failed" | `SUPABASE_SECRET_KEY` is missing or wrong, or the Email provider was disabled in Supabase. |
+| "The Supabase address looks wrong" or "Could not reach Supabase" | `NEXT_PUBLIC_SUPABASE_URL` in Vercel isn't your project's address. It should look like `https://abcdefgh.supabase.co`. Fix it and redeploy. |
+| "Supabase refused the key" or "SUPABASE_SECRET_KEY is missing" | `SUPABASE_SECRET_KEY` in Vercel must be the **secret** key (`sb_secret_…`), not the publishable one. Fix it and redeploy. |
+| "The database tables are not set up yet" or "database error while creating the account" | The five database files haven't all been run, or not in order (step 1.2). |
+| "Couldn't load your profile" after signing in | Same as above if the site is brand new; otherwise a connection problem. Sign out and in again after fixing. |
+| Any other "Dev login failed: …" | The rest of the message is Supabase's own wording. Check that the Email provider is still enabled in Supabase. |
 | "Phone sign-in is not switched on yet" | The Phone provider isn't enabled in Supabase (step 4). Until it is, only the dev code works; password sign-in also needs it. |
 | "The text message could not be sent" | The Phone provider is on but its Twilio details are wrong or the Twilio account can't send. |
 | The code never arrives | Twilio account still in trial, or out of credit. Check **Monitor → Logs** in Twilio and **Authentication → Logs** in Supabase. |

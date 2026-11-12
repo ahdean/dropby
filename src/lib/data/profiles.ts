@@ -26,11 +26,16 @@ export function useProfiles() {
   return { ...query, byId };
 }
 
-/** The signed-in user's own profile (undefined while loading). */
-export function useMe(): { me: Profile | undefined; isLoading: boolean } {
+/**
+ * The signed-in user's own profile (undefined while loading).
+ * `isError`: the profiles could not be read at all (offline, or the database is not set up).
+ * `isMissing`: they were read, but there is no row for this user.
+ */
+export function useMe() {
   const { userId } = useSession();
-  const { byId, isLoading } = useProfiles();
-  return { me: byId.get(userId), isLoading };
+  const { byId, isLoading, isError, isSuccess, refetch } = useProfiles();
+  const me = byId.get(userId);
+  return { me, isLoading, isError, isMissing: isSuccess && !me, refetch };
 }
 
 export function useUpdateProfile() {
