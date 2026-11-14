@@ -20,7 +20,6 @@ import { useConnections, useGroups } from "@/lib/data/social";
 import { eventPath } from "@/lib/navigation";
 import {
   addDays,
-  deviceZone,
   diffDays,
   formatDayKey,
   formatMinuteRange,
@@ -31,6 +30,7 @@ import {
   type DayKey,
 } from "@/lib/time";
 import type { CalendarBlock, Profile } from "@/lib/types";
+import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
 import { DayView } from "./DayView";
 import { FriendsDialog } from "./FriendsDialog";
@@ -63,7 +63,7 @@ export function CalendarScreen() {
   const { toast, toastError, choose } = useFeedback();
   const actions = useBlockActions();
 
-  const zone = useMemo(() => deviceZone(), []);
+  const zone = useZone();
   const now = useNow();
   const today = todayKey(zone, now);
   const nowMin = utcToZoned(now.toISOString(), zone).minutes;
@@ -139,6 +139,48 @@ export function CalendarScreen() {
   const inviteBlock = invite ? (blocks.find((b) => b.id === invite.blockId) ?? null) : null;
 
   const openCreate = useCallback((range: DayRange) => setEditor({ mode: "create", range }), []);
+
+  /**
+   * Dragging across a day makes a Free block on the spot, shared with all
+   * connections like any new block. Tapping it afterwards opens the details,
+   * where it can be turned into a hosted event. A tap on an empty spot (easy
+   * to do by accident) still opens the form first.
+   */
+  const createFromGesture = useCallback(
+    async (range: DayRange, how: "drag" | "tap") => {
+      if (how === "tap") return openCreate(range);
+      const sameDayMine = buildDayModels(blocks, userId, zone, range.dayKey, 1)[0].mine;
+      const conflict = findSameTypeConflict({ ...range, type: "free" }, sameDayMine);
+      if (conflict) {
+        toast(`You already have Free time then (${formatMinuteRange(conflict.startMin, conflict.endMin)}). Stretch that block instead.`, "error");
+        return;
+      }
+      try {
+        const blockId = await actions.create({
+          type: "free",
+          start_at: zonedToUtc(range.dayKey, range.startMin, zone),
+          end_at: zonedToUtc(range.dayKey, range.endMin, zone),
+          tz: zone,
+          repeat_weekly: false,
+          title: null,
+          emoji: null,
+          location: null,
+          description: null,
+          rsvp_enabled: true,
+          audience: "all_connections",
+          shared_user_ids: [],
+          shared_group_ids: [],
+        });
+        toast(`Free ${formatMinuteRange(range.startMin, range.endMin)} added. Tap it to add details or host something.`, "success", {
+          label: "Undo",
+          onClick: () => void actions.removeById(blockId).catch((error) => toastError(error)),
+        });
+      } catch (error) {
+        toastError(error, "Could not add the block. Please try again.");
+      }
+    },
+    [actions, blocks, openCreate, toast, toastError, userId, zone],
+  );
 
   const openItem = useCallback(
     (item: CalendarItem) => {
@@ -269,9 +311,8 @@ export function CalendarScreen() {
         )}
         {!isLoading && !isError && !hasOwnBlocks && (
           <p className="mb-2 px-1 text-ink-dim" role="note">
-            Your calendar is empty. Drag across a day to mark when you&apos;re free or hosting
-            <span className="sm:hidden"> (on a phone: press, hold, then drag)</span>, or use{" "}
-            <span className="text-free">+ New</span>.
+            Your calendar is empty. Drag across a day to mark when you&apos;re free
+            <span className="sm:hidden"> (on a phone: press, hold, then drag)</span>. Tap a block to add details or turn it into something you&apos;re hosting.
           </p>
         )}
         {view === "grid" ? (
@@ -284,7 +325,7 @@ export function CalendarScreen() {
             focusDay={focusDay}
             canLoadMore={canLoadMore}
             onLoadMore={loadMore}
-            onCreate={openCreate}
+            onCreate={createFromGesture}
             onChange={changeItem}
             onOpenItem={openItem}
             onOpenCluster={setCluster}
@@ -295,7 +336,7 @@ export function CalendarScreen() {
             today={today}
             nowMin={nowMin}
             profiles={profiles}
-            onCreate={openCreate}
+            onCreate={createFromGesture}
             onChange={changeItem}
             onOpenItem={openItem}
             onOpenCluster={setCluster}

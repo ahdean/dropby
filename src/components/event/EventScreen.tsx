@@ -7,6 +7,7 @@ import { BlockEditor, type EditorState } from "@/components/calendar/BlockEditor
 import { InviteDialog } from "@/components/calendar/InviteDialog";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
+import { EventIcon } from "@/components/ui/EventIcon";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { statusOf } from "@/lib/calendar/model";
@@ -17,8 +18,9 @@ import { useSession } from "@/lib/data/session";
 import { useConnections, useGroups } from "@/lib/data/social";
 import { eventPath } from "@/lib/navigation";
 import { nextOccurrence, occurrenceAt, occurrenceExists } from "@/lib/recurrence";
-import { addDays, deviceZone, formatRange, utcToZoned, weekdayName, zoneAbbreviation } from "@/lib/time";
+import { addDays, formatRange, utcToZoned, weekdayName, zoneAbbreviation } from "@/lib/time";
 import type { Profile, RsvpStatus } from "@/lib/types";
+import { useZone } from "@/lib/zone";
 import { Chat } from "./Chat";
 
 function PersonChip({ person, note }: { person: Profile | undefined; note?: string }) {
@@ -51,7 +53,7 @@ export function EventScreen() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { userId } = useSession();
-  const zone = useMemo(() => deviceZone(), []);
+  const zone = useZone();
   const { toast, toastError, confirm } = useFeedback();
   const actions = useBlockActions();
 
@@ -171,7 +173,7 @@ export function EventScreen() {
         <div className="space-y-4 p-4 sm:p-6">
           <div className="flex items-start gap-4">
             <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none sm:h-24 sm:w-24 sm:text-[58px]" aria-hidden="true">
-              {block.emoji}
+              <EventIcon value={block.emoji} size={52} />
             </span>
             <div className="min-w-0 flex-1">
               <p className={`mb-2 inline-flex items-center gap-2 font-display text-[9px] uppercase ${locked ? "text-locked" : "text-join"}`}>

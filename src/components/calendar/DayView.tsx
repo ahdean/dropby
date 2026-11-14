@@ -36,7 +36,7 @@ export function DayView({
   today: DayKey;
   nowMin: number;
   profiles: Map<string, Profile>;
-  onCreate: (range: DayRange) => void;
+  onCreate: (range: DayRange, how: "drag" | "tap") => void;
   onChange: (item: CalendarItem, next: DayRange) => void;
   onOpenItem: (item: CalendarItem) => void;
   onOpenCluster: (cluster: FriendFreeCluster) => void;

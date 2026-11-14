@@ -3,6 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { avatarColor, AVATAR_COLORS, initialsOf } from "@/lib/avatar";
+import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, iconAsText, isDoorIcon } from "@/lib/event-icon";
 import { formatUsPhone, formatUsPhoneInput, normalizeUsPhone } from "@/lib/phone";
 import { describeWhen, inviteMessage, inviteUrl, smsHref } from "@/lib/share";
 import { zonedToUtc } from "@/lib/time";
@@ -56,6 +57,22 @@ describe("invite text", () => {
     const free = { ...event, type: "free" as const, title: null, emoji: null };
     expect(inviteMessage({ inviterName: "Alex", block: free, zone: NY, url })).toContain("Alex is free Fri, Nov 20 · 7 – 9:30 PM.");
     expect(inviteMessage({ inviterName: "", block: null, zone: NY, url })).toMatch(/^A friend wants to connect on dropby/);
+  });
+
+  it("writes the built-in door icon as the door emoji, since a text message cannot show the drawn one", () => {
+    expect(inviteMessage({ inviterName: "Alex", block: { ...event, emoji: DOOR_ICON }, zone: NY, url })).toContain("Alex is hosting 🚪 Pizza night");
+    expect(iconAsText(DOOR_ICON)).toBe("🚪");
+    expect(iconAsText("🍕")).toBe("🍕");
+    expect(iconAsText(null)).toBe("");
+    expect(isDoorIcon(" :door: ")).toBe(true);
+    expect(isDoorIcon("🚪")).toBe(false);
+  });
+
+  it("offers the door first among the favourite icons, and no icon twice", () => {
+    expect(FAVORITE_ICONS[0].value).toBe(DOOR_ICON);
+    const all = [...FAVORITE_ICONS.map((i) => i.value), ...ICON_GROUPS.flatMap((g) => g.icons)];
+    expect(new Set(all).size).toBe(all.length);
+    expect(all).not.toContain("😴");
   });
 
   it("names the weekday for weekly repeats", () => {

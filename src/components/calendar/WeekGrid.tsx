@@ -174,7 +174,7 @@ export interface WeekGridProps {
   focusDay?: DayKey | null;
   canLoadMore: boolean;
   onLoadMore: () => void;
-  onCreate: (range: DayRange) => void;
+  onCreate: (range: DayRange, how: "drag" | "tap") => void;
   onChange: (item: CalendarItem, next: DayRange) => void;
   onOpenItem: (item: CalendarItem) => void;
   onOpenCluster: (cluster: FriendFreeCluster) => void;

@@ -257,13 +257,14 @@ export function useBlockActions() {
       });
     };
 
-    const remove = (block: CalendarBlock): Promise<void> => {
-      patchCache((blocks) => blocks.filter((b) => b.id !== block.id));
-      return run(block.id, async () => {
-        const { error } = await getSupabase().from("blocks").delete().eq("id", block.id);
+    const removeById = (blockId: string): Promise<void> => {
+      patchCache((blocks) => blocks.filter((b) => b.id !== blockId));
+      return run(blockId, async () => {
+        const { error } = await getSupabase().from("blocks").delete().eq("id", blockId);
         if (error) throw error;
       });
     };
+    const remove = (block: CalendarBlock): Promise<void> => removeById(block.id);
 
     /** Delete a single week of a weekly repeat. */
     const skipOccurrence = (block: CalendarBlock, occurrenceIndex: number): Promise<void> => {
@@ -335,7 +336,7 @@ export function useBlockActions() {
         if (error) throw error;
       });
 
-    return { create, update, setTimes, remove, skipOccurrence, endSeriesAt, detachOccurrence, setRsvp, leave, refresh };
+    return { create, update, setTimes, remove, removeById, skipOccurrence, endSeriesAt, detachOccurrence, setRsvp, leave, refresh };
   }, [patchCache, queryClient, refresh, run, userId]);
 }
 

@@ -6,10 +6,12 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { PixelIcon, type IconName } from "@/components/ui/PixelIcon";
 import { useNotificationActions, useNotifications } from "@/lib/data/notifications";
+import { iconAsText } from "@/lib/event-icon";
 import { eventPath } from "@/lib/navigation";
 import { describeWhen } from "@/lib/share";
-import { deviceZone, timeAgo, utcToZoned } from "@/lib/time";
+import { timeAgo, utcToZoned } from "@/lib/time";
 import type { NotificationRow } from "@/lib/types";
+import { useZone } from "@/lib/zone";
 
 interface Rendered {
   icon: IconName;
@@ -22,7 +24,7 @@ interface Rendered {
 /** Turn a notification row into words and a destination. */
 function render(n: NotificationRow, zone: string): Rendered {
   const who = n.data.actor_name?.trim() || "Someone";
-  const what = [n.data.emoji, n.data.title?.trim() || (n.data.block_type === "join" ? "their event" : "")].filter(Boolean).join(" ");
+  const what = [iconAsText(n.data.emoji), n.data.title?.trim() || (n.data.block_type === "join" ? "their event" : "")].filter(Boolean).join(" ");
   const when =
     n.data.start_at && n.data.end_at
       ? describeWhen({ start_at: n.data.start_at, end_at: n.data.end_at, repeat_weekly: Boolean(n.data.repeat_weekly) }, zone)
@@ -58,7 +60,7 @@ export function NotificationsBell() {
   const [open, setOpen] = useState(false);
   const { notifications, unreadCount } = useNotifications();
   const actions = useNotificationActions();
-  const zone = deviceZone();
+  const zone = useZone();
 
   const openNotification = (n: NotificationRow, href: string) => {
     void actions.markRead(n.id);

@@ -10,10 +10,16 @@ import { Dialog } from "./Dialog";
  */
 
 type ToastKind = "info" | "success" | "error";
+interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface Toast {
   id: number;
   message: string;
   kind: ToastKind;
+  action?: ToastAction;
 }
 
 export interface Choice<T extends string = string> {
@@ -30,7 +36,8 @@ interface Question {
 }
 
 interface FeedbackApi {
-  toast: (message: string, kind?: ToastKind) => void;
+  /** Show a short message. `action` adds one button, e.g. Undo. */
+  toast: (message: string, kind?: ToastKind, action?: ToastAction) => void;
   /** Report a failed action; accepts whatever was thrown. */
   toastError: (error: unknown, fallback?: string) => void;
   /** Ask a yes/no question. Resolves true when confirmed. */
@@ -56,10 +63,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [question, setQuestion] = useState<Question | null>(null);
   const nextId = useRef(1);
 
-  const toast = useCallback((message: string, kind: ToastKind = "info") => {
+  const toast = useCallback((message: string, kind: ToastKind = "info", action?: ToastAction) => {
     const id = nextId.current++;
-    setToasts((list) => [...list.slice(-2), { id, message, kind }]);
-    window.setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), kind === "error" ? 6000 : 3500);
+    setToasts((list) => [...list.slice(-2), { id, message, kind, action }]);
+    // Stay longer when there is something to read carefully or a button to reach.
+    const lifetime = action ? 8000 : kind === "error" ? 6000 : 3500;
+    window.setTimeout(() => setToasts((list) => list.filter((t) => t.id !== id)), lifetime);
   }, []);
 
   const api = useMemo<FeedbackApi>(
@@ -121,6 +130,18 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
             }`}
           >
             {t.message}
+            {t.action && (
+              <button
+                type="button"
+                className="btn btn-sm tile tile-dark ml-3 align-middle"
+                onClick={() => {
+                  setToasts((list) => list.filter((x) => x.id !== t.id));
+                  t.action?.onClick();
+                }}
+              >
+                {t.action.label}
+              </button>
+            )}
           </div>
         ))}
       </div>

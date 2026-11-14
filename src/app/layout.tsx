@@ -13,8 +13,13 @@ export const metadata: Metadata = {
   applicationName: "dropby",
   appleWebApp: { capable: true, title: "dropby", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
-  // The browser-tab icon comes from app/icon.png; these are for home screens.
+  // Browser tab: the small blue door. Home screens: the larger tile.
   icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
 };

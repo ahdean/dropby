@@ -57,7 +57,8 @@ interface Options {
   itemByKey: (key: string) => CalendarItem | undefined;
   /** May a new block be created on this day? (Past days: no.) */
   canCreateOn: (dayKey: DayKey) => boolean;
-  onCreate: (range: DayRange) => void;
+  /** A new block was drawn ("drag") or an empty spot was tapped ("tap"). */
+  onCreate: (range: DayRange, how: "drag" | "tap") => void;
   onChange: (item: CalendarItem, next: DayRange) => void;
   onOpen: (item: CalendarItem) => void;
 }
@@ -143,7 +144,7 @@ export function useBlockGestures(options: Options) {
 
       if (s.active && g) {
         if (g.mode === "create") {
-          opts.current.onCreate({ dayKey: g.dayKey, startMin: g.startMin, endMin: g.endMin });
+          opts.current.onCreate({ dayKey: g.dayKey, startMin: g.startMin, endMin: g.endMin }, "drag");
         } else if (g.item) {
           const unchanged = g.dayKey === g.item.dayKey && g.startMin === g.item.startMin && g.endMin === g.item.endMin;
           if (!unchanged) opts.current.onChange(g.item, { dayKey: g.dayKey, startMin: g.startMin, endMin: g.endMin });
@@ -157,7 +158,7 @@ export function useBlockGestures(options: Options) {
           Math.floor(s.startPoint.minute / SNAP_MINUTES) * SNAP_MINUTES,
           DAY_END_MIN - DEFAULT_BLOCK_MINUTES,
         );
-        opts.current.onCreate({ dayKey: s.startPoint.dayKey, startMin, endMin: startMin + DEFAULT_BLOCK_MINUTES });
+        opts.current.onCreate({ dayKey: s.startPoint.dayKey, startMin, endMin: startMin + DEFAULT_BLOCK_MINUTES }, "tap");
       } else {
         opts.current.onOpen(s.target.item);
       }

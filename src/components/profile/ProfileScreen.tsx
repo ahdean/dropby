@@ -6,11 +6,11 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { errorMessage, useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
+import { ZonePicker } from "@/components/ui/ZonePicker";
 import { useMe, useRemoveAvatar, useUpdateProfile, useUploadAvatar } from "@/lib/data/profiles";
 import { signOut, useSession } from "@/lib/data/session";
 import { formatUsPhone } from "@/lib/phone";
 import { getSupabase } from "@/lib/supabase/client";
-import { deviceZone } from "@/lib/time";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -157,9 +157,15 @@ export function ProfileScreen() {
       </Card>
 
       <Card title="This device">
-        <p className="text-ink-dim">
-          Times are shown in your time zone: <span className="text-ink">{deviceZone().replace(/_/g, " ")}</span>
-        </p>
+        <div>
+          <label htmlFor="profile-zone" className="label">
+            Time zone
+          </label>
+          <ZonePicker id="profile-zone" />
+          <p className="mt-2 text-[17px] text-ink-faint">
+            Every time in dropby is shown in this zone. The choice is remembered on this device only.
+          </p>
+        </div>
         <p className="text-[17px] text-ink-faint">
           Tip: add dropby to your home screen. On iPhone: Share, then &quot;Add to Home Screen&quot;. On Android: menu, then &quot;Install app&quot;.
         </p>

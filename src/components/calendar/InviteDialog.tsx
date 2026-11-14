@@ -12,8 +12,9 @@ import { useMe } from "@/lib/data/profiles";
 import { getSiteUrl } from "@/lib/env";
 import { occurrenceAt } from "@/lib/recurrence";
 import { inviteMessage, inviteUrl, smsHref } from "@/lib/share";
-import { deviceZone, timeAgo } from "@/lib/time";
+import { timeAgo } from "@/lib/time";
 import type { CalendarBlock } from "@/lib/types";
+import { useZone } from "@/lib/zone";
 
 /**
  * Invite someone who is not on dropby yet.
@@ -47,7 +48,7 @@ function InviteDialogOpen({
   const { me } = useMe();
   const { toast, toastError } = useFeedback();
   const queryClient = useQueryClient();
-  const zone = deviceZone();
+  const zone = useZone();
   const blockId = block?.id ?? null;
 
   const [token, setToken] = useState<string | null>(null);

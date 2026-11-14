@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Logo } from "@/components/shell/Logo";
 import { getPublicEnv } from "@/lib/env";
+import { iconAsText } from "@/lib/event-icon";
 import type { InvitePreview } from "@/lib/types";
 import { InviteCard } from "./InviteCard";
 
@@ -36,7 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     : preview.kind === "connect" || !preview.block
       ? `${preview.inviter.name} wants to connect`
       : preview.block.type === "join"
-        ? `${preview.block.emoji ?? ""} ${preview.block.title ?? "Join me"}`.trim()
+        ? `${iconAsText(preview.block.emoji)} ${preview.block.title ?? "Join me"}`.trim()
         : `${preview.inviter.name} is free`;
   const description = preview
     ? `${preview.inviter.name} invited you on dropby. Tap to see when and say if you're in.`

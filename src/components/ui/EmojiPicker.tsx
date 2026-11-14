@@ -1,77 +1,83 @@
 "use client";
 
 import { useState } from "react";
+import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, isDoorIcon } from "@/lib/event-icon";
+import { EventIcon } from "./EventIcon";
+import { PixelIcon } from "./PixelIcon";
 
-/** A short, curated list: the kinds of things friends host. Any emoji can also be typed. */
-const EMOJI_GROUPS: { label: string; emojis: string[] }[] = [
-  { label: "Food & drink", emojis: ["🍕", "🍔", "🌮", "🍣", "🍜", "🥗", "🍳", "🥞", "🧇", "🍰", "🍪", "🍿", "☕", "🍵", "🧋", "🍺", "🍷", "🍸", "🥂", "🍾"] },
-  { label: "Games & fun", emojis: ["🎲", "🎮", "🃏", "🧩", "🎳", "🎯", "🎤", "🎬", "📺", "🎸", "🎧", "🎨", "📚", "🪩", "🎉", "🎂", "🎁", "🔥", "✨", "🌙"] },
-  { label: "Active", emojis: ["🧗", "🏃", "🚴", "🏊", "🧘", "🏋️", "⚽", "🏀", "🎾", "🏐", "⛳", "🥾", "🏄", "⛷️", "🛼", "🛹", "🏓", "🥏", "🚣", "🤿"] },
-  { label: "Out & about", emojis: ["🌳", "🏖️", "⛺", "🌅", "🐕", "🛍️", "🚗", "✈️", "🏠", "🛋️", "🌻", "🎡", "🏟️", "🎭", "🖼️", "🧺", "🌮", "🌧️", "❄️", "☀️"] },
-  { label: "Getting it done", emojis: ["💻", "📝", "🧠", "🔧", "🧹", "📦", "🌱", "🧶", "🪴", "💰", "📞", "🤝", "🙌", "👋", "💬", "❤️", "😴", "🧑‍🍳", "👶", "🐈"] },
-];
-
+/**
+ * Choose the icon for a hosted event: a short row of favourites (starting
+ * with dropby's own green door), a longer list that can be expanded, and a
+ * box for typing any other emoji. The lists live in lib/event-icon.ts.
+ */
 export function EmojiPicker({
   value,
   onChange,
   id,
 }: {
   value: string;
-  onChange: (emoji: string) => void;
+  onChange: (icon: string) => void;
   id?: string;
 }) {
-  const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const choice = (icon: string, label: string, key: string) => {
+    const selected = value === icon;
+    return (
+      <button
+        key={key}
+        type="button"
+        onClick={() => onChange(icon)}
+        aria-label={label}
+        title={label}
+        aria-pressed={selected}
+        className={`flex aspect-square min-h-[40px] items-center justify-center hover:bg-panel-3 ${
+          selected ? "bg-panel-3 outline outline-2 outline-join" : ""
+        }`}
+      >
+        <EventIcon value={icon} size={24} />
+      </button>
+    );
+  };
 
   return (
-    <div>
+    <div className="space-y-3">
       <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          aria-label={value ? `Emoji ${value}, change` : "Choose an emoji"}
-          className="tile btn !min-h-[52px] !w-[52px] !p-0 text-[30px] leading-none"
-        >
-          {value || "?"}
+        <span className="tile flex h-[52px] w-[52px] shrink-0 items-center justify-center" aria-hidden="true">
+          {value ? <EventIcon value={value} size={30} /> : <span className="text-[26px] leading-none">?</span>}
+        </span>
+        <div className="slot grid flex-1 grid-cols-7 gap-1 p-1" role="group" aria-label="Favourite icons">
+          {FAVORITE_ICONS.map((icon) => choice(icon.value, icon.label, icon.value))}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button type="button" className="btn btn-sm tile tile-dark" aria-expanded={expanded} onClick={() => setExpanded((open) => !open)}>
+          <PixelIcon name={expanded ? "up" : "down"} size={11} />
+          {expanded ? "Fewer icons" : "More icons"}
         </button>
+        <label htmlFor={id} className="text-[17px] text-ink-faint">
+          or type any emoji
+        </label>
         <input
           id={id}
-          className="field !w-28 text-center"
-          value={value}
-          onChange={(e) => onChange([...e.target.value.trim()].slice(-8).join(""))}
-          placeholder="type one"
-          aria-label="Emoji"
+          className="field !min-h-[40px] !w-24 text-center"
+          // The door is drawn, not typed, so the box stays empty while it is selected.
+          value={isDoorIcon(value) ? "" : value}
+          onChange={(e) => onChange([...e.target.value.trim()].slice(-8).join("") || DOOR_ICON)}
+          placeholder="🙂"
           inputMode="text"
           autoComplete="off"
         />
-        <button type="button" className="btn-ghost" onClick={() => setOpen((o) => !o)}>
-          {open ? "Hide list" : "Pick from list"}
-        </button>
       </div>
 
-      {open && (
-        <div className="slot mt-3 max-h-56 overflow-y-auto p-2">
-          {EMOJI_GROUPS.map((group) => (
+      {expanded && (
+        <div className="slot max-h-60 overflow-y-auto p-2">
+          {ICON_GROUPS.map((group) => (
             <div key={group.label} className="mb-2">
               <div className="label !mb-1">{group.label}</div>
-              <div className="grid grid-cols-10 gap-1">
-                {group.emojis.map((emoji, index) => (
-                  <button
-                    key={`${emoji}-${index}`}
-                    type="button"
-                    onClick={() => {
-                      onChange(emoji);
-                      setOpen(false);
-                    }}
-                    aria-label={emoji}
-                    aria-pressed={value === emoji}
-                    className={`flex aspect-square items-center justify-center text-[22px] leading-none hover:bg-panel-3 ${
-                      value === emoji ? "bg-panel-3 outline outline-2 outline-join" : ""
-                    }`}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+              <div className="grid grid-cols-8 gap-1 sm:grid-cols-10">
+                {group.icons.map((icon, index) => choice(icon, icon, `${group.label}-${index}`))}
               </div>
             </div>
           ))}

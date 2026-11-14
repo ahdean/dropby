@@ -8,6 +8,7 @@ import { useFeedback } from "@/components/ui/Feedback";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
 import { DAY_END_MIN, DAY_START_MIN, MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
+import { DOOR_ICON } from "@/lib/event-icon";
 import { useBlockActions } from "@/lib/data/blocks";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
@@ -45,7 +46,7 @@ function initialForm(state: EditorState, zone: string): Form {
       endMin: state.range.endMin,
       repeat: false,
       title: "",
-      emoji: "",
+      emoji: DOOR_ICON,
       location: "",
       description: "",
       rsvp: true,
@@ -63,7 +64,7 @@ function initialForm(state: EditorState, zone: string): Form {
     endMin: end.dayKey === start.dayKey ? end.minutes : DAY_END_MIN,
     repeat: block.repeat_weekly,
     title: block.title ?? "",
-    emoji: block.emoji ?? "",
+    emoji: block.emoji ?? DOOR_ICON,
     location: block.location ?? "",
     description: block.description ?? "",
     rsvp: block.rsvp_enabled,
@@ -144,7 +145,7 @@ function EditorDialog({
 
   const validate = (f: Form): string | null => {
     if (f.endMin <= f.startMin) return "The end time must be after the start time.";
-    if (f.type === "join" && f.emoji.trim() === "") return "Pick an emoji for your event: it's what friends see on their calendar.";
+    if (f.type === "join" && f.emoji.trim() === "") return "Pick an icon for your event: it's what friends see on their calendar.";
     const mine = expandBlocks(blocks.filter((b) => b.owner_id === userId), userId, zone, f.dayKey, 1);
     const conflict = findSameTypeConflict(
       { dayKey: f.dayKey, type: f.type, startMin: f.startMin, endMin: f.endMin },
@@ -348,7 +349,7 @@ function EditorDialog({
           <fieldset className="space-y-3">
             <legend className="label">The plan</legend>
             <div>
-              <div className="label">Emoji (required)</div>
+              <div className="label">Icon</div>
               <EmojiPicker value={form.emoji} onChange={(emoji) => set("emoji", emoji)} />
             </div>
             <div>

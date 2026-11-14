@@ -32,7 +32,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
         </ul>
         <div className="divider" />
         <ul className="list-disc space-y-2 pl-5 text-ink-dim">
-          <li><span className="text-ink">Add a block:</span> drag across a day (on a phone: press, hold, then drag), or tap an empty spot.</li>
+          <li><span className="text-ink">Add free time:</span> drag across a day (on a phone: press, hold, then drag). It appears straight away.</li>
+          <li><span className="text-ink">Host something:</span> tap your block, switch it to Join me and add the details.</li>
           <li><span className="text-ink">Change it:</span> drag the middle to move it, drag an end to resize, tap to edit or delete.</li>
           <li><span className="text-ink">Empty means busy.</span> Only add the times you want friends to see.</li>
           <li><span className="text-ink">Sharing:</span> new blocks go to all your connections unless you pick people or groups.</li>

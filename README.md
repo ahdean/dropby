@@ -257,7 +257,7 @@ One database function, `private.can_view_block`, decides whether a person may re
 
 ### Time
 
-- Everything is stored in UTC and shown in the viewer's own time zone.
+- Everything is stored in UTC and shown in the viewer's own time zone. The globe button on the calendar (or the profile page) lets someone pick a different zone; the choice is remembered on that device.
 - A weekly repeat is one row. Each occurrence is computed in the time zone the block was created in, so "Tuesdays at 6 PM" stays at 6 PM when the clocks change.
 - The calendar shows 6 AM to 11:59 PM. A friend's block in another time zone that falls outside those hours for you is simply not shown.
 
@@ -321,7 +321,8 @@ public/sw.js             service worker (installable app); public/offline.html i
 
 - **Hours shown, snap interval, how far ahead the calendar goes, invite lifetime:** `src/lib/constants.ts`.
 - **Colours and the retro look:** the tokens at the top of `src/app/globals.css`. Blue/green/gold are defined once and used everywhere.
-- **Icons:** each is a 12×12 bitmap in `src/components/ui/PixelIcon.tsx`. App icons: `node scripts/make-icons.mjs`.
+- **Event icons** (the favourites row and the longer list in the editor): `src/lib/event-icon.ts`. The default is dropby's own green open door.
+- **Interface icons:** each is a 12×12 bitmap in `src/components/ui/PixelIcon.tsx`. App icons and the favicon: `node scripts/make-icons.mjs`.
 - **A database rule:** add a **new** file in `supabase/migrations` (never edit one that has already been applied to the live database), add a test in `tests/db`, then apply it (SQL Editor, or `npm run db:push`).
 - **More countries for phone numbers:** `src/lib/phone.ts` and the `+1` shown on the sign-in form.
 

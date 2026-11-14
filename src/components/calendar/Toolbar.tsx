@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button, IconButton } from "@/components/ui/Button";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { addDays, formatDayKey, startOfWeek, weekdayOf, type DayKey } from "@/lib/time";
+import { ZoneButton } from "./ZoneButton";
 
 export type CalendarView = "grid" | "day";
 
@@ -107,6 +108,7 @@ export function Toolbar({
             Today
           </Button>
           <IconButton icon="right" label={`Next ${unit}`} onClick={onForward} disabled={!canGoForward} className="!min-h-[36px] !w-9" size={13} />
+          <ZoneButton />
         </div>
         <h1 className="truncate text-right text-[10px] text-ink sm:text-[11px]" aria-live="polite">
           {rangeLabel}

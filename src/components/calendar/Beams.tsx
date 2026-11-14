@@ -2,7 +2,9 @@
 
 import type { CSSProperties, KeyboardEvent } from "react";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
+import { EventIcon } from "@/components/ui/EventIcon";
 import { PixelIcon } from "@/components/ui/PixelIcon";
+import { iconAsText } from "@/lib/event-icon";
 import type { BlockStatus, CalendarItem, FriendFreeCluster } from "@/lib/calendar/model";
 import { formatDayKey, formatMinuteRange } from "@/lib/time";
 import type { Profile } from "@/lib/types";
@@ -27,7 +29,7 @@ export const STATUS_BEAM: Record<BlockStatus, string> = {
 };
 
 export function describeItem(item: CalendarItem): string {
-  const title = [item.block.emoji, item.block.title].filter(Boolean).join(" ");
+  const title = [iconAsText(item.block.emoji), item.block.title].filter(Boolean).join(" ");
   const when = `${formatDayKey(item.dayKey)}, ${formatMinuteRange(item.startMin, item.endMin)}`;
   const repeat = item.block.repeat_weekly ? ", repeats weekly" : "";
   return `${STATUS_LABEL[item.status]}${title ? `: ${title}` : ""}, ${when}${repeat}`;
@@ -45,7 +47,7 @@ function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }
     >
       <span className="plate">
         {status === "locked" && <PixelIcon name="lock" size={11} className="shrink-0 text-locked" />}
-        {block.emoji && <span className="shrink-0 text-[17px] leading-none">{block.emoji}</span>}
+        <EventIcon value={block.emoji} size={17} />
         {text && <span className="truncate">{text}</span>}
         {status === "locked" && inCount > 0 && <span className="shrink-0 text-locked">+{inCount}</span>}
         {block.repeat_weekly && <PixelIcon name="repeat" size={10} className="shrink-0 text-ink-faint" />}
@@ -112,7 +114,7 @@ export function FriendEventBeam({
   onOpen: (item: CalendarItem) => void;
 }) {
   const hostName = host?.name ?? "A friend";
-  const label = `${hostName} is hosting ${[item.block.emoji, item.block.title].filter(Boolean).join(" ")}, ${formatDayKey(item.dayKey)}, ${formatMinuteRange(item.startMin, item.endMin)}${item.status === "locked" ? ". You're in." : ""}`;
+  const label = `${hostName} is hosting ${[iconAsText(item.block.emoji), item.block.title].filter(Boolean).join(" ")}, ${formatDayKey(item.dayKey)}, ${formatMinuteRange(item.startMin, item.endMin)}${item.status === "locked" ? ". You're in." : ""}`;
   return (
     <button
       type="button"
@@ -124,7 +126,7 @@ export function FriendEventBeam({
         vertical ? "flex-col items-start py-1" : ""
       }`}
     >
-      <span className="shrink-0 text-[17px] leading-none">{item.block.emoji}</span>
+      <EventIcon value={item.block.emoji} size={17} />
       <Avatar person={host} size={16} className="shrink-0" />
       {item.status === "locked" && <PixelIcon name="lock" size={10} className="shrink-0 text-locked" />}
       {item.block.title && <span className="truncate text-[16px] leading-none text-ink">{item.block.title}</span>}

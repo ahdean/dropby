@@ -5,6 +5,7 @@
  * phone's own messaging app (an `sms:` link or the system share sheet), with
  * copy-to-clipboard as the fallback on computers.
  */
+import { iconAsText } from "./event-icon";
 import { formatRange, weekdayName, formatTimeRange } from "./time";
 import type { BlockRow } from "./types";
 
@@ -36,7 +37,7 @@ export function inviteMessage(opts: {
   }
   const when = describeWhen(block, zone);
   if (block.type === "join") {
-    const what = [block.emoji, block.title?.trim() || "something"].filter(Boolean).join(" ");
+    const what = [iconAsText(block.emoji), block.title?.trim() || "something"].filter(Boolean).join(" ");
     return `${who} is hosting ${what} · ${when}. See the details and say if you're in: ${url}`;
   }
   const note = block.title?.trim() ? ` (${block.title.trim()})` : "";
