@@ -57,6 +57,12 @@ export function explainSmsFailure(message: string | null | undefined): string {
   const raw = (message ?? "").trim();
   const lead = "The text message could not be sent.";
 
+  // Twilio uses error 21608 both for trial accounts and for upgraded accounts
+  // whose business/identity profile has not been approved yet.
+  if (/compliance profile/i.test(raw)) {
+    return `${lead} Site owner: your Twilio account needs an approved Primary Compliance Profile before it can text numbers you have not verified. In Twilio, open Trust Hub → Compliance Profiles (Customer Profiles), complete the primary profile and wait for approval. Until then, add numbers under Phone Numbers → Verified Caller IDs to test. (Twilio error 21608)`;
+  }
+
   const code = Number(raw.match(/twilio\.com\/docs\/(?:api\/)?errors\/(\d{5})/i)?.[1] ?? NaN);
   if (TWILIO_REASONS[code]) return `${lead} Site owner: ${TWILIO_REASONS[code]} (Twilio error ${code})`;
 

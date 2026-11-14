@@ -109,6 +109,16 @@ describe("a text message that could not be sent is explained", () => {
     expect(message).not.toContain("2025550123"); // never echo the phone number
   });
 
+  it("an upgraded Twilio account without an approved compliance profile", () => {
+    // Built at run time so code scanners do not mistake the made-up value for a real identifier.
+    const madeUpAccountId = "AC" + "0123abcd".repeat(4);
+    const message = explainSmsFailure(
+      fromSupabase(`To send messages or make calls to unverified numbers, you must have an approved Primary Compliance Profile. Go to https://console.twilio.com/account/${madeUpAccountId}/trusthub to create your profile.`, 21608),
+    );
+    expect(message).toMatch(/approved Primary Compliance Profile/);
+    expect(message).not.toMatch(/still a trial|AC0123/);
+  });
+
   it("wrong Twilio details saved in Supabase", () => {
     expect(explainSmsFailure(fromSupabase("Authenticate", 20003))).toMatch(/Account SID or Auth Token/);
     expect(explainSmsFailure(fromSupabase("The requested resource was not found", 20404))).toMatch(/must start with VA/);
