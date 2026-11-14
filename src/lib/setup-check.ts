@@ -167,6 +167,22 @@ export async function runSetupChecks(): Promise<SetupCheck[]> {
         },
   );
 
+  if (databaseReady) {
+    // Added later than the first five files: private messages have their own table.
+    const dms = await getJson(`${url}/rest/v1/direct_messages?select=id&limit=0`, { headers: { apikey: publishable } });
+    // 401/403 means "the table exists but you are not signed in", which is what we want to see.
+    const exists = !("error" in dms) && [200, 401, 403].includes(dms.status);
+    checks.push(
+      exists
+        ? { label: "Private messages", status: "ok", detail: "Table created." }
+        : {
+            label: "Private messages",
+            status: "todo",
+            detail: "Not switched on yet. Run the newest file in supabase/migrations (…direct_messages.sql) in Supabase → SQL Editor.",
+          },
+    );
+  }
+
   // --- 4. the secret key in action, and the storage bucket --------------------
   if (secret && secretKind !== "publishable") {
     try {

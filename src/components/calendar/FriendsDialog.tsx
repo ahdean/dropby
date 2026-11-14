@@ -3,7 +3,7 @@
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
-import type { FriendFreeCluster } from "@/lib/calendar/model";
+import type { CalendarItem, FriendFreeCluster } from "@/lib/calendar/model";
 import { formatDayKey, formatMinuteRange } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 
@@ -16,11 +16,14 @@ export function FriendsDialog({
   profiles,
   onClose,
   onHost,
+  onMessage,
 }: {
   cluster: FriendFreeCluster | null;
   profiles: Map<string, Profile>;
   onClose: () => void;
   onHost: (cluster: FriendFreeCluster) => void;
+  /** Start a private message to this friend, quoting their free block. */
+  onMessage: (friendId: string, item: CalendarItem) => void;
 }) {
   const overlap = cluster?.common ?? cluster?.peak ?? null;
   return (
@@ -45,7 +48,7 @@ export function FriendsDialog({
               return (
                 <li key={userId} className="flex items-start gap-3">
                   <Avatar person={person} size={36} />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="text-ink">{person?.name ?? "A friend"}</div>
                     {items.map((item) => (
                       <div key={item.key} className="text-free">
@@ -55,6 +58,9 @@ export function FriendsDialog({
                       </div>
                     ))}
                   </div>
+                  <Button size="sm" variant="dark" icon="send" onClick={() => onMessage(userId, items[0])} aria-label={`Message ${person?.name ?? "this friend"}`}>
+                    Message
+                  </Button>
                 </li>
               );
             })}

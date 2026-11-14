@@ -151,6 +151,17 @@ export function formatMinutes(minutes: number): string {
   return m === 0 ? `${h12} ${suffix}` : `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
+/** "6a", "12p", "9p": hour labels that fit when the whole day is squeezed onto a phone. */
+export function formatHourShort(hour: number): string {
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h12}${hour % 24 >= 12 ? "p" : "a"}`;
+}
+
+/** "November 2026" (or "Nov 2026" with style "short"). */
+export function formatMonth(dayKey: DayKey, style: "short" | "long" = "long"): string {
+  return DateTime.fromISO(dayKey, { zone: "utc" }).toFormat(style === "long" ? "LLLL yyyy" : "LLL yyyy");
+}
+
 /** "7 – 9:30 PM" or "11 AM – 1 PM" (the first AM/PM is dropped when both match). */
 export function formatMinuteRange(startMin: number, endMin: number): string {
   const start = formatMinutes(startMin);

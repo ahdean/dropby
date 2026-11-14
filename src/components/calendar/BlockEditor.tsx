@@ -8,8 +8,8 @@ import { useFeedback } from "@/components/ui/Feedback";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
 import { DAY_END_MIN, DAY_START_MIN, MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
-import { DOOR_ICON } from "@/lib/event-icon";
-import { useBlockActions } from "@/lib/data/blocks";
+import { DOOR_ICON, defaultTitleFor, isAutomaticTitle } from "@/lib/event-icon";
+import { draftFromBlock, useBlockActions } from "@/lib/data/blocks";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
 import { formatDayKey, formatMinuteRange, formatMinutes, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
@@ -18,7 +18,7 @@ import { AudiencePicker, type AudienceValue } from "./AudiencePicker";
 import type { DayRange } from "./useBlockGestures";
 
 export type EditorState =
-  | { mode: "create"; range: DayRange; preset?: { type?: BlockType; audience?: AudienceValue } }
+  | { mode: "create"; range: DayRange; preset?: { type?: BlockType; emoji?: string; title?: string; audience?: AudienceValue } }
   | { mode: "edit"; block: CalendarBlock; occurrence: Occurrence };
 
 interface Form {
@@ -45,8 +45,8 @@ function initialForm(state: EditorState, zone: string): Form {
       startMin: state.range.startMin,
       endMin: state.range.endMin,
       repeat: false,
-      title: "",
-      emoji: DOOR_ICON,
+      title: state.preset?.title ?? "",
+      emoji: state.preset?.emoji ?? DOOR_ICON,
       location: "",
       description: "",
       rsvp: true,
@@ -116,7 +116,7 @@ function EditorDialog({
 }: EditorProps & { state: EditorState }) {
   const { userId } = useSession();
   const actions = useBlockActions();
-  const { toast, toastError, confirm, choose } = useFeedback();
+  const { toast, toastError, choose } = useFeedback();
   const ids = useId();
 
   const [form, setForm] = useState<Form>(() => initialForm(state, zone));
@@ -136,6 +136,22 @@ function EditorDialog({
     () => timeOptions(form.startMin + MIN_BLOCK_MINUTES, DAY_END_MIN, form.endMin),
     [form.startMin, form.endMin],
   );
+
+  /** Picking an icon fills in its usual title, unless the person has typed their own. */
+  const changeIcon = (emoji: string) =>
+    setForm((f) => ({ ...f, emoji, title: isAutomaticTitle(f.title) ? defaultTitleFor(emoji) : f.title }));
+
+  /** Free → Join me: start from the door and its title. A note typed on the Free block is kept as the title. */
+  const changeType = (type: BlockType) =>
+    setForm((f) => {
+      if (type === f.type) return f;
+      if (type === "join") {
+        const emoji = f.emoji || DOOR_ICON;
+        return { ...f, type, emoji, title: f.title.trim() === "" ? defaultTitleFor(emoji) : f.title };
+      }
+      // Join me → Free: an automatic event title makes no sense as a note.
+      return { ...f, type, title: isAutomaticTitle(f.title) ? "" : f.title };
+    });
 
   const changeStart = (startMin: number) =>
     setForm((f) => {
@@ -225,13 +241,6 @@ function EditorDialog({
     const { block, occurrence } = editing;
     try {
       if (!block.repeat_weekly) {
-        const ok = await confirm({
-          title: "Delete this block?",
-          body: block.type === "join" ? "Its RSVPs and chat go with it." : undefined,
-          confirmLabel: "Delete",
-          danger: true,
-        });
-        if (!ok) return;
         await actions.remove(block);
       } else {
         const scope = await choose({
@@ -248,8 +257,16 @@ function EditorDialog({
         else if (scope === "following") await actions.endSeriesAt(block, occurrence.index);
         else await actions.remove(block);
       }
-      toast("Deleted");
       onClose();
+      if (block.type === "free" && !block.repeat_weekly) {
+        // Free time is cheap to restore exactly; an event's answers and chat would be lost, so no Undo there.
+        toast("Deleted.", "info", {
+          label: "Undo",
+          onClick: () => void actions.create(draftFromBlock(block)).catch((failure) => toastError(failure)),
+        });
+      } else {
+        toast("Deleted.");
+      }
     } catch (failure) {
       toastError(failure, "Could not delete. Please try again.");
     }
@@ -287,7 +304,7 @@ function EditorDialog({
           <Segmented
             label="Block type"
             value={form.type}
-            onChange={(type) => set("type", type)}
+            onChange={changeType}
             options={[
               { value: "free", label: "Free", activeClass: "tile-free" },
               { value: "join", label: "Join me", activeClass: "tile-join" },
@@ -350,11 +367,11 @@ function EditorDialog({
             <legend className="label">The plan</legend>
             <div>
               <div className="label">Icon</div>
-              <EmojiPicker value={form.emoji} onChange={(emoji) => set("emoji", emoji)} />
+              <EmojiPicker value={form.emoji} onChange={changeIcon} />
             </div>
             <div>
               <label htmlFor={`${ids}-title`} className="label">Title</label>
-              <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="Pizza night" onChange={(e) => set("title", e.target.value)} />
+              <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="dropby" onChange={(e) => set("title", e.target.value)} />
             </div>
             <div>
               <label htmlFor={`${ids}-location`} className="label">Where</label>

@@ -38,7 +38,7 @@ You need three free accounts: **Supabase** (the database), **Vercel** (the hosti
 ### Step 1: Supabase (about 15 minutes)
 
 1. Go to [supabase.com](https://supabase.com), sign up, and click **New project**. Pick any name (for example `dropby`), set a database password (save it somewhere), and choose a region near your users. Wait for it to finish setting up.
-2. **Create the database tables.** In the left menu open **SQL Editor**. For each of the five files in this repository's [`supabase/migrations`](supabase/migrations) folder, **in order** (`…000100_schema.sql` first, `…000500_storage_realtime.sql` last):
+2. **Create the database tables.** In the left menu open **SQL Editor**. For each file in this repository's [`supabase/migrations`](supabase/migrations) folder, **in order of the number at the start of its name** (`20261111000100_schema.sql` first):
    - open the file on GitHub, click **Raw**, select all and copy;
    - paste into a new query in the SQL Editor and click **Run**;
    - wait for "Success" before doing the next file.
@@ -110,6 +110,24 @@ Good to know:
 ### Step 5 (later): your own domain
 
 In Vercel open **Settings → Domains** and add the domain. Then update `NEXT_PUBLIC_SITE_URL` in Vercel and the **Site URL** in Supabase to the new address, and redeploy.
+
+---
+
+## Updating the database
+
+Most updates to dropby only change the app, and Vercel deploys them by itself. Now and then a new feature needs a change to the database too. When that happens a new file appears in [`supabase/migrations`](supabase/migrations), and it has to be run once:
+
+1. Open the new file on GitHub, click **Raw**, select all and copy.
+2. In Supabase open **SQL Editor**, paste into a new query and click **Run**.
+
+Files are numbered by date; run any you haven't run yet, oldest first. Running a file twice fails harmlessly with "already exists". Until a new file is run, the feature that needs it says so on screen and the rest of the app keeps working.
+
+| File | Adds |
+| --- | --- |
+| `20261111000100` … `000500` | Everything the first version needs (step 1.2 above) |
+| `20261114000100_direct_messages.sql` | Private messages between two people |
+
+(Developers: `npm run db:push` applies whatever is pending.)
 
 ---
 
@@ -226,6 +244,7 @@ No setup needed: the database tests start a real Postgres in memory (PGlite), ap
 | `tests/db/visibility.test.ts` | Sharing and visibility: who can read a block, its RSVPs, chat and share lists; signed-out visitors; profiles; avatar storage |
 | `tests/db/connections.test.ts` | Connections, mutuals, groups, blocking |
 | `tests/db/events.test.ts` | RSVPs, chat, notifications, invite links |
+| `tests/db/messages.test.ts` | Private messages: who can write to whom, privacy, quotes |
 | `tests/unit/time.test.ts` | UTC ↔ local time, daylight saving, splitting by day, formatting |
 | `tests/unit/recurrence.test.ts` | Weekly repeats across daylight-saving changes and time zones |
 | `tests/unit/intervals.test.ts` | Block overlap, snapping, dragging, resizing, stacking |
@@ -259,6 +278,7 @@ One database function, `private.can_view_block`, decides whether a person may re
 
 - Everything is stored in UTC and shown in the viewer's own time zone. The globe button on the calendar (or the profile page) lets someone pick a different zone; the choice is remembered on that device.
 - A weekly repeat is one row. Each occurrence is computed in the time zone the block was created in, so "Tuesdays at 6 PM" stays at 6 PM when the clocks change.
+- The week view fits the whole day across the screen (no sideways scrolling) and scrolls endlessly up and down, about a year back and two years ahead. Dragging across a day, or tapping it, adds Free time on the spot.
 - The calendar shows 6 AM to 11:59 PM. A friend's block in another time zone that falls outside those hours for you is simply not shown.
 
 ### Sign-in
@@ -268,6 +288,10 @@ Phone number plus a texted one-time code (Supabase Auth). The session is kept in
 ### Invites
 
 Inviting someone who isn't on dropby creates an unguessable link and a ready-written text, and hands it to the phone's own messaging app. dropby's servers never send texts on a user's behalf. The link shows a small public preview (no address, no guest list); signing up from it connects the newcomer to the sharer. Links last 30 days and can be switched off.
+
+### Private messages
+
+One private conversation per pair of connections, reachable from the chat-bubble in the header, from a friend's block ("Message"), from an event page and from Connections. Opening it from a block attaches that block as a quote to the next message, so the other person knows what it is about. The quote is written by the database from the real block; only the two people can read the conversation.
 
 ### Live updates
 
@@ -284,6 +308,7 @@ supabase/migrations/     The database: tables, security rules, triggers. START H
   …300_policies.sql        row-level security and grants
   …400_rpc.sql             functions the app calls (connect, mutuals, invites)
   …500_storage_realtime.sql  avatars bucket, realtime
+  2026111400…_direct_messages.sql  private messages (added later; see "Updating the database")
 
 src/lib/                 Logic with no screens in it (all unit-tested)
   constants.ts             product settings: hours shown, snap, weeks ahead …
@@ -296,7 +321,8 @@ src/lib/                 Logic with no screens in it (all unit-tested)
   auth/dev-login.ts        the test sign-in
 
 src/components/
-  calendar/                week grid, day view, editor, sharing picker, invite dialog, drag gestures
+  calendar/                week grid, day view, editor, quick look, sharing picker, invite dialog, drag gestures
+  messages/                private conversations and the inbox
   event/                   event page and chat
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome

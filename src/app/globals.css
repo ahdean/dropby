@@ -80,6 +80,18 @@
   50% { opacity: 0.55; }
 }
 
+/* Sizes that differ between phones and wider screens. */
+:root {
+  --day-col: 40px; /* sticky day-label column of the week grid */
+  --cap: 8px; /* the end caps of a beam (also its resize handles) */
+}
+@media (min-width: 640px) {
+  :root {
+    --day-col: 52px;
+    --cap: 12px;
+  }
+}
+
 /* -----------------------------------------------------------------------------
    Base
    -------------------------------------------------------------------------- */
@@ -362,7 +374,7 @@ button:disabled {
     position: absolute;
     top: -2px;
     bottom: -2px;
-    width: 12px;
+    width: var(--cap);
     background-color: #9a9ea9;
     border: 2px solid;
     border-color: #e6e8ee #3f434d #3f434d #e6e8ee;
@@ -466,6 +478,11 @@ dialog::backdrop {
     background-size:
       calc(100% / var(--hours, 18)) 100%,
       calc(100% / (var(--hours, 18) * 2)) 100%;
+  }
+  /* When hours are narrow (phones), half-hour lines would only add noise. */
+  .track-compact {
+    background-image: linear-gradient(to right, rgb(49 57 87 / 0.8) 0 1px, transparent 1px);
+    background-size: calc(100% / var(--hours, 18)) 100%;
   }
   .track-weekend {
     background-color: rgb(35 41 65 / 0.28);

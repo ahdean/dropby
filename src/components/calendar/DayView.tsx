@@ -66,6 +66,8 @@ export function DayView({
 
   const { ghost, onPointerDown } = useBlockGestures({
     containerRef: scroller,
+    // Time runs down the screen here, the same way the page scrolls, so touch needs press-and-hold.
+    touchDrag: "none",
     locate,
     itemByKey: (key) => myItems.get(key),
     canCreateOn: (dayKey) => dayKey >= today,

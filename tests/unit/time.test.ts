@@ -12,7 +12,9 @@ import {
   clipToVisibleHours,
   dayRange,
   diffDays,
+  formatHourShort,
   formatMinuteRange,
+  formatMonth,
   formatMinutes,
   formatRange,
   formatTimeRange,
@@ -156,6 +158,12 @@ describe("formatting", () => {
     expect(formatMinutes(19 * 60 + 30)).toBe("7:30 PM");
     expect(formatMinutes(0)).toBe("12 AM");
     expect(formatMinutes(1440)).toBe("11:59 PM");
+  });
+
+  it("has compact labels for narrow screens and for the month in view", () => {
+    expect([6, 9, 12, 15, 21, 23].map(formatHourShort)).toEqual(["6a", "9a", "12p", "3p", "9p", "11p"]);
+    expect(formatMonth("2026-11-23")).toBe("November 2026");
+    expect(formatMonth("2026-11-23", "short")).toBe("Nov 2026");
   });
 
   it("drops the repeated AM/PM in a range", () => {

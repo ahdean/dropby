@@ -3,7 +3,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { avatarColor, AVATAR_COLORS, initialsOf } from "@/lib/avatar";
-import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, iconAsText, isDoorIcon } from "@/lib/event-icon";
+import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, defaultTitleFor, iconAsText, isAutomaticTitle, isDoorIcon } from "@/lib/event-icon";
 import { formatUsPhone, formatUsPhoneInput, normalizeUsPhone } from "@/lib/phone";
 import { describeWhen, inviteMessage, inviteUrl, smsHref } from "@/lib/share";
 import { zonedToUtc } from "@/lib/time";
@@ -66,6 +66,17 @@ describe("invite text", () => {
     expect(iconAsText(null)).toBe("");
     expect(isDoorIcon(" :door: ")).toBe(true);
     expect(isDoorIcon("🚪")).toBe(false);
+  });
+
+  it("suggests a title for each favourite icon, without overwriting one the person typed", () => {
+    expect(defaultTitleFor(DOOR_ICON)).toBe("dropby");
+    expect(defaultTitleFor("🏠")).toBe("house hang");
+    expect(defaultTitleFor("🌳")).toBe("park hang");
+    expect(defaultTitleFor("🍕")).toBe(""); // not a favourite: no suggestion
+    // Empty, or still one of the suggestions: safe to replace when the icon changes.
+    expect(isAutomaticTitle("")).toBe(true);
+    expect(isAutomaticTitle(" House Hang ")).toBe(true);
+    expect(isAutomaticTitle("Sam's birthday")).toBe(false);
   });
 
   it("offers the door first among the favourite icons, and no icon twice", () => {

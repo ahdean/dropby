@@ -44,6 +44,14 @@ function render(n: NotificationRow, zone: string): Rendered {
         : { icon: "x", tone: "text-ink-dim", text: `${who} can't make ${what || "your event"}`, detail: when, href: event };
     case "chat":
       return { icon: "chat", tone: "text-join", text: `${who} wrote in ${what || "an event"}`, detail: n.data.preview ? `“${n.data.preview}”` : undefined, href: `${event}#chat` };
+    case "dm":
+      return {
+        icon: "send",
+        tone: "text-free",
+        text: `${who} sent you a private message`,
+        detail: n.data.preview ? `“${n.data.preview}”` : undefined,
+        href: n.actor_id ? `/messages?with=${n.actor_id}` : "/messages",
+      };
     case "connected":
       return { icon: "users", tone: "text-free", text: `${who} connected with you`, href: "/connections" };
     case "group_added":

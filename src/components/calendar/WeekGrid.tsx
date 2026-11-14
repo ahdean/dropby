@@ -1,12 +1,12 @@
 "use client";
 
-import { memo, useCallback, useEffect, useMemo, useRef } from "react";
+import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { DAY_END_HOUR, DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS } from "@/lib/constants";
 import type { CalendarItem, DayModel, FriendFreeCluster } from "@/lib/calendar/model";
-import { addDays, formatDayKey, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
+import { addDays, formatDayKey, formatHourShort, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 import { FriendEventBeam, FriendStack, GhostBeam, MyBeam } from "./Beams";
-import { GRID, GRID_MIN_WIDTH, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
+import { GRID, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
 
 const WEEKDAY_LETTER = ["", "M", "T", "W", "T", "F", "S", "S"];
@@ -21,6 +21,8 @@ interface RowProps {
   ghost: Ghost | null;
   /** Key of the item being dragged, if it lives in this row (it is dimmed). */
   draggingKey: string | null;
+  /** Hours are narrow (phone): draw fewer grid lines. */
+  compact: boolean;
   profiles: Map<string, Profile>;
   registerTrack: (dayKey: DayKey, element: HTMLElement | null) => void;
   onOpenItem: (item: CalendarItem) => void;
@@ -39,6 +41,7 @@ const DayRow = memo(function DayRow({
   nowMin,
   ghost,
   draggingKey,
+  compact,
   profiles,
   registerTrack,
   onOpenItem,
@@ -55,10 +58,9 @@ const DayRow = memo(function DayRow({
       {/* sticky day label */}
       <div
         role="rowheader"
-        className="sticky left-0 z-20 flex shrink-0 items-center justify-center border-b-2 border-r-2 border-black bg-panel"
-        style={{ width: GRID.dayColumn }}
+        className="flex w-[var(--day-col)] shrink-0 items-center justify-center border-b-2 border-r-2 border-black bg-panel"
       >
-        <span className={`tile flex h-11 w-10 flex-col items-center justify-center leading-none ${isToday ? "tile-locked" : ""}`}>
+        <span className={`tile flex h-11 w-8 flex-col items-center justify-center leading-none sm:w-10 ${isToday ? "tile-locked" : ""}`}>
           <span className="sr-only">
             {formatDayKey(day.dayKey, "long")}
             {isToday ? ", today" : ""}
@@ -78,7 +80,7 @@ const DayRow = memo(function DayRow({
         role="gridcell"
         data-gesture="empty"
         aria-label={`${formatDayKey(day.dayKey, "long")}. Drag to add a block.`}
-        className={`track relative flex-1 border-b-2 border-black ${isWeekend ? "track-weekend" : ""} ${
+        className={`track relative min-w-0 flex-1 border-b-2 border-black ${compact ? "track-compact" : ""} ${isWeekend ? "track-weekend" : ""} ${
           isPast ? "cursor-default" : "cursor-crosshair"
         }`}
       >
@@ -156,7 +158,8 @@ const DayRow = memo(function DayRow({
   );
 });
 
-function weekLabel(firstDay: DayKey, thisWeek: DayKey): string {
+function weekLabel(dayInWeek: DayKey, thisWeek: DayKey): string {
+  const firstDay = addDays(dayInWeek, 1 - weekdayOf(dayInWeek));
   const range = `${formatDayKey(firstDay).split(", ")[1]} – ${formatDayKey(addDays(firstDay, 6)).split(", ")[1]}`;
   if (firstDay === thisWeek) return `This week · ${range}`;
   if (firstDay === addDays(thisWeek, 7)) return `Next week · ${range}`;
@@ -165,15 +168,20 @@ function weekLabel(firstDay: DayKey, thisWeek: DayKey): string {
 }
 
 export interface WeekGridProps {
+  /** The loaded days, in order. More are added at either end as the list is scrolled. */
   days: DayModel[];
   today: DayKey;
   thisWeek: DayKey;
   nowMin: number;
   profiles: Map<string, Profile>;
-  /** A day to bring into view (from a notification link). */
-  focusDay?: DayKey | null;
-  canLoadMore: boolean;
-  onLoadMore: () => void;
+  /** Scroll this day to the top. Change `nonce` to do it again for the same day. */
+  anchor: { day: DayKey; nonce: number };
+  canLoadEarlier: boolean;
+  canLoadLater: boolean;
+  onLoadEarlier: () => void;
+  onLoadLater: () => void;
+  /** Reports the day at the top of the visible list, for the toolbar's label. */
+  onTopDayChange: (day: DayKey) => void;
   onCreate: (range: DayRange, how: "drag" | "tap") => void;
   onChange: (item: CalendarItem, next: DayRange) => void;
   onOpenItem: (item: CalendarItem) => void;
@@ -182,8 +190,10 @@ export interface WeekGridProps {
 
 /**
  * The main calendar: one row per day, one column per hour.
- * It scrolls in both directions inside its frame; the hour header stays on
- * top and the day column stays on the left.
+ *
+ * The whole day always fits the width, so the list only ever scrolls up and
+ * down, and it does so endlessly: reaching either end loads more weeks. That
+ * also frees sideways drags to mean "draw a block", on phones too.
  */
 export function WeekGrid({
   days,
@@ -191,16 +201,20 @@ export function WeekGrid({
   thisWeek,
   nowMin,
   profiles,
-  focusDay,
-  canLoadMore,
-  onLoadMore,
+  anchor,
+  canLoadEarlier,
+  canLoadLater,
+  onLoadEarlier,
+  onLoadLater,
+  onTopDayChange,
   onCreate,
   onChange,
   onOpenItem,
   onOpenCluster,
 }: WeekGridProps) {
   const scroller = useRef<HTMLDivElement>(null);
-  const sentinel = useRef<HTMLDivElement>(null);
+  const topSentinel = useRef<HTMLDivElement>(null);
+  const bottomSentinel = useRef<HTMLDivElement>(null);
   const tracks = useRef(new Map<DayKey, HTMLElement>());
 
   const registerTrack = useCallback((dayKey: DayKey, element: HTMLElement | null) => {
@@ -229,6 +243,7 @@ export function WeekGrid({
 
   const { ghost, onPointerDown } = useBlockGestures({
     containerRef: scroller,
+    touchDrag: "x",
     locate,
     itemByKey: (key) => myItems.get(key),
     canCreateOn: (dayKey) => dayKey >= today,
@@ -237,38 +252,98 @@ export function WeekGrid({
     onOpen: onOpenItem,
   });
 
-  // Load another week when the bottom of the list scrolls into view.
+  // --- how wide is an hour? (decides how much detail the header and tracks show)
+  const [hourWidth, setHourWidth] = useState(64);
   useEffect(() => {
-    const target = sentinel.current;
     const root = scroller.current;
-    if (!target || !root || !canLoadMore) return;
+    if (!root) return;
+    const measure = () => {
+      const dayColumn = parseFloat(getComputedStyle(root).getPropertyValue("--day-col")) || 0;
+      setHourWidth(Math.max(1, (root.clientWidth - dayColumn) / VISIBLE_HOURS));
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, []);
+  const labelEvery = hourWidth >= 54 ? 1 : hourWidth >= 30 ? 2 : 3;
+  const compact = hourWidth < 30;
+
+  // --- keeping the view steady while the list grows -------------------------
+  const firstDay = days[0]?.dayKey;
+  /** What the top of the list looked like after the last render: its first day and where that row sat. */
+  const previous = useRef<{ firstDay?: DayKey; firstRowTop: number; nonce: number }>({ firstRowTop: 0, nonce: -1 });
+  useLayoutEffect(() => {
+    const root = scroller.current;
+    if (!root || !firstDay) return;
+    const before = previous.current;
+    const rowOf = (day: DayKey) => root.querySelector<HTMLElement>(`[data-day-row="${day}"]`);
+    if (before.nonce !== anchor.nonce) {
+      // A jump (opening the calendar, "Today", picking a date): put that day at the top.
+      const row = rowOf(anchor.day);
+      if (row) root.scrollTop = Math.max(0, row.offsetTop - GRID.header - 24);
+    } else if (before.firstDay && firstDay < before.firstDay) {
+      // Earlier weeks were added above. The row that used to be first has moved
+      // down by exactly their height: scroll by the same amount, so nothing
+      // appears to move.
+      const formerFirst = rowOf(before.firstDay);
+      if (formerFirst) root.scrollTop += formerFirst.offsetTop - before.firstRowTop;
+    }
+    previous.current = { firstDay, firstRowTop: rowOf(firstDay)?.offsetTop ?? 0, nonce: anchor.nonce };
+  }, [anchor.day, anchor.nonce, firstDay, days.length]);
+
+  // --- endless scrolling: load more weeks near either end -------------------
+  useEffect(() => {
+    const root = scroller.current;
+    if (!root) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) onLoadMore();
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          if (entry.target === topSentinel.current) onLoadEarlier();
+          else onLoadLater();
+        }
       },
-      { root, rootMargin: "200px" },
+      { root, rootMargin: "500px 0px" },
     );
-    observer.observe(target);
+    if (canLoadEarlier && topSentinel.current) observer.observe(topSentinel.current);
+    if (canLoadLater && bottomSentinel.current) observer.observe(bottomSentinel.current);
     return () => observer.disconnect();
-  }, [canLoadMore, onLoadMore, days.length]);
+    // Re-armed whenever the list grows, so a still-visible end keeps loading.
+  }, [canLoadEarlier, canLoadLater, onLoadEarlier, onLoadLater, days.length]);
 
-  // On first show, scroll sideways so "now" (or the morning) is in view on narrow screens.
-  const didInitialScroll = useRef(false);
+  // --- which day is at the top? (drives the label in the toolbar) -----------
+  const reportTopDay = useCallback(() => {
+    const root = scroller.current;
+    if (!root) return;
+    const edge = root.scrollTop + GRID.header + 4;
+    const rows = root.querySelectorAll<HTMLElement>("[data-day-row]");
+    for (const row of rows) {
+      if (row.offsetTop + row.offsetHeight > edge) {
+        onTopDayChange(row.dataset.dayRow as DayKey);
+        return;
+      }
+    }
+  }, [onTopDayChange]);
+
   useEffect(() => {
     const root = scroller.current;
-    if (!root || didInitialScroll.current) return;
-    didInitialScroll.current = true;
-    const trackWidth = root.scrollWidth - GRID.dayColumn;
-    const target = Math.max(DAY_START_MIN, nowMin - 90);
-    root.scrollLeft = Math.max(0, fractionOf(target) * trackWidth - 8);
-  }, [nowMin]);
-
-  // Bring a requested day into view.
-  useEffect(() => {
-    if (!focusDay) return;
-    const row = scroller.current?.querySelector<HTMLElement>(`[data-day-row="${focusDay}"]`);
-    row?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [focusDay, days.length]);
+    if (!root) return;
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        reportTopDay();
+      });
+    };
+    root.addEventListener("scroll", onScroll, { passive: true });
+    reportTopDay();
+    return () => {
+      root.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [reportTopDay, days.length, anchor.nonce]);
 
   return (
     <div className="mesh flex min-h-0 flex-1 flex-col p-[6px]">
@@ -278,61 +353,66 @@ export function WeekGrid({
         aria-label="Calendar: days down, hours across"
         aria-rowcount={days.length}
         onPointerDown={onPointerDown}
-        className="relative min-h-0 flex-1 overflow-auto overscroll-contain bg-void/90 [-webkit-touch-callout:none]"
+        // pan-y: the browser scrolls up and down; sideways movement is ours, for drawing blocks.
+        // overflow-anchor none: when weeks are added above, we keep the view steady ourselves (see the
+        // layout effect), because not every browser does it, and those that do would double the correction.
+        className="relative min-h-0 flex-1 touch-pan-y overflow-y-auto overflow-x-hidden overscroll-contain bg-void/90 [-webkit-touch-callout:none] [overflow-anchor:none]"
       >
-        <div style={{ minWidth: GRID_MIN_WIDTH }}>
-          {/* hour header */}
-          <div role="row" className="sticky top-0 z-30 flex border-b-2 border-black bg-panel-2" style={{ height: GRID.header }}>
-            <div className="sticky left-0 z-40 shrink-0 border-r-2 border-black bg-panel-2" style={{ width: GRID.dayColumn }} />
-            <div className="relative flex-1">
-              {HOURS.map((hour) => (
-                <span
-                  key={hour}
-                  role="columnheader"
-                  className="absolute top-0 flex h-full items-center border-l-2 border-line/60 pl-1 font-display text-[8px] text-ink-dim"
-                  style={{ left: percent(fractionOf(hour * 60)), width: percent(1 / VISIBLE_HOURS) }}
-                >
-                  {formatMinutes(hour * 60)}
-                </span>
-              ))}
-              <span className="sr-only">Columns run from {formatMinutes(DAY_START_HOUR * 60)} to {formatMinutes(DAY_END_HOUR * 60)}.</span>
-            </div>
-          </div>
-
-          {days.map((day, index) => {
-            const startsWeek = weekdayOf(day.dayKey) === 1 || index === 0;
-            const rowGhost = ghost && ghost.dayKey === day.dayKey ? ghost : null;
-            const dragging = ghost?.item && ghost.item.dayKey === day.dayKey ? ghost.item.key : null;
-            return (
-              <div key={day.dayKey}>
-                {startsWeek && (
-                  <div className="flex h-6 items-center border-b-2 border-black bg-panel-3/80">
-                    <span className="sticky left-0 px-2 font-display text-[8px] uppercase text-ink-dim">
-                      {weekLabel(day.dayKey, thisWeek)}
-                    </span>
-                  </div>
-                )}
-                <DayRow
-                  day={day}
-                  isToday={day.dayKey === today}
-                  isPast={day.dayKey < today}
-                  nowMin={day.dayKey === today ? nowMin : null}
-                  ghost={rowGhost}
-                  draggingKey={dragging}
-                  profiles={profiles}
-                  registerTrack={registerTrack}
-                  onOpenItem={onOpenItem}
-                  onOpenCluster={onOpenCluster}
-                />
-              </div>
-            );
-          })}
-
-          <div ref={sentinel} className="flex h-12 items-center justify-center">
-            <span className="sticky left-0 right-0 px-3 text-[17px] text-ink-faint">
-              {canLoadMore ? "Loading more weeks…" : "That's as far ahead as dropby goes for now (about two months)."}
+        {/* hour header */}
+        <div role="row" className="sticky top-0 z-30 flex border-b-2 border-black bg-panel-2" style={{ height: GRID.header }}>
+          <div className="w-[var(--day-col)] shrink-0 border-r-2 border-black bg-panel-2" />
+          <div className="relative min-w-0 flex-1">
+            {HOURS.filter((hour) => (hour - DAY_START_HOUR) % labelEvery === 0).map((hour) => (
+              <span
+                key={hour}
+                role="columnheader"
+                aria-label={formatMinutes(hour * 60)}
+                className="absolute top-0 flex h-full items-center overflow-hidden whitespace-nowrap border-l-2 border-line/60 pl-1 font-display text-[8px] text-ink-dim"
+                style={{ left: percent(fractionOf(hour * 60)), width: percent(labelEvery / VISIBLE_HOURS) }}
+              >
+                {labelEvery === 1 ? formatMinutes(hour * 60) : formatHourShort(hour)}
+              </span>
+            ))}
+            <span className="sr-only">
+              Columns run from {formatMinutes(DAY_START_HOUR * 60)} to {formatMinutes(DAY_END_HOUR * 60)}.
             </span>
           </div>
+        </div>
+
+        <div ref={topSentinel} className="flex h-10 items-center justify-center text-[17px] text-ink-faint">
+          {canLoadEarlier ? "Loading earlier weeks…" : "This is as far back as dropby goes."}
+        </div>
+
+        {days.map((day, index) => {
+          const startsWeek = weekdayOf(day.dayKey) === 1 || index === 0;
+          const rowGhost = ghost && ghost.dayKey === day.dayKey ? ghost : null;
+          const dragging = ghost?.item && ghost.item.dayKey === day.dayKey ? ghost.item.key : null;
+          return (
+            <div key={day.dayKey}>
+              {startsWeek && (
+                <div className="flex h-6 items-center border-b-2 border-black bg-panel-3/80">
+                  <span className="px-2 font-display text-[8px] uppercase text-ink-dim">{weekLabel(day.dayKey, thisWeek)}</span>
+                </div>
+              )}
+              <DayRow
+                day={day}
+                isToday={day.dayKey === today}
+                isPast={day.dayKey < today}
+                nowMin={day.dayKey === today ? nowMin : null}
+                ghost={rowGhost}
+                draggingKey={dragging}
+                compact={compact}
+                profiles={profiles}
+                registerTrack={registerTrack}
+                onOpenItem={onOpenItem}
+                onOpenCluster={onOpenCluster}
+              />
+            </div>
+          );
+        })}
+
+        <div ref={bottomSentinel} className="flex h-12 items-center justify-center px-3 text-center text-[17px] text-ink-faint">
+          {canLoadLater ? "Loading more weeks…" : "That's as far ahead as dropby goes for now (about two years)."}
         </div>
       </div>
     </div>

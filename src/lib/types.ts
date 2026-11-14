@@ -86,7 +86,8 @@ export type NotificationType =
   | "chat"
   | "connected"
   | "group_added"
-  | "invite_accepted";
+  | "invite_accepted"
+  | "dm";
 
 export interface NotificationRow {
   id: string;
@@ -109,6 +110,30 @@ export interface NotificationRow {
     preview?: string;
     group_name?: string;
   };
+  read_at: string | null;
+  created_at: string;
+}
+
+/** What a private message quotes: a snapshot of a block, written by the database. */
+export interface MessageQuote {
+  owner_id: string;
+  owner_name: string | null;
+  block_type: BlockType;
+  title: string | null;
+  emoji: string | null;
+  start_at: string;
+  end_at: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  /** Null when there is no quote, or the quoted block has since been deleted. */
+  block_id: string | null;
+  occurrence: number;
+  quote: MessageQuote | null;
   read_at: string | null;
   created_at: string;
 }

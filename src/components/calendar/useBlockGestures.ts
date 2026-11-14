@@ -20,7 +20,10 @@ import type { DayKey } from "@/lib/time";
  * supplies `locate`, which turns a screen position into a day and a time.
  *
  * Mouse / pen:  press and drag straight away.
- * Touch:        press and hold (so a swipe still scrolls), then drag.
+ * Touch:        where time runs across the screen (week grid), drag sideways
+ *               straight away; up-and-down swipes scroll as usual. Where time
+ *               runs down the screen (day view), press and hold first, so a
+ *               swipe still scrolls. Press-and-hold works everywhere.
  * A press without a drag is a tap: it opens the block, or starts a new one.
  *
  * Elements opt in with data attributes:
@@ -52,6 +55,11 @@ interface Point {
 interface Options {
   /** The scrolling element that contains the tracks. */
   containerRef: RefObject<HTMLElement | null>;
+  /**
+   * "x": a sideways touch-drag draws immediately (the view only scrolls up and down).
+   * "none": touch needs press-and-hold first (the view scrolls along the time axis).
+   */
+  touchDrag: "x" | "none";
   locate: (clientX: number, clientY: number) => Point | null;
   /** Look up one of the viewer's own blocks by its item key. */
   itemByKey: (key: string) => CalendarItem | undefined;
@@ -248,8 +256,18 @@ export function useBlockGestures(options: Options) {
       if (!s || !s.touch) return;
       const touch = event.touches[0];
       if (!s.active) {
-        // Moved before the hold completed: the person is scrolling. Let them.
-        if (Math.hypot(touch.clientX - s.startX, touch.clientY - s.startY) > TOUCH_SLOP) finish(false);
+        const dx = Math.abs(touch.clientX - s.startX);
+        const dy = Math.abs(touch.clientY - s.startY);
+        if (opts.current.touchDrag === "x" && dx > TOUCH_SLOP && dx > dy * 1.5) {
+          // Clearly sideways: start drawing now, no need to wait for the hold.
+          if (s.timer) window.clearTimeout(s.timer);
+          s.timer = undefined;
+          if (event.cancelable) event.preventDefault();
+          activate(s, touch.clientX, touch.clientY);
+          return;
+        }
+        // Otherwise, moving before the hold completed means the person is scrolling. Let them.
+        if (Math.hypot(dx, dy) > TOUCH_SLOP) finish(false);
         return;
       }
       event.preventDefault(); // we are dragging a block: keep the page still

@@ -5,6 +5,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { BlockEditor, type EditorState } from "@/components/calendar/BlockEditor";
 import { InviteDialog } from "@/components/calendar/InviteDialog";
+import { useMessaging } from "@/components/messages/Messaging";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { EventIcon } from "@/components/ui/EventIcon";
@@ -23,12 +24,23 @@ import type { Profile, RsvpStatus } from "@/lib/types";
 import { useZone } from "@/lib/zone";
 import { Chat } from "./Chat";
 
-function PersonChip({ person, note }: { person: Profile | undefined; note?: string }) {
+function PersonChip({ person, note, onMessage }: { person: Profile | undefined; note?: string; onMessage?: () => void }) {
   return (
     <li className="flex items-center gap-2 border-2 border-line bg-panel-2 py-1 pl-1 pr-3">
       <Avatar person={person} size={26} />
       <span className="truncate">{person?.name ?? "Someone"}</span>
       {note && <span className="text-[16px] text-ink-faint">{note}</span>}
+      {onMessage && (
+        <button
+          type="button"
+          onClick={onMessage}
+          aria-label={`Message ${person?.name ?? "this person"} privately`}
+          title="Message privately"
+          className="-mr-2 p-1 text-ink-dim hover:text-free"
+        >
+          <PixelIcon name="send" size={13} />
+        </button>
+      )}
     </li>
   );
 }
@@ -56,6 +68,7 @@ export function EventScreen() {
   const zone = useZone();
   const { toast, toastError, confirm } = useFeedback();
   const actions = useBlockActions();
+  const messaging = useMessaging();
 
   const { data: block, isLoading } = useBlock(id);
   const { data: people = [] } = useBlockPeople(id);
@@ -115,6 +128,9 @@ export function EventScreen() {
     .map((cid) => profiles.get(cid))
     .filter((p): p is Profile => Boolean(p))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  /** A private message to one person, quoting this event. */
+  const messageAbout = (personId: string) => messaging.openThread(personId, { blockId: block.id, occurrence: occurrence.index });
 
   const answer = async (next: RsvpStatus) => {
     const value = myAnswer === next ? null : next; // tapping your answer again clears it
@@ -220,9 +236,14 @@ export function EventScreen() {
 
             <div className="flex items-center gap-3">
               <dt className="text-join"><PixelIcon name="star" size={16} title="Host" /></dt>
-              <dd className="flex items-center gap-2">
+              <dd className="flex flex-wrap items-center gap-2">
                 <Avatar person={host} size={28} />
                 <span>{isHost ? "You're hosting" : `Hosted by ${host?.name ?? "a friend"}`}</span>
+                {!isHost && (
+                  <Button size="sm" variant="dark" icon="send" onClick={() => messageAbout(block.owner_id)}>
+                    Message privately
+                  </Button>
+                )}
               </dd>
             </div>
           </dl>
@@ -285,7 +306,12 @@ export function EventScreen() {
                 ) : (
                   <ul className="flex flex-wrap gap-2">
                     {going.map((r) => (
-                      <PersonChip key={r.user_id} person={names.get(r.user_id)} note={r.user_id === userId ? "(you)" : undefined} />
+                      <PersonChip
+                        key={r.user_id}
+                        person={names.get(r.user_id)}
+                        note={r.user_id === userId ? "(you)" : undefined}
+                        onMessage={isHost ? () => messageAbout(r.user_id) : undefined}
+                      />
                     ))}
                   </ul>
                 )}
@@ -295,7 +321,12 @@ export function EventScreen() {
                   <div className="label">Can&apos;t make it ({notGoing.length})</div>
                   <ul className="flex flex-wrap gap-2 opacity-70">
                     {notGoing.map((r) => (
-                      <PersonChip key={r.user_id} person={names.get(r.user_id)} note={r.user_id === userId ? "(you)" : undefined} />
+                      <PersonChip
+                        key={r.user_id}
+                        person={names.get(r.user_id)}
+                        note={r.user_id === userId ? "(you)" : undefined}
+                        onMessage={isHost ? () => messageAbout(r.user_id) : undefined}
+                      />
                     ))}
                   </ul>
                 </div>
@@ -322,7 +353,12 @@ export function EventScreen() {
             </li>
           ))}
           {invited.map((person) => (
-            <PersonChip key={person.id} person={person} note={person.id === userId ? "(you)" : undefined} />
+            <PersonChip
+              key={person.id}
+              person={person}
+              note={person.id === userId ? "(you)" : undefined}
+              onMessage={isHost ? () => messageAbout(person.id) : undefined}
+            />
           ))}
         </ul>
         {block.audience === "custom" && invited.length === 0 && (

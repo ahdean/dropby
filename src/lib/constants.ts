@@ -20,12 +20,17 @@ export const MIN_BLOCK_MINUTES = 30;
 /** Length of the block created by a single click/tap on an empty slot. */
 export const DEFAULT_BLOCK_MINUTES = 60;
 
-/** Weeks shown when the calendar first opens. */
-export const INITIAL_WEEKS = 2;
-/** How far ahead the calendar can scroll: about two months. */
-export const MAX_WEEKS_AHEAD = 9;
-/** How far back "previous week" can go. */
-export const MAX_WEEKS_BACK = 4;
+/**
+ * The week view scrolls endlessly in both directions, loading a few weeks at a
+ * time, up to these limits (about one year back and two years ahead).
+ */
+export const MAX_WEEKS_BACK = 52;
+export const MAX_WEEKS_AHEAD = 104;
+/** Weeks loaded above and below the current week when the calendar opens. */
+export const INITIAL_WEEKS_BEFORE = 2;
+export const INITIAL_WEEKS_AFTER = 6;
+/** Weeks added each time the top or bottom of the list is reached. */
+export const WEEKS_PER_LOAD = 4;
 
 /** Only US numbers are supported for now. */
 export const PHONE_COUNTRY_CODE = "+1";

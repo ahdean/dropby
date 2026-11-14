@@ -14,4 +14,8 @@ export const keys = {
   mutuals: ["mutuals"] as const,
   blocked: ["blocked"] as const,
   notifications: ["notifications"] as const,
+  /** Everything to do with private messages (prefix). */
+  dms: ["dm"] as const,
+  dmList: ["dm", "list"] as const,
+  dmThread: (otherId: string) => ["dm", "thread", otherId] as const,
 };

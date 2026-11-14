@@ -2,14 +2,15 @@
  * Sizes shared by the calendar views, and the conversion between minutes and
  * positions on screen.
  */
-import { DAY_START_MIN, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
+import { DAY_START_MIN, VISIBLE_MINUTES } from "@/lib/constants";
 
-/** Week grid (days down, hours across). */
+/**
+ * Week grid (days down, hours across). The day always fits the width of the
+ * screen, so the grid never scrolls sideways; on a phone an hour is simply
+ * narrower. The width of the sticky day column is the CSS variable --day-col
+ * (see globals.css).
+ */
 export const GRID = {
-  /** Width of the sticky day-label column. */
-  dayColumn: 52,
-  /** Narrowest an hour column may get before the grid scrolls sideways. */
-  minHourWidth: 62,
   /** Height of the sticky hour header. */
   header: 30,
   /** Height of one lane inside a row. */
@@ -21,8 +22,6 @@ export const GRID = {
   friendBeam: 22,
   avatar: 26,
 } as const;
-
-export const GRID_MIN_WIDTH = GRID.dayColumn + GRID.minHourWidth * VISIBLE_HOURS;
 
 export function rowHeight(laneCount: number): number {
   return GRID.rowPadding * 2 + GRID.lane * Math.max(1, laneCount);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { MAX_WEEKS_AHEAD, MAX_WEEKS_BACK } from "../constants";
 import { shiftSeries } from "../recurrence";
@@ -31,34 +31,53 @@ function toCalendarBlock(row: BlockWithRelations): CalendarBlock {
   };
 }
 
-/** The furthest the calendar can show: a few weeks back to about two months ahead. */
-export function calendarWindow(zone: string, now: Date = new Date()) {
+/** How far the calendar can go, and where "this week" is. */
+export function calendarLimits(zone: string, now: Date = new Date()) {
   const thisWeek = startOfWeek(todayKey(zone, now));
   const firstDay: DayKey = addDays(thisWeek, -7 * MAX_WEEKS_BACK);
   const endDay: DayKey = addDays(thisWeek, 7 * MAX_WEEKS_AHEAD);
-  return { thisWeek, firstDay, endDay, fromIso: zonedToUtc(firstDay, 0, zone), toIso: zonedToUtc(endDay, 0, zone) };
+  return { thisWeek, firstDay, endDay };
 }
+
+/** Supabase returns at most this many rows per request, so larger results are read in pages. */
+const PAGE_SIZE = 1000;
 
 async function fetchBlocks(fromIso: string, toIso: string): Promise<CalendarBlock[]> {
   // Weekly repeats are stored once, so fetch all of them plus one-offs in range.
   // Row-level security limits the result to the viewer's own blocks and blocks shared with them.
-  const { data, error } = await getSupabase()
-    .from("blocks")
-    .select(BLOCK_SELECT)
-    .or(`repeat_weekly.eq.true,and(start_at.lt."${toIso}",end_at.gt."${fromIso}")`);
-  if (error) throw error;
-  return (data as BlockWithRelations[]).map(toCalendarBlock);
+  const rows: BlockWithRelations[] = [];
+  for (let page = 0; page < 20; page++) {
+    const { data, error } = await getSupabase()
+      .from("blocks")
+      .select(BLOCK_SELECT)
+      .or(`repeat_weekly.eq.true,and(start_at.lt."${toIso}",end_at.gt."${fromIso}")`)
+      .order("id")
+      .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+    if (error) throw error;
+    rows.push(...(data as BlockWithRelations[]));
+    if (data.length < PAGE_SIZE) break;
+  }
+  return rows.map(toCalendarBlock);
 }
 
-/** All blocks the viewer can see within the calendar's window. */
-export function useCalendarBlocks(zone: string) {
-  // The window only changes when the week rolls over; recompute per mount.
-  const range = useMemo(() => calendarWindow(zone), [zone]);
+/**
+ * All blocks the viewer can see between two days (`endDay` exclusive).
+ * Without a range: the weeks around now, which is what the event page and the
+ * editor need for spotting overlaps.
+ */
+export function useCalendarBlocks(zone: string, range?: { firstDay: DayKey; endDay: DayKey }) {
+  const limits = useMemo(() => calendarLimits(zone), [zone]);
+  const firstDay = range?.firstDay ?? addDays(limits.thisWeek, -28);
+  const endDay = range?.endDay ?? addDays(limits.thisWeek, 7 * 13);
+  const fromIso = zonedToUtc(firstDay, 0, zone);
+  const toIso = zonedToUtc(endDay, 0, zone);
   const query = useQuery({
-    queryKey: keys.blocks,
-    queryFn: () => fetchBlocks(range.fromIso, range.toIso),
+    queryKey: [...keys.blocks, fromIso, toIso],
+    queryFn: () => fetchBlocks(fromIso, toIso),
+    // While a wider range loads (scrolling), keep showing what we have.
+    placeholderData: keepPreviousData,
   });
-  return { ...query, blocks: query.data ?? EMPTY, window: range };
+  return { ...query, blocks: query.data ?? EMPTY, window: limits };
 }
 const EMPTY: CalendarBlock[] = [];
 
@@ -72,7 +91,12 @@ export function useBlock(id: string) {
       if (error) throw error;
       return data ? toCalendarBlock(data as BlockWithRelations) : null;
     },
-    placeholderData: () => queryClient.getQueryData<CalendarBlock[]>(keys.blocks)?.find((b) => b.id === id),
+    // Show it instantly if any loaded stretch of the calendar already has it.
+    placeholderData: () =>
+      queryClient
+        .getQueriesData<CalendarBlock[]>({ queryKey: keys.blocks })
+        .flatMap(([, cached]) => cached ?? [])
+        .find((b) => b.id === id),
   });
 }
 
@@ -189,7 +213,8 @@ export function useBlockActions() {
 
   const patchCache = useCallback(
     (update: (blocks: CalendarBlock[]) => CalendarBlock[]) => {
-      queryClient.setQueryData<CalendarBlock[]>(keys.blocks, (old) => (old ? update(old) : old));
+      // Every loaded stretch of the calendar is cached separately; patch them all.
+      queryClient.setQueriesData<CalendarBlock[]>({ queryKey: keys.blocks }, (old) => (old ? update(old) : old));
     },
     [queryClient],
   );

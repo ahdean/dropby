@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
+import { MessagingProvider } from "@/components/messages/Messaging";
 import { Button } from "@/components/ui/Button";
 import { FeedbackProvider } from "@/components/ui/Feedback";
 import { RealtimeBridge } from "@/lib/data/realtime";
@@ -78,8 +79,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <FeedbackProvider>
         <SessionProvider fallback={<LoadingScreen />}>
           <RealtimeBridge />
-          <Header />
-          <NameGate>{children}</NameGate>
+          <MessagingProvider>
+            <Header />
+            <NameGate>{children}</NameGate>
+          </MessagingProvider>
         </SessionProvider>
       </FeedbackProvider>
     </QueryClientProvider>

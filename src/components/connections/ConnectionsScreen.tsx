@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, type ReactNode } from "react";
 import { InviteDialog } from "@/components/calendar/InviteDialog";
+import { useMessaging } from "@/components/messages/Messaging";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useFeedback } from "@/components/ui/Feedback";
@@ -56,6 +57,7 @@ export function ConnectionsScreen() {
   const { groups } = useGroups();
   const { blockedIds } = useBlocked();
   const actions = useSocialActions();
+  const messaging = useMessaging();
   const { toast, toastError, confirm } = useFeedback();
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -145,6 +147,9 @@ export function ConnectionsScreen() {
           <ul className="divide-y-2 divide-black">
             {connections.map((person) => (
               <PersonRow key={person.id} person={person}>
+                <Button size="sm" variant="free" icon="send" onClick={() => messaging.openThread(person.id)} aria-label={`Message ${person.name}`}>
+                  Message
+                </Button>
                 <Button size="sm" variant="dark" onClick={() => remove(person)} aria-label={`Remove ${person.name}`}>
                   Remove
                 </Button>

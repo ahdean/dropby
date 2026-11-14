@@ -57,6 +57,17 @@ export function RealtimeBridge() {
     }
     channel.subscribe();
 
+    // Private messages get their own channel: if that table has not been
+    // created yet (the newest database file not run), only this subscription
+    // fails and everything else stays live.
+    const messages = supabase
+      .channel("dm-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "direct_messages" }, () => {
+        pending.set(JSON.stringify(keys.dms), keys.dms);
+        if (timer === undefined) timer = window.setTimeout(flush, DEBOUNCE_MS);
+      })
+      .subscribe();
+
     // Coming back to the tab or regaining the network: catch up on anything missed.
     const catchUp = () => {
       if (document.visibilityState === "visible") queryClient.invalidateQueries();
@@ -69,6 +80,7 @@ export function RealtimeBridge() {
       document.removeEventListener("visibilitychange", catchUp);
       window.removeEventListener("online", catchUp);
       supabase.removeChannel(channel);
+      supabase.removeChannel(messages);
     };
   }, [queryClient]);
 
