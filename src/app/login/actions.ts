@@ -2,6 +2,7 @@
 
 import { devSignIn } from "@/lib/auth/dev-login";
 import { explainDevLoginFailure } from "@/lib/auth/dev-login-errors";
+import { explainSmsFailure } from "@/lib/auth/sms-errors";
 import { getDevLogin, getPublicEnv } from "@/lib/env";
 import { normalizeUsPhone } from "@/lib/phone";
 import { createSupabaseServer } from "@/lib/supabase/server";
@@ -30,7 +31,9 @@ function friendly(error: { message?: string; code?: string; status?: number } | 
     return "Phone sign-in is not switched on yet (README, step 4). Until then, use \"Text me a code\" with the dev code.";
   }
   if (code === "sms_send_failed" || /provider|sms/i.test(message)) {
-    return "The text message could not be sent. Check the SMS provider settings (README, step 4).";
+    // Keep the full detail in the server log, and tell the page the actual cause.
+    console.error("sms send failed:", message);
+    return explainSmsFailure(message);
   }
   if (code === "weak_password") return "That password is too short.";
   if (/fetch failed|network|enotfound/i.test(message)) {

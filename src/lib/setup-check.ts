@@ -115,7 +115,15 @@ export async function runSetupChecks(): Promise<SetupCheck[]> {
   }
   checks.push({ label: "Reaching Supabase", status: "ok", detail: "Connected." });
 
-  const providers = (settings.body as { external?: Record<string, boolean> } | null)?.external ?? {};
+  const settingsBody = settings.body as { external?: Record<string, boolean>; sms_provider?: string } | null;
+  const providers = settingsBody?.external ?? {};
+  const smsProviderNames: Record<string, string> = {
+    twilio_verify: "Twilio Verify",
+    twilio: "Twilio (plain messaging: needs a Messaging Service SID and US carrier registration)",
+  };
+  const smsProvider = settingsBody?.sms_provider
+    ? ` Provider: ${smsProviderNames[settingsBody.sms_provider] ?? settingsBody.sms_provider}.`
+    : "";
   checks.push(
     providers.email
       ? { label: "Email provider", status: "ok", detail: "Enabled (the test sign-in relies on it; no email is sent)." }
@@ -129,7 +137,11 @@ export async function runSetupChecks(): Promise<SetupCheck[]> {
   );
   checks.push(
     providers.phone
-      ? { label: "Text messages (phone provider)", status: "ok", detail: "Enabled in Supabase." }
+      ? {
+          label: "Text messages (phone provider)",
+          status: "ok",
+          detail: `Enabled in Supabase.${smsProvider} This only shows it is switched on; if a code still does not arrive, the sign-in page says why.`,
+        }
       : {
           label: "Text messages (phone provider)",
           status: "todo",

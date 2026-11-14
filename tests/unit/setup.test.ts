@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { DevLoginError, explainDevLoginFailure } from "@/lib/auth/dev-login-errors";
+import { explainSmsFailure } from "@/lib/auth/sms-errors";
 import { classifyKey, normalizeSupabaseUrl } from "@/lib/env";
 
 describe("the Supabase address", () => {
@@ -92,5 +93,57 @@ describe("dev login failures are explained", () => {
 
   it("anything else, with the original message kept for diagnosis", () => {
     expect(explain("Something unexpected")).toBe("Dev login failed: Something unexpected");
+  });
+});
+
+describe("a text message that could not be sent is explained", () => {
+  const fromSupabase = (twilioText: string, code: number) =>
+    `Error sending confirmation OTP to provider: ${twilioText} More information: https://www.twilio.com/docs/errors/${code}`;
+
+  it("a Twilio trial account", () => {
+    const message = explainSmsFailure(
+      fromSupabase("The number +12025550123 is unverified. Trial accounts cannot send messages to unverified numbers", 21608),
+    );
+    expect(message).toMatch(/still a trial/);
+    expect(message).toMatch(/Twilio error 21608/);
+    expect(message).not.toContain("2025550123"); // never echo the phone number
+  });
+
+  it("wrong Twilio details saved in Supabase", () => {
+    expect(explainSmsFailure(fromSupabase("Authenticate", 20003))).toMatch(/Account SID or Auth Token/);
+    expect(explainSmsFailure(fromSupabase("The requested resource was not found", 20404))).toMatch(/must start with VA/);
+  });
+
+  it("US carrier registration and blocked destinations", () => {
+    expect(explainSmsFailure(fromSupabase("Message from an Unregistered Number", 30034))).toMatch(/A2P 10DLC/);
+    expect(explainSmsFailure(fromSupabase("Verification delivery attempts blocked", 60605))).toMatch(/Geo permissions/);
+  });
+
+  it("a half-configured Phone provider in Supabase", () => {
+    expect(explainSmsFailure("Unable to get SMS provider")).toMatch(/not fully set up/);
+  });
+
+  it("an unfamiliar cause, in the provider's own words without the number or the link", () => {
+    const message = explainSmsFailure(fromSupabase("Something odd happened with +12025550123", 99999));
+    expect(message).toBe('The text message could not be sent. Site owner: the SMS provider said "Something odd happened with that number" (Twilio error 99999).');
+  });
+
+  it("the provider being unreachable, without leaking the account identifier in the address", () => {
+    const message = explainSmsFailure(
+      'Error sending confirmation OTP to provider: Post "https://api.twilio.com/2010-04-01/Accounts/AC00000000000000000000000000000000/Messages.json": dial tcp: lookup api.twilio.com: no such host',
+    );
+    expect(message).toBe("The text message could not be sent. Supabase could not reach the SMS provider just now. Try again in a minute.");
+  });
+
+  it("never shows web addresses or account identifiers from an unfamiliar message", () => {
+    const message = explainSmsFailure(
+      "Error sending confirmation OTP to provider: Service VA0123456789abcdef0123456789abcdef refused, see https://example.com/x for (202) 555-0123",
+    );
+    expect(message).not.toMatch(/VA0123|example\.com|555-0123/);
+    expect(message).toMatch(/Service refused, see for that number/);
+  });
+
+  it("nothing to go on", () => {
+    expect(explainSmsFailure("")).toMatch(/check the Phone provider settings/);
   });
 });

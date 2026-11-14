@@ -340,7 +340,7 @@ public/sw.js             service worker (installable app); public/offline.html i
 | "Couldn't load your profile" after signing in | Same as above if the site is brand new; otherwise a connection problem. Sign out and in again after fixing. |
 | Any other "Dev login failed: …" | The rest of the message is Supabase's own wording. Check that the Email provider is still enabled in Supabase. |
 | "Phone sign-in is not switched on yet" | The Phone provider isn't enabled in Supabase (step 4). Until it is, only the dev code works; password sign-in also needs it. |
-| "The text message could not be sent" | The Phone provider is on but its Twilio details are wrong or the Twilio account can't send. |
+| "The text message could not be sent. Site owner: …" | The rest of the message says why, for example a Twilio trial account, a wrong SID or token, or a blocked country. Full detail is in Supabase → Logs → Auth and in Twilio → Monitor → Logs → Errors. To get back in meanwhile, set `DEV_LOGIN_ENABLED` to `true` and redeploy. |
 | The code never arrives | Twilio account still in trial, or out of credit. Check **Monitor → Logs** in Twilio and **Authentication → Logs** in Supabase. |
 | Signed in but the calendar says it could not load | The migrations weren't all run, or not in order. Re-run step 1.2. |
 | Changes by friends don't appear until refresh | The last migration file (`…500_storage_realtime.sql`) wasn't run. |
