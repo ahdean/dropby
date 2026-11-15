@@ -279,7 +279,7 @@ One database function, `private.can_view_block`, decides whether a person may re
 - Everything is stored in UTC and shown in the viewer's own time zone. The globe button on the calendar (or the profile page) lets someone pick a different zone; the choice is remembered on that device.
 - A weekly repeat is one row. Each occurrence is computed in the time zone the block was created in, so "Tuesdays at 6 PM" stays at 6 PM when the clocks change.
 - The week view fits the whole day across the screen (no sideways scrolling) and scrolls endlessly up and down, about a year back and two years ahead. Dragging across a day, or tapping it, adds Free time on the spot.
-- The calendar shows 6 AM to 11:59 PM. A friend's block in another time zone that falls outside those hours for you is simply not shown.
+- The calendar shows 8 AM to 11 PM (set in `src/lib/constants.ts`). A block that starts earlier or ends later still exists and can be edited by tapping it; the part outside those hours is not drawn. A friend's block in another time zone that falls outside those hours for you is simply not shown.
 
 ### Sign-in
 
@@ -288,6 +288,12 @@ Phone number plus a texted one-time code (Supabase Auth). The session is kept in
 ### Invites
 
 Inviting someone who isn't on dropby creates an unguessable link and a ready-written text, and hands it to the phone's own messaging app. dropby's servers never send texts on a user's behalf. The link shows a small public preview (no address, no guest list); signing up from it connects the newcomer to the sharer. Links last 30 days and can be switched off.
+
+### Small conveniences
+
+- **Places you've used.** When hosting, the "Where" field offers the locations already on your own events, most used first. Nothing extra is stored (`src/lib/places.ts`).
+- **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
+- **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
 
 ### Private messages
 

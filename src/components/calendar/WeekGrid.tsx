@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { DAY_END_HOUR, DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS } from "@/lib/constants";
+import { DAY_END_HOUR, DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
 import type { CalendarItem, DayModel, FriendFreeCluster } from "@/lib/calendar/model";
 import { addDays, formatDayKey, formatHourShort, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
@@ -223,6 +223,7 @@ export function WeekGrid({
   }, []);
 
   const myItems = useMemo(() => new Map(days.flatMap((d) => d.mine).map((item) => [item.key, item])), [days]);
+  const mineByDay = useMemo(() => new Map(days.map((d) => [d.dayKey, d.mine])), [days]);
 
   /** Which day row and time is under this screen position? The nearest row wins. */
   const locate = useCallback((clientX: number, clientY: number) => {
@@ -238,7 +239,11 @@ export function WeekGrid({
       }
     }
     if (!best) return null;
-    return { dayKey: best.dayKey, minute: minutesAt(clientX - best.rect.left, best.rect.width) };
+    return {
+      dayKey: best.dayKey,
+      minute: minutesAt(clientX - best.rect.left, best.rect.width),
+      pxPerMinute: best.rect.width / VISIBLE_MINUTES,
+    };
   }, []);
 
   const { ghost, onPointerDown } = useBlockGestures({
@@ -246,6 +251,7 @@ export function WeekGrid({
     touchDrag: "x",
     locate,
     itemByKey: (key) => myItems.get(key),
+    itemsOn: (dayKey) => mineByDay.get(dayKey) ?? [],
     canCreateOn: (dayKey) => dayKey >= today,
     onCreate,
     onChange,

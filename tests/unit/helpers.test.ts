@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { avatarColor, AVATAR_COLORS, initialsOf } from "@/lib/avatar";
 import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, defaultTitleFor, iconAsText, isAutomaticTitle, isDoorIcon } from "@/lib/event-icon";
 import { formatUsPhone, formatUsPhoneInput, normalizeUsPhone } from "@/lib/phone";
+import { rankPlaces } from "@/lib/places";
 import { describeWhen, inviteMessage, inviteUrl, smsHref } from "@/lib/share";
 import { zonedToUtc } from "@/lib/time";
 
@@ -111,5 +112,28 @@ describe("default avatars", () => {
     expect(avatarColor(id)).toBe(avatarColor(id));
     expect(AVATAR_COLORS).toContain(avatarColor(id));
     expect(AVATAR_COLORS).toContain(avatarColor(null));
+  });
+});
+
+describe("places you have used before", () => {
+  const use = (location: string | null, day: string) => ({ location, updated_at: `2026-11-${day}T12:00:00Z` });
+
+  it("lists each place once, most used first, then most recent", () => {
+    const places = rankPlaces([
+      use("Boulder Barn", "10"),
+      use("My place, 12 Elm St", "12"),
+      use("Boulder Barn", "03"),
+      use("Riverside Park", "14"),
+    ]);
+    expect(places).toEqual(["Boulder Barn", "Riverside Park", "My place, 12 Elm St"]);
+  });
+
+  it("treats different capitals and spacing as the same place, keeping the latest spelling", () => {
+    expect(rankPlaces([use("  my place ", "01"), use("My  Place", "09")])).toEqual(["My Place"]);
+  });
+
+  it("ignores events without a location, and respects the limit", () => {
+    expect(rankPlaces([use(null, "01"), use("   ", "02")])).toEqual([]);
+    expect(rankPlaces([use("A", "01"), use("B", "02"), use("C", "03")], 2)).toEqual(["C", "B"]);
   });
 });

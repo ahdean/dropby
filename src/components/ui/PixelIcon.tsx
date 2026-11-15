@@ -1,6 +1,7 @@
 /**
- * Pixel-art icons drawn on a 12×12 grid. Each icon is a tiny bitmap ("#" = on),
- * so adding or tweaking one needs no design tool: edit the rows below.
+ * Pixel-art icons. Each icon is a tiny bitmap ("#" = on), so adding or tweaking
+ * one needs no design tool: edit the rows below. Most are 12×12; an icon may
+ * use a finer square grid (e.g. 16×16) when it needs more detail.
  */
 const ICONS = {
   bell: [
@@ -339,20 +340,26 @@ const ICONS = {
     "############",
     "############",
   ],
-  // An open doorway: the frame is empty and the door has swung out to the left.
+  // An open door, drawn on a finer 16×16 grid so the shape reads at small sizes:
+  // the door itself (solid, with a knob) has swung towards you on the left, and
+  // the empty doorway stands open on the right.
   doorOpen: [
-    "...########.",
-    "...#......#.",
-    ".###......#.",
-    "####......#.",
-    "####......#.",
-    "#.##......#.",
-    "####......#.",
-    "####......#.",
-    ".###......#.",
-    "...#......#.",
-    "############",
-    "############",
+    "..##............",
+    "..####..........",
+    "..############..",
+    "..#######....#..",
+    "..#######....#..",
+    "..#######....#..",
+    "..#######....#..",
+    "..####.##....#..",
+    "..####.##....#..",
+    "..#######....#..",
+    "..#######....#..",
+    "..#######....#..",
+    "..#######....#..",
+    "..##############",
+    "..####..........",
+    "..##............",
   ],
   globe: [
     "...######...",
@@ -447,8 +454,8 @@ function toPath(rows: readonly string[]): string {
 }
 
 const PATHS = Object.fromEntries(
-  Object.entries(ICONS).map(([name, rows]) => [name, toPath(rows)]),
-) as Record<IconName, string>;
+  Object.entries(ICONS).map(([name, rows]) => [name, { d: toPath(rows), grid: rows.length }]),
+) as Record<IconName, { d: string; grid: number }>;
 
 export function PixelIcon({
   name,
@@ -464,7 +471,7 @@ export function PixelIcon({
 }) {
   return (
     <svg
-      viewBox="0 0 12 12"
+      viewBox={`0 0 ${PATHS[name].grid} ${PATHS[name].grid}`}
       width={size}
       height={size}
       fill="currentColor"
@@ -475,7 +482,7 @@ export function PixelIcon({
       aria-hidden={title ? undefined : true}
       focusable="false"
     >
-      <path d={PATHS[name]} />
+      <path d={PATHS[name].d} />
     </svg>
   );
 }

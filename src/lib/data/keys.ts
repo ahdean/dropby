@@ -5,6 +5,8 @@
 export const keys = {
   profiles: ["profiles"] as const,
   blocks: ["blocks"] as const,
+  /** Locations the viewer has used on their own events. */
+  places: ["places"] as const,
   block: (id: string) => ["block", id] as const,
   blockPeople: (id: string) => ["block", id, "people"] as const,
   messages: (blockId: string) => ["block", blockId, "messages"] as const,

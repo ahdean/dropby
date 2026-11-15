@@ -37,7 +37,7 @@ export interface CalendarItem extends Interval {
   /** How many guests said "I'm in" for this occurrence. */
   inCount: number;
   /**
-   * False when part of the occurrence is outside this row (before 6 AM, or it
+   * False when part of the occurrence is outside this row (outside the visible hours, or it
    * continues on another day for this viewer). Such items are not draggable.
    */
   whole: boolean;

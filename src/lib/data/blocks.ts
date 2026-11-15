@@ -3,6 +3,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { MAX_WEEKS_AHEAD, MAX_WEEKS_BACK } from "../constants";
+import { rankPlaces } from "../places";
 import { shiftSeries } from "../recurrence";
 import { getSupabase } from "../supabase/client";
 import { addDays, startOfWeek, todayKey, zonedToUtc, type DayKey } from "../time";
@@ -80,6 +81,28 @@ export function useCalendarBlocks(zone: string, range?: { firstDay: DayKey; endD
   return { ...query, blocks: query.data ?? EMPTY, window: limits };
 }
 const EMPTY: CalendarBlock[] = [];
+
+/** Locations the viewer has put on their own events before, most used first (see lib/places.ts). */
+export function useMyPlaces() {
+  const { userId } = useSession();
+  const query = useQuery({
+    queryKey: keys.places,
+    queryFn: async (): Promise<string[]> => {
+      const { data, error } = await getSupabase()
+        .from("blocks")
+        .select("location, updated_at")
+        .eq("owner_id", userId)
+        .not("location", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(300);
+      if (error) throw error;
+      return rankPlaces(data);
+    },
+    staleTime: 5 * 60_000,
+  });
+  return query.data ?? EMPTY_PLACES;
+}
+const EMPTY_PLACES: string[] = [];
 
 /** One block by id (for the event page). Null if it does not exist or is not shared with the viewer. */
 export function useBlock(id: string) {
@@ -204,7 +227,10 @@ export function useBlockActions() {
 
   const refresh = useCallback(
     (blockId?: string) => {
-      const jobs = [queryClient.invalidateQueries({ queryKey: keys.blocks })];
+      const jobs = [
+        queryClient.invalidateQueries({ queryKey: keys.blocks }),
+        queryClient.invalidateQueries({ queryKey: keys.places }),
+      ];
       if (blockId) jobs.push(queryClient.invalidateQueries({ queryKey: keys.block(blockId) }));
       return Promise.all(jobs);
     },

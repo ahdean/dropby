@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMessaging } from "@/components/messages/Messaging";
 import { useFeedback } from "@/components/ui/Feedback";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 import { buildDayModels, findSameTypeConflict, type CalendarItem, type FriendFreeCluster } from "@/lib/calendar/model";
 import {
   INITIAL_WEEKS_AFTER,
@@ -103,6 +104,23 @@ export function CalendarScreen() {
   const [anchor, setAnchor] = useState<{ day: DayKey; nonce: number }>(() => ({ day: thisWeek, nonce: 0 }));
   const [topDay, setTopDay] = useState<DayKey>(thisWeek);
   const [selectedDay, setSelectedDay] = useState<DayKey>(today);
+
+  // On a phone held sideways the top rows are hidden while the calendar is on
+  // screen (the rule is in globals.css); these two flags tell the page so.
+  const [barsShown, setBarsShown] = useState(false);
+  useEffect(() => {
+    document.body.dataset.calendar = "on";
+    return () => {
+      delete document.body.dataset.calendar;
+    };
+  }, []);
+  useEffect(() => {
+    if (barsShown) document.body.dataset.showBars = "on";
+    else delete document.body.dataset.showBars;
+    return () => {
+      delete document.body.dataset.showBars;
+    };
+  }, [barsShown]);
 
   const changeView = (next: CalendarView) => {
     setView(next);
@@ -298,8 +316,23 @@ export function CalendarScreen() {
     <main
       className="flex min-h-0 flex-col"
       // Fill the screen below the header so the calendar scrolls inside its frame.
-      style={{ height: "calc(100dvh - 58px - env(safe-area-inset-top))", ["--hours" as string]: VISIBLE_HOURS }}
+      style={{
+        height: "calc(100dvh - var(--header-h) - env(safe-area-inset-top))",
+        paddingLeft: "env(safe-area-inset-left)",
+        paddingRight: "env(safe-area-inset-right)",
+        ["--hours" as string]: VISIBLE_HOURS,
+      }}
     >
+      {/* Only shown on a phone held sideways (see globals.css), where the top rows are tucked away. */}
+      <button
+        type="button"
+        className="bars-toggle btn tile tile-dark !min-h-[36px] !w-9 !p-0"
+        aria-label={barsShown ? "Hide the menu rows" : "Show the menu rows"}
+        aria-pressed={barsShown}
+        onClick={() => setBarsShown((shown) => !shown)}
+      >
+        <PixelIcon name={barsShown ? "up" : "down"} size={12} />
+      </button>
       <Toolbar
         view={view}
         onViewChange={changeView}

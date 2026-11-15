@@ -113,10 +113,11 @@ describe("splitting a range into calendar days", () => {
     ]);
   });
 
-  it("trims to the hours the calendar shows (6 AM to the end of the day)", () => {
-    expect(clipToVisibleHours({ dayKey: "d", startMin: 300, endMin: 480 })).toEqual({ dayKey: "d", startMin: 360, endMin: 480 });
+  it("trims to the hours the calendar shows (8 AM to 11 PM)", () => {
+    expect(clipToVisibleHours({ dayKey: "d", startMin: 300, endMin: 600 })).toEqual({ dayKey: "d", startMin: 480, endMin: 600 });
     expect(clipToVisibleHours({ dayKey: "d", startMin: 0, endMin: 150 })).toBeNull();
-    expect(clipToVisibleHours({ dayKey: "d", startMin: 1320, endMin: 1440 })).toEqual({ dayKey: "d", startMin: 1320, endMin: 1440 });
+    expect(clipToVisibleHours({ dayKey: "d", startMin: 1320, endMin: 1440 })).toEqual({ dayKey: "d", startMin: 1320, endMin: 1380 });
+    expect(clipToVisibleHours({ dayKey: "d", startMin: 1380, endMin: 1440 })).toBeNull(); // after 11 PM: not shown
   });
 });
 

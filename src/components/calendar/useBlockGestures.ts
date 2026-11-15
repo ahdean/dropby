@@ -10,7 +10,7 @@ import {
   type RefObject,
 } from "react";
 import { DAY_END_MIN, DEFAULT_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
-import { moveInterval, rangeFromDrag, resizeInterval, type Interval } from "@/lib/calendar/intervals";
+import { moveInterval, nearestEdge, rangeFromDrag, resizeInterval, type Interval } from "@/lib/calendar/intervals";
 import type { CalendarItem } from "@/lib/calendar/model";
 import type { DayKey } from "@/lib/time";
 
@@ -25,6 +25,12 @@ import type { DayKey } from "@/lib/time";
  *               runs down the screen (day view), press and hold first, so a
  *               swipe still scrolls. Press-and-hold works everywhere.
  * A press without a drag is a tap: it opens the block, or starts a new one.
+ *
+ * A press in the empty space right beside one of your blocks grabs that
+ * block's edge (to stretch or shrink it) rather than starting a new block
+ * there: on a phone the edges are only a few pixels wide and easy to miss. To
+ * make a block that touches another, start further away and drag up to it.
+ * A tap in that space opens the block.
  *
  * Elements opt in with data attributes:
  *   data-gesture="empty"                         an empty track
@@ -50,6 +56,8 @@ type Target =
 interface Point {
   dayKey: DayKey;
   minute: number;
+  /** How many screen pixels one minute takes along the time axis here. */
+  pxPerMinute: number;
 }
 
 interface Options {
@@ -63,6 +71,8 @@ interface Options {
   locate: (clientX: number, clientY: number) => Point | null;
   /** Look up one of the viewer's own blocks by its item key. */
   itemByKey: (key: string) => CalendarItem | undefined;
+  /** The viewer's own blocks on a day (to find an edge near a press). */
+  itemsOn: (dayKey: DayKey) => CalendarItem[];
   /** May a new block be created on this day? (Past days: no.) */
   canCreateOn: (dayKey: DayKey) => boolean;
   /** A new block was drawn ("drag") or an empty spot was tapped ("tap"). */
@@ -72,6 +82,8 @@ interface Options {
 }
 
 const MOUSE_DRAG_THRESHOLD = 4;
+/** How close to a block's edge (in screen pixels) a press still counts as grabbing that edge. */
+const EDGE_GRAB_PX = { touch: 12, mouse: 5 };
 const TOUCH_SLOP = 10;
 const LONG_PRESS_MS = 350;
 
@@ -176,11 +188,21 @@ export function useBlockGestures(options: Options) {
 
   const begin = useCallback(
     (element: Element | null, clientX: number, clientY: number, touch: boolean): Session | null => {
-      const target = resolveTarget(element);
+      let target = resolveTarget(element);
       if (!target) return null;
       const startPoint = opts.current.locate(clientX, clientY);
       if (!startPoint) return null;
-      if (target.kind === "empty" && !opts.current.canCreateOn(startPoint.dayKey)) return null;
+      if (target.kind === "empty") {
+        // Right beside one of my blocks? Then this is about that block's edge.
+        const reach = (touch ? EDGE_GRAB_PX.touch : EDGE_GRAB_PX.mouse) / Math.max(startPoint.pxPerMinute, 0.001);
+        const near = nearestEdge(
+          opts.current.itemsOn(startPoint.dayKey).filter((item) => item.whole),
+          startPoint.minute,
+          reach,
+        );
+        if (near) target = { kind: "resize", item: near.block, edge: near.edge };
+        else if (!opts.current.canCreateOn(startPoint.dayKey)) return null;
+      }
       const s: Session = { target, startX: clientX, startY: clientY, startPoint, active: false, touch };
       session.current = s;
       return s;

@@ -82,6 +82,7 @@
 
 /* Sizes that differ between phones and wider screens. */
 :root {
+  --header-h: 58px; /* the site header, including its border */
   --day-col: 40px; /* sticky day-label column of the week grid */
   --cap: 8px; /* the end caps of a beam (also its resize handles) */
 }
@@ -551,5 +552,33 @@ dialog::backdrop {
     width: 4px;
     background: var(--color-free);
     box-shadow: 0 0 6px color-mix(in srgb, var(--color-free) 70%, transparent);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   A phone held sideways
+   -----------------------------------------------------------------------------
+   The screen is wide but very short, so on the calendar the site header and
+   the toolbar are tucked away to leave the height to the calendar itself. A
+   small button in the corner brings them back (and hides them again).
+   -------------------------------------------------------------------------- */
+.bars-toggle {
+  display: none;
+}
+@media (orientation: landscape) and (max-height: 540px) {
+  body[data-calendar]:not([data-show-bars]) .app-header,
+  body[data-calendar]:not([data-show-bars]) .calendar-toolbar {
+    display: none;
+  }
+  body[data-calendar]:not([data-show-bars]) {
+    --header-h: 0px;
+  }
+  body[data-calendar] .bars-toggle {
+    display: inline-flex;
+    position: fixed;
+    z-index: 45;
+    top: max(4px, env(safe-area-inset-top));
+    right: max(4px, env(safe-area-inset-right));
+    opacity: 0.9;
   }
 }

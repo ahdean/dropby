@@ -3,10 +3,14 @@
  * the editor and the tests all follow.
  */
 
-/** First hour shown on the calendar (6 AM). */
-export const DAY_START_HOUR = 6;
-/** The calendar runs to the end of the day (shown as 11:59 PM). */
-export const DAY_END_HOUR = 24;
+/**
+ * The hours the calendar shows: 8 AM to 11 PM. Fewer hours means each one is
+ * wider, which matters on a phone where the whole day shares one screen width.
+ * A block outside these hours still exists and can be edited; the part outside
+ * is simply not drawn.
+ */
+export const DAY_START_HOUR = 8;
+export const DAY_END_HOUR = 23;
 
 export const DAY_START_MIN = DAY_START_HOUR * 60;
 export const DAY_END_MIN = DAY_END_HOUR * 60;

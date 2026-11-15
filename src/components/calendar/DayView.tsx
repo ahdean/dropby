@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from "rea
 import { Avatar } from "@/components/ui/Avatar";
 import { assignLanes } from "@/lib/calendar/intervals";
 import type { CalendarItem, DayModel, FriendFreeCluster } from "@/lib/calendar/model";
-import { DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS } from "@/lib/constants";
+import { DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
 import { formatDayKey, formatMinuteRange, formatMinutes, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 import { FriendEventBeam, GhostBeam, MyBeam } from "./Beams";
@@ -59,7 +59,7 @@ export function DayView({
     (_clientX: number, clientY: number) => {
       const rect = track.current?.getBoundingClientRect();
       if (!rect) return null;
-      return { dayKey: day.dayKey, minute: minutesAt(clientY - rect.top, rect.height) };
+      return { dayKey: day.dayKey, minute: minutesAt(clientY - rect.top, rect.height), pxPerMinute: rect.height / VISIBLE_MINUTES };
     },
     [day.dayKey],
   );
@@ -70,6 +70,7 @@ export function DayView({
     touchDrag: "none",
     locate,
     itemByKey: (key) => myItems.get(key),
+    itemsOn: () => day.mine,
     canCreateOn: (dayKey) => dayKey >= today,
     onCreate,
     onChange,

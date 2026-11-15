@@ -2,6 +2,7 @@
  * Block overlap and the arithmetic behind dragging, resizing and stacking.
  */
 import { describe, expect, it } from "vitest";
+import { DAY_END_MIN, DAY_START_MIN } from "@/lib/constants";
 import {
   assignLanes,
   clusterOverlapping,
@@ -10,6 +11,7 @@ import {
   intersection,
   mergeIntervals,
   moveInterval,
+  nearestEdge,
   overlaps,
   peakWindow,
   rangeFromDrag,
@@ -18,6 +20,9 @@ import {
 } from "@/lib/calendar/intervals";
 
 const at = (startHour: number, endHour: number) => ({ startMin: startHour * 60, endMin: endHour * 60 });
+/** The first and last minute the calendar shows (8 AM and 11 PM). */
+const FIRST = DAY_START_MIN;
+const LAST = DAY_END_MIN;
 
 describe("overlap", () => {
   it("is true when two blocks share any time", () => {
@@ -64,10 +69,10 @@ describe("creating a block by dragging", () => {
   });
 
   it("stays inside the visible hours", () => {
-    expect(rangeFromDrag(200, 400)).toEqual({ startMin: 360, endMin: 420 }); // starts at 6 AM
-    expect(rangeFromDrag(1400, 1600)).toEqual({ startMin: 1380, endMin: 1440 }); // ends at the end of the day
-    expect(rangeFromDrag(1440, 1440)).toEqual({ startMin: 1410, endMin: 1440 }); // min length pushed back in
-    expect(rangeFromDrag(100, 100)).toEqual({ startMin: 360, endMin: 390 });
+    expect(rangeFromDrag(200, 520)).toEqual({ startMin: FIRST, endMin: 540 }); // starts at the first visible hour
+    expect(rangeFromDrag(1300, 1600)).toEqual({ startMin: 1290, endMin: LAST }); // ends at the last visible hour
+    expect(rangeFromDrag(LAST, LAST)).toEqual({ startMin: LAST - 30, endMin: LAST }); // min length pushed back in
+    expect(rangeFromDrag(100, 100)).toEqual({ startMin: FIRST, endMin: FIRST + 30 });
   });
 });
 
@@ -78,8 +83,8 @@ describe("moving a block", () => {
   });
 
   it("stops at the edges of the day instead of shrinking", () => {
-    expect(moveInterval(at(21, 23), 600)).toEqual(at(22, 24));
-    expect(moveInterval(at(7, 9), -600)).toEqual(at(6, 8));
+    expect(moveInterval(at(19, 21), 600)).toEqual({ startMin: LAST - 120, endMin: LAST });
+    expect(moveInterval(at(10, 12), -600)).toEqual({ startMin: FIRST, endMin: FIRST + 120 });
   });
 });
 
@@ -95,8 +100,8 @@ describe("resizing a block", () => {
   });
 
   it("cannot leave the visible hours", () => {
-    expect(resizeInterval(at(18, 20), "end", 3000)).toEqual(at(18, 24));
-    expect(resizeInterval(at(8, 10), "start", 0)).toEqual(at(6, 10));
+    expect(resizeInterval(at(18, 20), "end", 3000)).toEqual({ startMin: 18 * 60, endMin: LAST });
+    expect(resizeInterval(at(10, 12), "start", 0)).toEqual({ startMin: FIRST, endMin: 12 * 60 });
   });
 });
 
@@ -171,5 +176,28 @@ describe("stacking into lanes", () => {
     const { placed } = assignLanes([{ id: "friend-event", ...at(19, 21) }, { id: "other", ...at(10, 11) }], [mineInMainLane]);
     const lanes = Object.fromEntries(placed.map((p) => [p.id, p.lane]));
     expect(lanes).toEqual({ "friend-event": 1, other: 0 });
+  });
+});
+
+describe("grabbing the edge of a block from just beside it", () => {
+  const blocks = [{ id: "morning", ...at(9, 11) }, { id: "evening", ...at(18, 20) }];
+
+  it("finds the edge when the press is within reach, on either side", () => {
+    expect(nearestEdge(blocks, 11 * 60 + 20, 30)).toMatchObject({ block: { id: "morning" }, edge: "end" });
+    expect(nearestEdge(blocks, 17 * 60 + 45, 30)).toMatchObject({ block: { id: "evening" }, edge: "start" });
+    expect(nearestEdge(blocks, 11 * 60, 30)).toMatchObject({ block: { id: "morning" }, edge: "end" }); // right at the end
+  });
+
+  it("finds nothing when the press is further away, or inside a block", () => {
+    expect(nearestEdge(blocks, 14 * 60, 30)).toBeNull();
+    expect(nearestEdge(blocks, 11 * 60 + 31, 30)).toBeNull();
+    expect(nearestEdge(blocks, 10 * 60, 30)).toBeNull(); // inside the morning block: that is the block itself
+    expect(nearestEdge([], 600, 30)).toBeNull();
+  });
+
+  it("picks the closer edge when two blocks are both within reach", () => {
+    const close = [{ id: "a", ...at(9, 10) }, { id: "b", startMin: 10 * 60 + 40, endMin: 12 * 60 }];
+    expect(nearestEdge(close, 10 * 60 + 10, 45)).toMatchObject({ block: { id: "a" }, edge: "end" });
+    expect(nearestEdge(close, 10 * 60 + 30, 45)).toMatchObject({ block: { id: "b" }, edge: "start" });
   });
 });

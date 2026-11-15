@@ -171,7 +171,7 @@ export function GhostBeam({ ghost, style, vertical = false }: { ghost: Ghost; st
       style={style}
       className={`beam beam-ghost pointer-events-none z-[6] ${status ? STATUS_BEAM[status] : "beam-new"} ${vertical ? "vbeam" : ""}`}
     >
-      <span className={`plate absolute whitespace-nowrap ${vertical ? "left-1 top-1" : "-top-6 left-0"}`}>
+      <span className={`plate absolute whitespace-nowrap !px-2 !text-[19px] ${vertical ? "left-1 top-1" : "-top-9 left-0"}`}>
         {formatMinuteRange(ghost.startMin, ghost.endMin)}
       </span>
     </div>

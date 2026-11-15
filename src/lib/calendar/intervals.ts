@@ -197,3 +197,29 @@ export function assignLanes<T extends Interval>(
   });
   return { placed, laneCount: Math.max(1, lanes.length) };
 }
+
+/**
+ * Is this time just outside one of the blocks, close enough that the person
+ * probably meant to grab its edge? Returns the nearest such edge within
+ * `tolerance` minutes, or null. Times inside a block never match: that is the
+ * block itself, not the space beside it.
+ */
+export function nearestEdge<T extends Interval>(
+  blocks: readonly T[],
+  minute: number,
+  tolerance: number,
+): { block: T; edge: "start" | "end" } | null {
+  let best: { block: T; edge: "start" | "end"; distance: number } | null = null;
+  for (const block of blocks) {
+    const before = block.startMin - minute; // how far the point is before the block starts
+    const after = minute - block.endMin; // how far it is after the block ends
+    const candidate =
+      before > 0 && before <= tolerance
+        ? { block, edge: "start" as const, distance: before }
+        : after >= 0 && after <= tolerance
+          ? { block, edge: "end" as const, distance: after }
+          : null;
+    if (candidate && (!best || candidate.distance < best.distance)) best = candidate;
+  }
+  return best ? { block: best.block, edge: best.edge } : null;
+}

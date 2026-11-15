@@ -54,7 +54,7 @@ export function Toolbar({
   const clampDay = (day: DayKey) => (day < minDay ? minDay : day > maxDay ? maxDay : day);
 
   return (
-    <div className="space-y-2 px-2 py-2 sm:px-5">
+    <div className="calendar-toolbar space-y-2 px-2 py-2 sm:px-5">
       <div className="flex items-center gap-2">
         <Button size="sm" variant="dark" onClick={onToday}>
           Today

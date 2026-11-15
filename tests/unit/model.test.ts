@@ -4,6 +4,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { buildDayModels, expandBlocks, findSameTypeConflict, statusOf } from "@/lib/calendar/model";
+import { DAY_END_MIN, DAY_START_MIN } from "@/lib/constants";
 import { zonedToUtc } from "@/lib/time";
 import type { CalendarBlock, RsvpRow } from "@/lib/types";
 
@@ -202,21 +203,21 @@ describe("viewers in other time zones", () => {
     expect(model.friendFree[0]).toMatchObject({ startMin: 17 * 60, endMin: 20 * 60 });
   });
 
-  it("hide the part that falls before 6 AM or on the next day", () => {
+  it("hide the part that falls outside the visible hours or on the next day", () => {
     // 9–11:30 PM in Los Angeles is 12–2:30 AM the next day in New York: off the visible grid.
     const late = block("mika", "2026-11-18", 21, 23.5, {}, LA);
     expect(expandBlocks([late], ME, NY, MONDAY, 7)).toEqual([]);
 
-    // 7 PM–11 PM in Los Angeles is 10 PM–2 AM in New York: only 10 PM–midnight shows.
+    // 7 PM–11 PM in Los Angeles is 10 PM–2 AM in New York: only 10–11 PM shows.
     const straddling = block("mika", "2026-11-18", 19, 23, {}, LA);
     const items = expandBlocks([straddling], ME, NY, MONDAY, 7);
-    expect(items).toMatchObject([{ dayKey: "2026-11-18", startMin: 22 * 60, endMin: 1440, whole: false }]);
+    expect(items).toMatchObject([{ dayKey: "2026-11-18", startMin: 22 * 60, endMin: DAY_END_MIN, whole: false }]);
   });
 
   it("clip an early-morning block to the first visible hour", () => {
-    const early = block("mika", "2026-11-18", 5, 8);
+    const early = block("mika", "2026-11-18", 5, 10);
     const [item] = expandBlocks([early], ME, NY, MONDAY, 7);
-    expect(item).toMatchObject({ startMin: 6 * 60, endMin: 8 * 60, whole: false });
+    expect(item).toMatchObject({ startMin: DAY_START_MIN, endMin: 10 * 60, whole: false });
   });
 });
 
@@ -228,8 +229,8 @@ describe("the edges of the loaded range", () => {
   });
 
   it("includes the first and last day", () => {
-    const first = block(ME, "2026-11-16", 6, 7);
-    const last = block(ME, "2026-11-22", 23, 24);
+    const first = block(ME, "2026-11-16", 8, 9);
+    const last = block(ME, "2026-11-22", 22, 23);
     expect(expandBlocks([first, last], ME, NY, MONDAY, 7).map((i) => i.dayKey)).toEqual(["2026-11-16", "2026-11-22"]);
   });
 

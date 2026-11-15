@@ -5,11 +5,12 @@ import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { useFeedback } from "@/components/ui/Feedback";
+import { PixelIcon } from "@/components/ui/PixelIcon";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
 import { DAY_END_MIN, DAY_START_MIN, MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle } from "@/lib/event-icon";
-import { draftFromBlock, useBlockActions } from "@/lib/data/blocks";
+import { draftFromBlock, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
 import { formatDayKey, formatMinuteRange, formatMinutes, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
@@ -116,6 +117,7 @@ function EditorDialog({
 }: EditorProps & { state: EditorState }) {
   const { userId } = useSession();
   const actions = useBlockActions();
+  const places = useMyPlaces();
   const { toast, toastError, choose } = useFeedback();
   const ids = useId();
 
@@ -375,7 +377,44 @@ function EditorDialog({
             </div>
             <div>
               <label htmlFor={`${ids}-location`} className="label">Where</label>
-              <input id={`${ids}-location`} className="field" value={form.location} maxLength={200} placeholder="My place, 12 Elm St" onChange={(e) => set("location", e.target.value)} />
+              <input
+                id={`${ids}-location`}
+                className="field"
+                value={form.location}
+                maxLength={200}
+                placeholder="My place, 12 Elm St"
+                list={`${ids}-places`}
+                autoComplete="off"
+                onChange={(e) => set("location", e.target.value)}
+              />
+              {/* Typing also suggests from the same list. */}
+              <datalist id={`${ids}-places`}>
+                {places.map((place) => (
+                  <option key={place} value={place} />
+                ))}
+              </datalist>
+              {places.length > 0 && (
+                <div className="mt-2">
+                  <div className="label !mb-1">Places you&apos;ve used (tap to fill in)</div>
+                  <ul className="flex flex-wrap gap-2">
+                    {places.slice(0, 6).map((place) => (
+                      <li key={place} className="max-w-full">
+                        <button
+                          type="button"
+                          onClick={() => set("location", place)}
+                          aria-pressed={form.location.trim().toLowerCase() === place.toLowerCase()}
+                          className={`btn btn-sm tile max-w-full ${
+                            form.location.trim().toLowerCase() === place.toLowerCase() ? "tile-join" : "tile-dark"
+                          }`}
+                        >
+                          <PixelIcon name="pin" size={11} className="shrink-0" />
+                          <span className="truncate">{place}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <div>
               <label htmlFor={`${ids}-description`} className="label">Details</label>
