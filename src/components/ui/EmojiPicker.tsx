@@ -1,14 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, isDoorIcon } from "@/lib/event-icon";
+import { FAVORITE_ICONS, ICON_GROUPS, MAX_ICONS, iconAsText, joinIcons, splitIcons, toggleIcon } from "@/lib/event-icon";
 import { EventIcon } from "./EventIcon";
 import { PixelIcon } from "./PixelIcon";
 
 /**
- * Choose the icon for a hosted event: a short row of favourites (starting
- * with dropby's own green door), a longer list that can be expanded, and a
- * box for typing any other emoji. The lists live in lib/event-icon.ts.
+ * Choose the icon or icons for a hosted event.
+ *
+ * Tap an icon to add it; tap it again to take it off. The first one is the
+ * main icon: it suggests the title and is the one shown where space is tight.
+ * There is a short row of favourites (starting with dropby's own green door),
+ * a longer list that can be expanded, and a box for typing any other emoji.
+ * The lists live in lib/event-icon.ts.
  */
 export function EmojiPicker({
   value,
@@ -16,23 +20,32 @@ export function EmojiPicker({
   id,
 }: {
   value: string;
-  onChange: (icon: string) => void;
+  onChange: (icons: string) => void;
   id?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [full, setFull] = useState(false);
+  const selected = splitIcons(value);
+
+  const toggle = (icon: string) => {
+    const next = toggleIcon(selected, icon);
+    // Unchanged means there was no room for another one.
+    setFull(next.length === selected.length && !selected.includes(icon));
+    onChange(joinIcons(next));
+  };
 
   const choice = (icon: string, label: string, key: string) => {
-    const selected = value === icon;
+    const on = selected.includes(icon);
     return (
       <button
         key={key}
         type="button"
-        onClick={() => onChange(icon)}
+        onClick={() => toggle(icon)}
         aria-label={label}
         title={label}
-        aria-pressed={selected}
+        aria-pressed={on}
         className={`flex aspect-square min-h-[40px] items-center justify-center hover:bg-panel-3 ${
-          selected ? "bg-panel-3 outline outline-2 outline-join" : ""
+          on ? "bg-panel-3 outline outline-2 outline-join" : ""
         }`}
       >
         <EventIcon value={icon} size={24} />
@@ -42,13 +55,36 @@ export function EmojiPicker({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <span className="tile flex h-[52px] w-[52px] shrink-0 items-center justify-center" aria-hidden="true">
-          {value ? <EventIcon value={value} size={30} /> : <span className="text-[26px] leading-none">?</span>}
+      {/* what is chosen: the main icon large, then any others; tap one to remove it */}
+      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Chosen icons">
+        {selected.map((icon, index) => (
+          <button
+            key={`${icon}-${index}`}
+            type="button"
+            onClick={() => toggle(icon)}
+            aria-label={`Remove ${iconAsText(icon)}${index === 0 ? " (main icon)" : ""}`}
+            title="Tap to remove"
+            className={`tile relative flex shrink-0 items-center justify-center ${index === 0 ? "h-[52px] w-[52px]" : "h-10 w-10"}`}
+          >
+            <EventIcon value={icon} size={index === 0 ? 30 : 22} />
+            {selected.length > 1 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center border border-black bg-panel-3 text-ink" aria-hidden="true">
+                <PixelIcon name="x" size={8} />
+              </span>
+            )}
+          </button>
+        ))}
+        <span className="text-[17px] text-ink-faint" role="status">
+          {full
+            ? `That's the most that fit (${MAX_ICONS}). Remove one to add another.`
+            : selected.length > 1
+              ? "The first is the main icon."
+              : "Tap more icons below to add them."}
         </span>
-        <div className="slot grid flex-1 grid-cols-7 gap-1 p-1" role="group" aria-label="Favourite icons">
-          {FAVORITE_ICONS.map((icon) => choice(icon.value, icon.label, icon.value))}
-        </div>
+      </div>
+
+      <div className="slot grid grid-cols-7 gap-1 p-1" role="group" aria-label="Favourite icons">
+        {FAVORITE_ICONS.map((icon) => choice(icon.value, icon.label, icon.value))}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -62,9 +98,16 @@ export function EmojiPicker({
         <input
           id={id}
           className="field !min-h-[40px] !w-24 text-center"
-          // The door is drawn, not typed, so the box stays empty while it is selected.
-          value={isDoorIcon(value) ? "" : value}
-          onChange={(e) => onChange([...e.target.value.trim()].slice(-8).join("") || DOOR_ICON)}
+          // Whatever is typed is added to the chosen icons, and the box empties again.
+          value=""
+          onChange={(e) => {
+            let next = selected;
+            for (const icon of splitIcons(e.target.value)) {
+              if (!next.includes(icon)) next = toggleIcon(next, icon);
+            }
+            setFull(false);
+            onChange(joinIcons(next));
+          }}
           placeholder="🙂"
           inputMode="text"
           autoComplete="off"

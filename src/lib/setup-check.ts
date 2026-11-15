@@ -183,6 +183,20 @@ export async function runSetupChecks(): Promise<SetupCheck[]> {
     );
   }
 
+  if (databaseReady) {
+    const saved = await getJson(`${url}/rest/v1/saved_places?select=id&limit=0`, { headers: { apikey: publishable } });
+    const exists = !("error" in saved) && [200, 401, 403].includes(saved.status);
+    checks.push(
+      exists
+        ? { label: "Saved places", status: "ok", detail: "Table created." }
+        : {
+            label: "Saved places",
+            status: "todo",
+            detail: "Not switched on yet. Run the newest file in supabase/migrations (…saved_places.sql) in Supabase → SQL Editor.",
+          },
+    );
+  }
+
   // --- 4. the secret key in action, and the storage bucket --------------------
   if (secret && secretKind !== "publishable") {
     try {

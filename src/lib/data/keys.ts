@@ -7,6 +7,8 @@ export const keys = {
   blocks: ["blocks"] as const,
   /** Locations the viewer has used on their own events. */
   places: ["places"] as const,
+  /** The viewer's own nicknamed places. */
+  savedPlaces: ["saved-places"] as const,
   block: (id: string) => ["block", id] as const,
   blockPeople: (id: string) => ["block", id, "people"] as const,
   messages: (blockId: string) => ["block", blockId, "messages"] as const,

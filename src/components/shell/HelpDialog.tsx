@@ -19,24 +19,24 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
         <ul className="space-y-3">
           <li className="flex items-center gap-3">
             <Swatch kind="free" />
-            <span><strong className="text-free">Free</strong>: you&apos;re available. Friends see your avatar over that time.</span>
+            <span><strong className="text-free">Free</strong>: you&apos;re available. Friends can see your avatar over that time.</span>
           </li>
           <li className="flex items-center gap-3">
             <Swatch kind="join" />
-            <span><strong className="text-join">Join me</strong>: you&apos;re hosting something. Friends can say they&apos;re in and chat.</span>
+            <span><strong className="text-join">Join me</strong>: you&apos;re hosting something. Friends can see and join in.</span>
           </li>
           <li className="flex items-center gap-3">
             <Swatch kind="locked" />
-            <span><strong className="text-locked">Locked in</strong>: someone is joining. It&apos;s happening!</span>
+            <span><strong className="text-locked">Locked in</strong>: someone is joining your plan. It&apos;s happening!</span>
           </li>
         </ul>
         <div className="divider" />
         <ul className="list-disc space-y-2 pl-5 text-ink-dim">
-          <li><span className="text-ink">Add free time:</span> drag across a day (on a phone: press, hold, then drag). It appears straight away.</li>
+          <li><span className="text-ink">Add free time:</span> drag across a day to show when you&apos;re free.</li>
           <li><span className="text-ink">Host something:</span> tap your block, switch it to Join me and add the details.</li>
-          <li><span className="text-ink">Change it:</span> drag the middle to move it, drag an end to resize, tap to edit or delete.</li>
+          <li><span className="text-ink">Change it:</span> drag the middle to move it, drag an end to resize it, tap to edit or delete.</li>
           <li><span className="text-ink">Empty means busy.</span> Only add the times you want friends to see.</li>
-          <li><span className="text-ink">Sharing:</span> new blocks go to all your connections unless you pick people or groups.</li>
+          <li><span className="text-ink">Sharing:</span> new blocks share with all your connections unless you pick people or groups.</li>
           <li><span className="text-ink">Invite someone new:</span> open a block and use &quot;Invite by text&quot;. They get a link; signing up connects you.</li>
         </ul>
       </div>

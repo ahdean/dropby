@@ -126,6 +126,7 @@ Files are numbered by date; run any you haven't run yet, oldest first. Running a
 | --- | --- |
 | `20261111000100` … `000500` | Everything the first version needs (step 1.2 above) |
 | `20261114000100_direct_messages.sql` | Private messages between two people |
+| `20261115000100_saved_places.sql` | Your own list of nicknamed places ("Home") for filling in an event's location |
 
 (Developers: `npm run db:push` applies whatever is pending.)
 
@@ -245,6 +246,7 @@ No setup needed: the database tests start a real Postgres in memory (PGlite), ap
 | `tests/db/connections.test.ts` | Connections, mutuals, groups, blocking |
 | `tests/db/events.test.ts` | RSVPs, chat, notifications, invite links |
 | `tests/db/messages.test.ts` | Private messages: who can write to whom, privacy, quotes |
+| `tests/db/places.test.ts` | Saved places: private to their owner |
 | `tests/unit/time.test.ts` | UTC ↔ local time, daylight saving, splitting by day, formatting |
 | `tests/unit/recurrence.test.ts` | Weekly repeats across daylight-saving changes and time zones |
 | `tests/unit/intervals.test.ts` | Block overlap, snapping, dragging, resizing, stacking |
@@ -291,7 +293,8 @@ Inviting someone who isn't on dropby creates an unguessable link and a ready-wri
 
 ### Small conveniences
 
-- **Places you've used.** When hosting, the "Where" field offers the locations already on your own events, most used first. Nothing extra is stored (`src/lib/places.ts`).
+- **Saved places.** Keep a private list of nicknamed places ("Home" → the full address) on the profile page or from the event editor ("Manage"). When hosting, tap one to fill in "Where"; guests see the address, never your nickname. The editor also offers locations typed on your earlier events ("Used before").
+- **Several icons.** An event can carry up to four icons; the first is the main one, which suggests the title and is the one drawn where space is tight.
 - **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
 - **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
 
@@ -329,6 +332,7 @@ src/lib/                 Logic with no screens in it (all unit-tested)
 src/components/
   calendar/                week grid, day view, editor, quick look, sharing picker, invite dialog, drag gestures
   messages/                private conversations and the inbox
+  places/                  managing saved places
   event/                   event page and chat
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome

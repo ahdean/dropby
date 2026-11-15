@@ -47,7 +47,7 @@ function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }
     >
       <span className="plate">
         {status === "locked" && <PixelIcon name="lock" size={11} className="shrink-0 text-locked" />}
-        <EventIcon value={block.emoji} size={17} />
+        <EventIcon value={block.emoji} size={17} max={2} />
         {text && <span className="truncate">{text}</span>}
         {status === "locked" && inCount > 0 && <span className="shrink-0 text-locked">+{inCount}</span>}
         {block.repeat_weekly && <PixelIcon name="repeat" size={10} className="shrink-0 text-ink-faint" />}
@@ -126,7 +126,7 @@ export function FriendEventBeam({
         vertical ? "flex-col items-start py-1" : ""
       }`}
     >
-      <EventIcon value={item.block.emoji} size={17} />
+      <EventIcon value={item.block.emoji} size={17} max={1} />
       <Avatar person={host} size={16} className="shrink-0" />
       {item.status === "locked" && <PixelIcon name="lock" size={10} className="shrink-0 text-locked" />}
       {item.block.title && <span className="truncate text-[16px] leading-none text-ink">{item.block.title}</span>}

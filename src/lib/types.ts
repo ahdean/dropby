@@ -114,6 +114,15 @@ export interface NotificationRow {
   created_at: string;
 }
 
+/** A place the viewer saved, with a nickname. Private to them. */
+export interface SavedPlace {
+  id: string;
+  /** The nickname, e.g. "Home". */
+  name: string;
+  /** What is put into an event's "Where" field. */
+  address: string;
+}
+
 /** What a private message quotes: a snapshot of a block, written by the database. */
 export interface MessageQuote {
   owner_id: string;

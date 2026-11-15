@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { PlacesManager } from "@/components/places/PlacesManager";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { errorMessage, useFeedback } from "@/components/ui/Feedback";
@@ -154,6 +155,10 @@ export function ProfileScreen() {
             Save password
           </Button>
         </form>
+      </Card>
+
+      <Card title="Saved places">
+        <PlacesManager />
       </Card>
 
       <Card title="This device">

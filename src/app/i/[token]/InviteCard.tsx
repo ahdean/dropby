@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { EventIcon } from "@/components/ui/EventIcon";
+import { HeroEventIcon } from "@/components/ui/EventIcon";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { INVITE_COOKIE } from "@/lib/constants";
 import { occurrenceAt } from "@/lib/recurrence";
@@ -69,7 +69,7 @@ export function InviteCard({ token, preview }: { token: string; preview: InviteP
             <div className="flex items-start gap-4">
               {isEvent && (
                 <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none" aria-hidden="true">
-                  <EventIcon value={block.emoji} size={48} />
+                  <HeroEventIcon value={block.emoji} />
                 </span>
               )}
               <div className="min-w-0">

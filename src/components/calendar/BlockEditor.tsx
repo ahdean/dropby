@@ -9,8 +9,10 @@ import { PixelIcon } from "@/components/ui/PixelIcon";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
 import { DAY_END_MIN, DAY_START_MIN, MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
-import { DOOR_ICON, defaultTitleFor, isAutomaticTitle } from "@/lib/event-icon";
+import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
+import { PlacesDialog } from "@/components/places/PlacesManager";
 import { draftFromBlock, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
+import { useSavedPlaces } from "@/lib/data/saved-places";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
 import { formatDayKey, formatMinuteRange, formatMinutes, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
@@ -73,6 +75,11 @@ function initialForm(state: EditorState, zone: string): Form {
   };
 }
 
+/** The same place, give or take capitals and spaces? */
+function sameText(a: string, b: string): boolean {
+  return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
 /** Half-hour choices between two times, plus the current value if it is off the grid. */
 function timeOptions(from: number, to: number, current: number): number[] {
   const options = new Set<number>([current]);
@@ -118,6 +125,10 @@ function EditorDialog({
   const { userId } = useSession();
   const actions = useBlockActions();
   const places = useMyPlaces();
+  const { places: savedPlaces } = useSavedPlaces();
+  // Places typed on earlier events that have not been saved under a nickname.
+  const usedPlaces = places.filter((place) => !savedPlaces.some((saved) => sameText(saved.address, place)));
+  const [placesOpen, setPlacesOpen] = useState<"save" | "manage" | null>(null);
   const { toast, toastError, choose } = useFeedback();
   const ids = useId();
 
@@ -139,9 +150,15 @@ function EditorDialog({
     [form.startMin, form.endMin],
   );
 
-  /** Picking an icon fills in its usual title, unless the person has typed their own. */
+  /**
+   * Icons were added or removed. If the main (first) icon changed, fill in its
+   * usual title, unless the person has typed their own.
+   */
   const changeIcon = (emoji: string) =>
-    setForm((f) => ({ ...f, emoji, title: isAutomaticTitle(f.title) ? defaultTitleFor(emoji) : f.title }));
+    setForm((f) => {
+      const mainChanged = splitIcons(emoji)[0] !== splitIcons(f.emoji)[0];
+      return { ...f, emoji, title: mainChanged && isAutomaticTitle(f.title) ? defaultTitleFor(emoji) : f.title };
+    });
 
   /** Free → Join me: start from the door and its title. A note typed on the Free block is kept as the title. */
   const changeType = (type: BlockType) =>
@@ -368,7 +385,7 @@ function EditorDialog({
           <fieldset className="space-y-3">
             <legend className="label">The plan</legend>
             <div>
-              <div className="label">Icon</div>
+              <div className="label">Icons</div>
               <EmojiPicker value={form.emoji} onChange={changeIcon} />
             </div>
             <div>
@@ -393,21 +410,54 @@ function EditorDialog({
                   <option key={place} value={place} />
                 ))}
               </datalist>
-              {places.length > 0 && (
+              {/* Your own saved places, by nickname. Tapping one fills in its address. */}
+              <div className="mt-2">
+                <div className="label !mb-1">Saved places</div>
+                <ul className="flex flex-wrap items-center gap-2">
+                  {savedPlaces.map((place) => {
+                    const chosen = sameText(form.location, place.address);
+                    return (
+                      <li key={place.id} className="max-w-full">
+                        <button
+                          type="button"
+                          onClick={() => set("location", place.address)}
+                          aria-pressed={chosen}
+                          title={place.address}
+                          className={`btn btn-sm tile max-w-full ${chosen ? "tile-join" : "tile-dark"}`}
+                        >
+                          <PixelIcon name="pin" size={11} className="shrink-0" />
+                          <span className="truncate">{place.name}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                  {form.location.trim() !== "" && !savedPlaces.some((place) => sameText(form.location, place.address)) && (
+                    <li>
+                      <button type="button" className="btn btn-sm tile tile-dark" onClick={() => setPlacesOpen("save")}>
+                        <PixelIcon name="plus" size={11} />
+                        Save this place
+                      </button>
+                    </li>
+                  )}
+                  <li>
+                    <button type="button" className="btn-ghost" onClick={() => setPlacesOpen("manage")}>
+                      Manage
+                    </button>
+                  </li>
+                </ul>
+              </div>
+              {usedPlaces.length > 0 && (
                 <div className="mt-2">
-                  <div className="label !mb-1">Places you&apos;ve used (tap to fill in)</div>
+                  <div className="label !mb-1">Used before</div>
                   <ul className="flex flex-wrap gap-2">
-                    {places.slice(0, 6).map((place) => (
+                    {usedPlaces.slice(0, 5).map((place) => (
                       <li key={place} className="max-w-full">
                         <button
                           type="button"
                           onClick={() => set("location", place)}
-                          aria-pressed={form.location.trim().toLowerCase() === place.toLowerCase()}
-                          className={`btn btn-sm tile max-w-full ${
-                            form.location.trim().toLowerCase() === place.toLowerCase() ? "tile-join" : "tile-dark"
-                          }`}
+                          aria-pressed={sameText(form.location, place)}
+                          className={`btn btn-sm tile max-w-full ${sameText(form.location, place) ? "tile-join" : "tile-dark"}`}
                         >
-                          <PixelIcon name="pin" size={11} className="shrink-0" />
                           <span className="truncate">{place}</span>
                         </button>
                       </li>
@@ -445,6 +495,11 @@ function EditorDialog({
           </p>
         )}
       </form>
+      <PlacesDialog
+        open={placesOpen !== null}
+        onClose={() => setPlacesOpen(null)}
+        suggestedAddress={placesOpen === "save" ? form.location.trim() : undefined}
+      />
     </Dialog>
   );
 }

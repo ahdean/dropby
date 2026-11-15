@@ -98,7 +98,7 @@ function QuoteCard({
   const content = (
     <>
       <span className={`mt-0.5 shrink-0 ${isEvent ? "text-join" : "text-free"}`}>
-        {isEvent && quote.emoji ? <EventIcon value={quote.emoji} size={16} /> : <PixelIcon name="clock" size={13} />}
+        {isEvent && quote.emoji ? <EventIcon value={quote.emoji} size={16} max={1} /> : <PixelIcon name="clock" size={13} />}
       </span>
       <span className="min-w-0">
         <span className="block truncate text-ink">

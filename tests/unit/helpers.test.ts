@@ -3,7 +3,20 @@
  */
 import { describe, expect, it } from "vitest";
 import { avatarColor, AVATAR_COLORS, initialsOf } from "@/lib/avatar";
-import { DOOR_ICON, FAVORITE_ICONS, ICON_GROUPS, defaultTitleFor, iconAsText, isAutomaticTitle, isDoorIcon } from "@/lib/event-icon";
+import {
+  DOOR_ICON,
+  FAVORITE_ICONS,
+  ICON_GROUPS,
+  MAX_ICONS,
+  defaultTitleFor,
+  iconAsText,
+  iconsFit,
+  isAutomaticTitle,
+  isDoorIcon,
+  joinIcons,
+  splitIcons,
+  toggleIcon,
+} from "@/lib/event-icon";
 import { formatUsPhone, formatUsPhoneInput, normalizeUsPhone } from "@/lib/phone";
 import { rankPlaces } from "@/lib/places";
 import { describeWhen, inviteMessage, inviteUrl, smsHref } from "@/lib/share";
@@ -78,6 +91,38 @@ describe("invite text", () => {
     expect(isAutomaticTitle("")).toBe(true);
     expect(isAutomaticTitle(" House Hang ")).toBe(true);
     expect(isAutomaticTitle("Sam's birthday")).toBe(false);
+  });
+
+  it("lets an event carry several icons, main one first", () => {
+    expect(splitIcons(`${DOOR_ICON}🍕🎲`)).toEqual([DOOR_ICON, "🍕", "🎲"]);
+    expect(splitIcons("🍕")).toEqual(["🍕"]);
+    expect(splitIcons("")).toEqual([]);
+    expect(splitIcons(null)).toEqual([]);
+    // An emoji made of several parts (a cook, a weightlifter with its variation mark) stays one icon.
+    expect(splitIcons("🧑‍🍳🏋️")).toEqual(["🧑‍🍳", "🏋️"]);
+    expect(joinIcons(splitIcons(`🏠${DOOR_ICON}🍕`))).toBe(`🏠${DOOR_ICON}🍕`);
+    expect(iconAsText(`${DOOR_ICON}🍕`)).toBe("🚪🍕");
+    // The suggested title follows the main icon only.
+    expect(defaultTitleFor(`🏠🍕`)).toBe("house hang");
+    expect(defaultTitleFor(`🍕🏠`)).toBe("");
+  });
+
+  it("adds an icon on the first tap and removes it on the second, always keeping at least one", () => {
+    expect(toggleIcon([DOOR_ICON], "🍕")).toEqual([DOOR_ICON, "🍕"]);
+    expect(toggleIcon([DOOR_ICON, "🍕"], DOOR_ICON)).toEqual(["🍕"]);
+    expect(toggleIcon(["🍕"], "🍕")).toEqual([DOOR_ICON]); // the last one is replaced by the door
+    expect(toggleIcon([DOOR_ICON], DOOR_ICON)).toEqual([DOOR_ICON]);
+  });
+
+  it("stops at four icons, or sooner if they would not fit the database field", () => {
+    const four = ["🍕", "🎲", "🍺", "🎉"];
+    expect(iconsFit(four)).toBe(true);
+    expect(toggleIcon(four, "🏠")).toEqual(four); // unchanged: no room
+    expect(four.length).toBe(MAX_ICONS);
+    // Long built-up emoji use many characters each: three families already overflow 16.
+    const family = "👨‍👩‍👧‍👦";
+    expect(iconsFit([family, family])).toBe(true);
+    expect(iconsFit([family, family, family])).toBe(false);
   });
 
   it("offers the door first among the favourite icons, and no icon twice", () => {

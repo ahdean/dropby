@@ -8,7 +8,7 @@ import { InviteDialog } from "@/components/calendar/InviteDialog";
 import { useMessaging } from "@/components/messages/Messaging";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
-import { EventIcon } from "@/components/ui/EventIcon";
+import { HeroEventIcon } from "@/components/ui/EventIcon";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { statusOf } from "@/lib/calendar/model";
@@ -189,7 +189,7 @@ export function EventScreen() {
         <div className="space-y-4 p-4 sm:p-6">
           <div className="flex items-start gap-4">
             <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none sm:h-24 sm:w-24 sm:text-[58px]" aria-hidden="true">
-              <EventIcon value={block.emoji} size={52} />
+              <HeroEventIcon value={block.emoji} />
             </span>
             <div className="min-w-0 flex-1">
               <p className={`mb-2 inline-flex items-center gap-2 font-display text-[9px] uppercase ${locked ? "text-locked" : "text-join"}`}>
