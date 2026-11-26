@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChatBox, ChatList, EVERYONE, useBlockChat, type ChatTarget } from "@/components/event/Chat";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -27,23 +27,23 @@ export interface SheetRequest {
 }
 
 /**
- * The one window for a block, opened by tapping it on the calendar (or from a
- * notification or a link): what, when, where, who's in, and its chat, with a
- * message box always at the bottom. Your own blocks also get Edit and Invite.
+ * The window for a friend's block, opened by tapping it on the calendar (or
+ * from a notification or a link): what, when, where, who's in, and its chat,
+ * with a message box always at the bottom. Your own blocks open straight in
+ * the editor instead (which has the chat at its bottom), so a link to one of
+ * yours is handed over to `onOwnBlock`.
  */
 export function BlockSheet({
   request,
   zone,
   onClose,
-  onEdit,
-  onInvite,
+  onOwnBlock,
 }: {
   /** Null closes the window. */
   request: SheetRequest | null;
   zone: string;
   onClose: () => void;
-  onEdit: (block: CalendarBlock, occurrence: Occurrence) => void;
-  onInvite: (block: CalendarBlock, occurrence: number) => void;
+  onOwnBlock: (block: CalendarBlock, occurrence: Occurrence, to: string | null) => void;
 }) {
   if (!request) return null;
   return (
@@ -53,8 +53,7 @@ export function BlockSheet({
       request={request}
       zone={zone}
       onClose={onClose}
-      onEdit={onEdit}
-      onInvite={onInvite}
+      onOwnBlock={onOwnBlock}
     />
   );
 }
@@ -63,16 +62,27 @@ function SheetLoader({
   request,
   zone,
   onClose,
-  onEdit,
-  onInvite,
+  onOwnBlock,
 }: {
   request: SheetRequest;
   zone: string;
   onClose: () => void;
-  onEdit: (block: CalendarBlock, occurrence: Occurrence) => void;
-  onInvite: (block: CalendarBlock, occurrence: number) => void;
+  onOwnBlock: (block: CalendarBlock, occurrence: Occurrence, to: string | null) => void;
 }) {
+  const { userId } = useSession();
   const { data: block, isLoading } = useBlock(request.blockId);
+  const occurrence = !block
+    ? null
+    : request.occurrence !== undefined && occurrenceExists(block, request.occurrence)
+      ? occurrenceAt(block, request.occurrence)
+      : nextOccurrence(block);
+  const own = Boolean(block && occurrence && block.owner_id === userId);
+  // A link to one of your own blocks opens it in the editor.
+  useEffect(() => {
+    if (own && block && occurrence) onOwnBlock(block, occurrence, request.to ?? null);
+  }, [block, occurrence, onOwnBlock, own, request.to]);
+  if (own) return null;
+
   if (!block) {
     return (
       <Dialog open onClose={onClose} title={isLoading ? "Loading…" : "Not available"}>
@@ -82,10 +92,6 @@ function SheetLoader({
       </Dialog>
     );
   }
-  const occurrence =
-    request.occurrence !== undefined && occurrenceExists(block, request.occurrence)
-      ? occurrenceAt(block, request.occurrence)
-      : nextOccurrence(block);
   if (!occurrence) {
     return (
       <Dialog open onClose={onClose} title="Not available">
@@ -100,8 +106,6 @@ function SheetLoader({
       initialTo={request.to ?? EVERYONE}
       zone={zone}
       onClose={onClose}
-      onEdit={onEdit}
-      onInvite={onInvite}
     />
   );
 }
@@ -112,16 +116,12 @@ function Sheet({
   initialTo,
   zone,
   onClose,
-  onEdit,
-  onInvite,
 }: {
   block: CalendarBlock;
   occurrence: Occurrence;
   initialTo: ChatTarget;
   zone: string;
   onClose: () => void;
-  onEdit: (block: CalendarBlock, occurrence: Occurrence) => void;
-  onInvite: (block: CalendarBlock, occurrence: number) => void;
 }) {
   const { userId } = useSession();
   const actions = useBlockActions();
@@ -245,17 +245,6 @@ function Sheet({
                 </>
               )}
             </div>
-          </div>
-        )}
-
-        {isHost && (
-          <div className="flex gap-2">
-            <Button variant="stone" size="sm" icon="edit" onClick={() => onEdit(block, occurrence)}>
-              Edit
-            </Button>
-            <Button variant="dark" size="sm" icon="send" onClick={() => onInvite(block, occurrence.index)}>
-              Invite
-            </Button>
           </div>
         )}
 

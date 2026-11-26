@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
@@ -21,11 +21,21 @@ import type { BlockDraft, BlockType, CalendarBlock, Group, Profile } from "@/lib
 import { EVERYONE } from "@/lib/audience";
 import { AudiencePicker, type AudienceValue } from "./AudiencePicker";
 import { PictureField } from "./PictureField";
+import { ChatBox, ChatList, EVERYONE as CHAT_EVERYONE, useBlockChat, type ChatTarget } from "@/components/event/Chat";
+import { AvatarStack } from "@/components/ui/Avatar";
 import type { DayRange } from "./useBlockGestures";
 
 export type EditorState =
   | { mode: "create"; range: DayRange; preset?: { type?: BlockType; emoji?: string; title?: string; audience?: AudienceValue } }
-  | { mode: "edit"; block: CalendarBlock; occurrence: Occurrence };
+  | {
+      mode: "edit";
+      block: CalendarBlock;
+      occurrence: Occurrence;
+      /** Start the chat's message box on a private message to this person. */
+      chatTo?: string | null;
+      /** Scroll down to the chat when opening (from a chat notification). */
+      focusChat?: boolean;
+    };
 
 /** The longest a block may be (the database allows up to 24 hours). */
 const MAX_BLOCK_MINUTES = 24 * 60;
@@ -556,11 +566,67 @@ function EditorDialog({
       footer={footer}
     >
       {details}
+      {/* The block's chat, at the bottom (outside the form: it has its own message box). */}
+      {editing && (
+        <EditorChat block={editing.block} occurrence={editing.occurrence} chatTo={editing.chatTo ?? null} focus={Boolean(editing.focusChat)} zone={zone} />
+      )}
       <PlacesDialog
         open={placesOpen !== null}
         onClose={() => setPlacesOpen(null)}
         suggestedAddress={placesOpen === "save" ? form.location.trim() : undefined}
       />
     </Dialog>
+  );
+}
+
+/**
+ * The bottom of the editor: for an event, who's in; then the block's chat,
+ * so it can be read and answered right where the block is edited.
+ */
+function EditorChat({
+  block,
+  occurrence,
+  chatTo,
+  focus,
+  zone,
+}: {
+  block: CalendarBlock;
+  occurrence: Occurrence;
+  chatTo: string | null;
+  focus: boolean;
+  zone: string;
+}) {
+  const chat = useBlockChat(block, occurrence.index);
+  const [to, setTo] = useState<ChatTarget>(chatTo ?? CHAT_EVERYONE);
+  const section = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (focus) section.current?.scrollIntoView({ block: "start" });
+  }, [focus]);
+
+  const answers = block.rsvps.filter((r) => r.occurrence === occurrence.index);
+  const going = answers.filter((r) => r.status === "in").map((r) => chat.people.get(r.user_id));
+  const notGoing = answers.filter((r) => r.status === "out").length;
+
+  return (
+    <section ref={section} aria-label="Chat" className="mt-5 space-y-3 border-t-2 border-black pt-4">
+      {block.type === "join" && block.rsvp_enabled && (
+        <div className="flex flex-wrap items-center gap-2 text-[18px] text-ink-dim">
+          <span className="label !mb-0">Who&apos;s in</span>
+          {going.length === 0 ? (
+            <span>Nobody yet.</span>
+          ) : (
+            <>
+              <AvatarStack people={going} size={24} max={6} />
+              <span title={going.map((p) => p?.name ?? "Someone").join(", ")}>
+                {going.length} in{notGoing > 0 ? ` · ${notGoing} can't` : ""}
+              </span>
+            </>
+          )}
+        </div>
+      )}
+      <div className="label !mb-0">Chat</div>
+      <ChatList chat={chat} block={block} zone={zone} />
+      <ChatBox chat={chat} block={block} to={to} onTo={setTo} />
+    </section>
   );
 }

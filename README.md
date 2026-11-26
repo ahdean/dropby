@@ -323,12 +323,15 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 
 ### Chats in blocks
 
-Tapping any block on the calendar, an event or Free time, yours or a friend's, opens one window over the calendar: when and where, who's in (with "I'm in" / "Can't make it" for friends' events), **Edit** and **Invite** for your own blocks, and the block's chat, with a message box always at the bottom. A friend's free time opens the same window from the list that appears when you tap their faces.
+One tap on a block opens everything about it, over the calendar:
+
+- **Your own block** (Free time or an event) opens straight in the editor. Its chat is at the bottom, under the form, with its own message box; for an event, who's in is shown there too.
+- **A friend's block** opens a window with when and where, "I'm in" / "Can't make it" for events, and the chat at the bottom. A friend's free time opens the same window from the list that appears when you tap their faces.
 
 - Comments go to **everyone** who can see the block. A weekly repeat has a separate chat for each week, like its RSVPs.
 - The **To** choice next to the message box sends a message **privately** to one person instead. Private messages appear in the same list with a lock, and only the two people can see them. You can write privately to someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
 
-Links to a block (from the bell, a quoted message, or an old `/e/…` page link) open the calendar with that window. A private-message notification opens it with the message box set to answer that person.
+Links to a block (from the bell, a quoted message, or an old `/e/…` page link) open the calendar with that block open: the editor for your own (scrolled to the chat), the window for a friend's. A private-message notification sets the message box to answer that person.
 
 ### Private messages
 
@@ -369,7 +372,7 @@ src/components/
   calendar/                week grid, day view, editor, quick look, sharing picker, invite dialog, drag gestures
   messages/                private conversations and the inbox
   places/                  managing saved places
-  event/Chat.tsx           a block's chat (comments and private messages); the window itself is calendar/EventPeek.tsx
+  event/Chat.tsx           a block's chat (comments and private messages), shown in the editor and in calendar/EventPeek.tsx
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome
   ui/                      buttons, dialogs, avatars, pixel icons

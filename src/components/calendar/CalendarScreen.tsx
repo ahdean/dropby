@@ -21,6 +21,7 @@ import {
   WEEKS_PER_LOAD,
 } from "@/lib/constants";
 import { useBlockActions, useCalendarBlocks } from "@/lib/data/blocks";
+import type { Occurrence } from "@/lib/recurrence";
 import { useProfiles } from "@/lib/data/profiles";
 import { useSession } from "@/lib/data/session";
 import { useConnections, useGroups } from "@/lib/data/social";
@@ -263,9 +264,19 @@ export function CalendarScreen() {
     [actions, blocks, toast, toastError, userId, zone],
   );
 
-  /** Tapping any block opens its window: details, and its chat with a message box. */
+  /**
+   * Tapping a block: your own opens straight in the editor (its chat is at the
+   * bottom); a friend's opens its window, with details and the chat.
+   */
   const openItem = useCallback((item: CalendarItem) => {
-    setSheet({ blockId: item.block.id, occurrence: item.occurrence.index });
+    if (item.mine) setEditor({ mode: "edit", block: item.block, occurrence: item.occurrence });
+    else setSheet({ blockId: item.block.id, occurrence: item.occurrence.index });
+  }, []);
+
+  /** A link (notification, quoted message) to one of your own blocks: the editor, scrolled to its chat. */
+  const openOwnFromLink = useCallback((block: CalendarBlock, occurrence: Occurrence, to: string | null) => {
+    setSheet(null);
+    setEditor({ mode: "edit", block, occurrence, chatTo: to, focusChat: true });
   }, []);
 
   /** Something outside the week grid's hours: open it as if it had been tapped on the calendar. */
@@ -459,14 +470,7 @@ export function CalendarScreen() {
           // Opened from a link: tidy the address, so going back doesn't reopen it.
           if (blockParam) router.replace("/", { scroll: false });
         }}
-        onEdit={(block, occurrence) => {
-          setSheet(null);
-          setEditor({ mode: "edit", block, occurrence });
-        }}
-        onInvite={(block, occurrence) => {
-          setSheet(null);
-          setInvite({ blockId: block.id, occurrence });
-        }}
+        onOwnBlock={openOwnFromLink}
       />
       <OffscreenDialog
         list={offscreen}
