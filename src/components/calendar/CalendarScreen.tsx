@@ -1,8 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useMessaging } from "@/components/messages/Messaging";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
@@ -26,7 +25,6 @@ import { useProfiles } from "@/lib/data/profiles";
 import { useSession } from "@/lib/data/session";
 import { useConnections, useGroups } from "@/lib/data/social";
 import { DOOR_ICON, defaultTitleFor } from "@/lib/event-icon";
-import type { Occurrence } from "@/lib/recurrence";
 import {
   addDays,
   diffDays,
@@ -44,8 +42,7 @@ import type { CalendarBlock, Profile } from "@/lib/types";
 import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
 import { DayView } from "./DayView";
-import { BlockPeek } from "./EventPeek";
-import type { SheetTab } from "@/components/event/Chat";
+import { BlockSheet, type SheetRequest } from "./EventPeek";
 import { FriendsDialog } from "./FriendsDialog";
 import { InviteDialog } from "./InviteDialog";
 import { OffscreenDialog, type OffscreenList } from "./OffscreenDialog";
@@ -88,11 +85,11 @@ function weeksAround(week: number): LoadedWeeks {
  * below only draw and report gestures.
  */
 export function CalendarScreen() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { userId } = useSession();
   const { toast, toastError, choose } = useFeedback();
   const actions = useBlockActions();
-  const messaging = useMessaging();
 
   const zone = useZone();
   const now = useNow();
@@ -206,12 +203,25 @@ export function CalendarScreen() {
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [cluster, setCluster] = useState<FriendFreeCluster | null>(null);
   /** The quick look over the calendar (events, and friends' free time), and which tab it opens on. */
-  const [peek, setPeek] = useState<{ blockId: string; occurrence: Occurrence; tab?: SheetTab } | null>(null);
+  /** The window of the block that was tapped (or linked to). */
+  const [sheet, setSheet] = useState<SheetRequest | null>(null);
+
+  // A link such as /?block=<id>&o=2&with=<person> (from a notification, a
+  // quoted message or an old event-page link) opens that block's window.
+  const blockParam = searchParams.get("block");
+  const linkKey = blockParam ? `${blockParam}:${searchParams.get("o") ?? ""}:${searchParams.get("with") ?? ""}` : null;
+  const [handledLink, setHandledLink] = useState<string | null>(null);
+  if (linkKey !== handledLink) {
+    setHandledLink(linkKey);
+    if (blockParam) {
+      const o = Number(searchParams.get("o"));
+      setSheet({ blockId: blockParam, occurrence: Number.isInteger(o) && o >= 0 ? o : undefined, to: searchParams.get("with") });
+    }
+  }
   const [invite, setInvite] = useState<{ blockId: string; occurrence: number } | null>(null);
   const [offscreen, setOffscreen] = useState<OffscreenList | null>(null);
   const inviteBlock = invite ? (blocks.find((b) => b.id === invite.blockId) ?? null) : null;
   // Read from the live list, so the card reflects an answer the moment it is given.
-  const peekBlock = peek ? (blocks.find((b) => b.id === peek.blockId) ?? null) : null;
 
   /**
    * Dragging across a day, or tapping an empty spot, makes a Free block on the
@@ -253,14 +263,9 @@ export function CalendarScreen() {
     [actions, blocks, toast, toastError, userId, zone],
   );
 
+  /** Tapping any block opens its window: details, and its chat with a message box. */
   const openItem = useCallback((item: CalendarItem) => {
-    if (item.mine && item.block.type === "free") {
-      // Your own free time: straight into editing it (its chat is a tab there).
-      setEditor({ mode: "edit", block: item.block, occurrence: item.occurrence });
-    } else if (item.block.type === "join") {
-      // An event, yours or a friend's: a quick look with its chat, right here.
-      setPeek({ blockId: item.block.id, occurrence: item.occurrence });
-    }
+    setSheet({ blockId: item.block.id, occurrence: item.occurrence.index });
   }, []);
 
   /** Something outside the week grid's hours: open it as if it had been tapped on the calendar. */
@@ -441,29 +446,26 @@ export function CalendarScreen() {
         profiles={profiles}
         onClose={() => setCluster(null)}
         onHost={hostFor}
-        onMessage={(friendId, item) => {
+        onOpen={(item) => {
           setCluster(null);
-          messaging.openThread(friendId, { blockId: item.block.id, occurrence: item.occurrence.index });
-        }}
-        onChat={(item) => {
-          setCluster(null);
-          setPeek({ blockId: item.block.id, occurrence: item.occurrence, tab: "everyone" });
+          setSheet({ blockId: item.block.id, occurrence: item.occurrence.index });
         }}
       />
-      <BlockPeek
-        block={peekBlock}
-        occurrence={peek?.occurrence ?? null}
-        host={peekBlock ? profiles.get(peekBlock.owner_id) : undefined}
+      <BlockSheet
+        request={sheet}
         zone={zone}
-        initialTab={peek?.tab}
-        onClose={() => setPeek(null)}
-        onMessageHost={(block, occurrence) => {
-          setPeek(null);
-          messaging.openThread(block.owner_id, { blockId: block.id, occurrence: occurrence.index });
+        onClose={() => {
+          setSheet(null);
+          // Opened from a link: tidy the address, so going back doesn't reopen it.
+          if (blockParam) router.replace("/", { scroll: false });
         }}
         onEdit={(block, occurrence) => {
-          setPeek(null);
+          setSheet(null);
           setEditor({ mode: "edit", block, occurrence });
+        }}
+        onInvite={(block, occurrence) => {
+          setSheet(null);
+          setInvite({ blockId: block.id, occurrence });
         }}
       />
       <OffscreenDialog

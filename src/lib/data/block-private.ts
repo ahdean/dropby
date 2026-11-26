@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo } from "react";
+import { useEffect, useId, useMemo } from "react";
 import { getSupabase } from "../supabase/client";
 import type { BlockPrivateMessage } from "../types";
 import { isBlockChatsNotSetUp } from "./events";
@@ -24,6 +24,8 @@ export interface PrivateConversation {
 export function useBlockPrivateMessages(blockId: string, occurrence: number, userId: string) {
   const queryClient = useQueryClient();
   const key = keys.blockPrivate(blockId, occurrence);
+  // Each use gets its own channel name: two subscriptions under one name crash the page.
+  const instance = useId();
 
   const query = useQuery({
     queryKey: key,
@@ -46,7 +48,7 @@ export function useBlockPrivateMessages(blockId: string, occurrence: number, use
   useEffect(() => {
     const supabase = getSupabase();
     const channel = supabase
-      .channel(`block-private:${blockId}:${occurrence}`)
+      .channel(`block-private:${blockId}:${occurrence}:${instance}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "block_private_messages", filter: `block_id=eq.${blockId}` },
@@ -56,7 +58,7 @@ export function useBlockPrivateMessages(blockId: string, occurrence: number, use
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [blockId, occurrence, queryClient]);
+  }, [blockId, instance, occurrence, queryClient]);
 
   const conversations = useMemo(() => {
     const byPerson = new Map<string, PrivateConversation>();
@@ -72,6 +74,8 @@ export function useBlockPrivateMessages(blockId: string, occurrence: number, use
   }, [query.data, userId]);
 
   return {
+    /** Every private message the viewer can see here, oldest first. */
+    messages: query.data ?? EMPTY_PRIVATE,
     conversations,
     unread: conversations.reduce((sum, c) => sum + c.unread, 0),
     isLoading: query.isLoading,
@@ -79,6 +83,8 @@ export function useBlockPrivateMessages(blockId: string, occurrence: number, use
     notSetUp: query.isError && isBlockChatsNotSetUp(query.error),
   };
 }
+
+const EMPTY_PRIVATE: BlockPrivateMessage[] = [];
 
 export function useBlockPrivateActions(blockId: string, occurrence: number, userId: string) {
   const queryClient = useQueryClient();
@@ -114,6 +120,19 @@ export function useBlockPrivateActions(blockId: string, occurrence: number, user
           patch((rows) => rows.filter((m) => m.id !== id));
           throw explain(error);
         }
+      },
+
+      /** Everything sent privately to the viewer here counts as read. */
+      markAllRead: async () => {
+        const now = new Date().toISOString();
+        patch((rows) => rows.map((m) => (m.recipient_id === userId && !m.read_at ? { ...m, read_at: now } : m)));
+        await getSupabase()
+          .from("block_private_messages")
+          .update({ read_at: now })
+          .eq("block_id", blockId)
+          .eq("occurrence", occurrence)
+          .eq("recipient_id", userId)
+          .is("read_at", null);
       },
 
       /** Everything this person sent the viewer here counts as read. */

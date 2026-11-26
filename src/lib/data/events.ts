@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { getSupabase } from "../supabase/client";
 import type { BlockPerson, InviteRow, MessageRow } from "../types";
 import { keys } from "./keys";
@@ -57,6 +57,8 @@ export interface GroupChat {
 export function useMessages(blockId: string, occurrence: number, enabled = true): GroupChat {
   const queryClient = useQueryClient();
   const key = keys.messages(blockId, occurrence);
+  // Each use gets its own channel name: two subscriptions under one name crash the page.
+  const instance = useId();
 
   const query = useQuery({
     queryKey: key,
@@ -92,7 +94,7 @@ export function useMessages(blockId: string, occurrence: number, enabled = true)
         old ? { ...old, rows: update(old.rows) } : old,
       );
     const channel = supabase
-      .channel(`messages:${blockId}:${occurrence}`)
+      .channel(`messages:${blockId}:${occurrence}:${instance}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `block_id=eq.${blockId}` },
@@ -112,7 +114,7 @@ export function useMessages(blockId: string, occurrence: number, enabled = true)
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [blockId, enabled, occurrence, queryClient]);
+  }, [blockId, enabled, instance, occurrence, queryClient]);
 
   return { messages: query.data?.rows ?? EMPTY_MESSAGES, isLoading: query.isLoading, legacy: query.data?.legacy ?? false };
 }

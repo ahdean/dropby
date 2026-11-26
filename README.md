@@ -14,7 +14,7 @@ Built with Next.js (App Router), TypeScript, Tailwind, and Supabase (database, s
 
 | A hosted event | On a phone |
 | --- | --- |
-| ![Event page with RSVP and chat](docs/screenshots/event.png) | ![The same grid on a phone](docs/screenshots/phone.png) |
+| ![An event with RSVP and chat](docs/screenshots/event.png) | ![The same grid on a phone](docs/screenshots/phone.png) |
 
 ---
 
@@ -314,7 +314,7 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 
 - **Saved places.** Keep a private list of nicknamed places ("Home" → the full address) on the profile page or from the event editor ("Manage"). When hosting, tap one to fill in "Where"; guests see the address, never your nickname. The editor also offers locations typed on your earlier events ("Used before").
 - **Used before.** The places from your earlier events are listed under "Used before" in the places manager: **+** saves one under a nickname, **✗** stops it being suggested (the events themselves keep their address; Undo brings it back).
-- **Event pictures.** A hosted event can have a picture (editor → "Add a picture"). It is shrunk on the phone before upload and shown on the event page, in a friend's quick look, on the invite preview and in the link bubble when an invite is texted. The file sits in the `event-pictures` storage bucket under the host's own folder; like profile pictures, anyone holding its address can load it, and the address is only handed out with the event itself.
+- **Event pictures.** A hosted event can have a picture (editor → "Add a picture"). It is shrunk on the phone before upload and shown in the event's window on the calendar, on the invite preview and in the link bubble when an invite is texted. The file sits in the `event-pictures` storage bucket under the host's own folder; like profile pictures, anyone holding its address can load it, and the address is only handed out with the event itself.
 - **Designs.** Profile → **Design** switches the look: "Retro night" (the default), "Light" and "Mara". The choice is remembered on each device.
 - **The Mara design.** Named after the mara, a small long-legged rodent from Patagonia: a grassy meadow behind everything, parchment panels and wooden buttons. The logo becomes a pixel mara's face (also the browser-tab icon), the help button a mara in profile, and the help window (and the Design card, when Mara is picked) opens with a little scene: a mara sitting in the grass next to an alpaca opens its mouth and says "wheet!" while the alpaca blinks and chews. Tap the scene to play it again; with "reduce motion" on it is a still picture. The app icon on a phone's home screen stays the door, since an installed icon can't change with the design.
 - **Several icons.** An event can carry up to four icons; the first is the main one, which suggests the title and is the one drawn where space is tight.
@@ -323,16 +323,16 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 
 ### Chats in blocks
 
-Every block, hosted events and Free time alike, has a page with a **Chat** panel and two tabs:
+Tapping any block on the calendar, an event or Free time, yours or a friend's, opens one window over the calendar: when and where, who's in (with "I'm in" / "Can't make it" for friends' events), **Edit** and **Invite** for your own blocks, and the block's chat, with a message box always at the bottom. A friend's free time opens the same window from the list that appears when you tap their faces.
 
-- **Everyone**: an open group chat for everyone who can see the block. A weekly repeat has a separate chat for each week, like its RSVPs.
-- **Private**: one-to-one conversations that belong to the block (and week). Only the two people can read one. To keep strangers apart, you can only start one with someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its group chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
+- Comments go to **everyone** who can see the block. A weekly repeat has a separate chat for each week, like its RSVPs.
+- The **To** choice next to the message box sends a message **privately** to one person instead. Private messages appear in the same list with a lock, and only the two people can see them. You can write privately to someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
 
-The chat opens right over the calendar, without leaving it: tapping your own Free time opens its editor, and tapping an event (yours or a friend's) opens a quick look; both have three tabs, **Details**, **Chat** and **Private**. A friend's free time opens the same quick look from the list that appears when you tap their faces ("Chat"). Each block also has its own page ("Open page") with everything at once, and the bell opens the exact conversation there. "Message privately" on a block's page opens the private chat inside that block.
+Links to a block (from the bell, a quoted message, or an old `/e/…` page link) open the calendar with that window. A private-message notification opens it with the message box set to answer that person.
 
 ### Private messages
 
-The permanent one-to-one conversations, separate from the chats in blocks: one per pair of connections, reachable from the chat-bubble in the header, from a friend's free time ("Message") and from Connections. Opening one from a block attaches that block as a quote to the next message, so the other person knows what it is about. The quote is written by the database from the real block; only the two people can read the conversation.
+The permanent one-to-one conversations, separate from the chats in blocks: one per pair of connections, reachable from the chat-bubble in the header and from Connections. Opening one from a block attaches that block as a quote to the next message, so the other person knows what it is about. The quote is written by the database from the real block; only the two people can read the conversation.
 
 ### Live updates
 
@@ -369,7 +369,7 @@ src/components/
   calendar/                week grid, day view, editor, quick look, sharing picker, invite dialog, drag gestures
   messages/                private conversations and the inbox
   places/                  managing saved places
-  event/                   the page of a block (event or Free time) and its chat
+  event/Chat.tsx           a block's chat (comments and private messages); the window itself is calendar/EventPeek.tsx
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome
   ui/                      buttons, dialogs, avatars, pixel icons
