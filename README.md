@@ -328,7 +328,7 @@ Every block, hosted events and Free time alike, has a page with a **Chat** panel
 - **Everyone**: an open group chat for everyone who can see the block. A weekly repeat has a separate chat for each week, like its RSVPs.
 - **Private**: one-to-one conversations that belong to the block (and week). Only the two people can read one. To keep strangers apart, you can only start one with someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its group chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
 
-Ways in: a friend's free time ("Chat" in the list that opens from their faces), a friend's event (quick look → "Chat"), your own Free time (tap it → "Chat about this block"), your own event's page, and the bell, which opens the exact conversation. "Message privately" on a block's page opens the private chat inside that block.
+The chat opens right over the calendar, without leaving it: tapping your own Free time opens its editor, and tapping an event (yours or a friend's) opens a quick look; both have three tabs, **Details**, **Chat** and **Private**. A friend's free time opens the same quick look from the list that appears when you tap their faces ("Chat"). Each block also has its own page ("Open page") with everything at once, and the bell opens the exact conversation there. "Message privately" on a block's page opens the private chat inside that block.
 
 ### Private messages
 

@@ -6,9 +6,13 @@ import { Button } from "@/components/ui/Button";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { useBlockPrivateActions, useBlockPrivateMessages, type PrivateConversation } from "@/lib/data/block-private";
-import { useMessageActions, useMessages } from "@/lib/data/events";
+import { useBlockPeople, useMessageActions, useMessages } from "@/lib/data/events";
+import { useProfiles } from "@/lib/data/profiles";
+import { useSession } from "@/lib/data/session";
+import { useConnections } from "@/lib/data/social";
 import { formatClock, formatDayKey, utcToZoned } from "@/lib/time";
-import type { BlockType, Profile } from "@/lib/types";
+import { useZone } from "@/lib/zone";
+import type { BlockType, CalendarBlock, Profile } from "@/lib/types";
 
 /**
  * The chat of a block (an event or Free time), for one week of it:
@@ -160,7 +164,7 @@ function Composer({
 // Everyone
 // ---------------------------------------------------------------------------
 
-function GroupChat({
+export function GroupChat({
   blockId,
   blockType,
   occurrence,
@@ -314,7 +318,7 @@ function PrivateThread({
   );
 }
 
-function PrivateChats({
+export function PrivateChats({
   blockId,
   occurrence,
   userId,
@@ -428,6 +432,133 @@ function PrivateChats({
             Start
           </Button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Who appears in a block's chat
+// ---------------------------------------------------------------------------
+
+/**
+ * Names and pictures for everyone who may appear in a block's chat, and the
+ * people the viewer may start a private chat with: those taking part (host,
+ * people named or in a shared group, anyone who answered or chatted), and for
+ * the host, everyone the block is shared with.
+ */
+export function useBlockChatPeople(block: CalendarBlock): { people: Map<string, Profile>; candidates: Profile[] } {
+  const { userId } = useSession();
+  const { data: involved = [] } = useBlockPeople(block.id);
+  const { byId: profiles } = useProfiles();
+  const { connectionIds } = useConnections();
+
+  const people = new Map<string, Profile>(profiles);
+  for (const person of involved) people.set(person.id, person);
+
+  const list = new Map<string, Profile>(involved.map((p) => [p.id, p]));
+  if (block.owner_id === userId && block.audience === "all_connections") {
+    for (const id of connectionIds) {
+      const person = profiles.get(id);
+      if (person) list.set(id, person);
+    }
+  }
+  const candidates = [...list.values()]
+    .filter((p) => p.id !== userId)
+    .sort((a, b) => Number(b.id === block.owner_id) - Number(a.id === block.owner_id) || a.name.localeCompare(b.name));
+  return { people, candidates };
+}
+
+// ---------------------------------------------------------------------------
+// In a window over the calendar: Details · Chat · Private
+// ---------------------------------------------------------------------------
+
+export type SheetTab = "details" | "everyone" | "private";
+
+/** The row of tabs at the top of the editor and the quick look. */
+export function SheetTabs({
+  tab,
+  onTab,
+  privateUnread,
+}: {
+  tab: SheetTab;
+  onTab: (tab: SheetTab) => void;
+  privateUnread: number;
+}) {
+  const item = (value: SheetTab, icon: "edit" | "chat" | "lock", label: string, badge = 0) => (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={tab === value}
+      onClick={() => onTab(value)}
+      aria-label={badge > 0 ? `${label}, ${badge} unread` : label}
+      className={`btn btn-sm tile relative flex-1 ${tab === value ? "tile-locked" : "tile-dark"}`}
+    >
+      <PixelIcon name={icon} size={12} />
+      {label}
+      {badge > 0 && <span className="badge absolute -right-2 -top-2">{badge > 9 ? "9+" : badge}</span>}
+    </button>
+  );
+  return (
+    <div className="mb-4 flex gap-1" role="tablist" aria-label="Details or chat">
+      {item("details", "edit", "Details")}
+      {item("everyone", "chat", "Chat")}
+      {item("private", "lock", "Private", privateUnread)}
+    </div>
+  );
+}
+
+/**
+ * The chat of a block inside a window over the calendar, so it can be read
+ * and answered without leaving it. Pair with SheetTabs; `tab` picks the pane.
+ */
+export function SheetChat({
+  block,
+  occurrence,
+  tab,
+  privateChats,
+  openWith,
+  onOpenWith,
+}: {
+  block: CalendarBlock;
+  occurrence: number;
+  tab: "everyone" | "private";
+  privateChats: ReturnType<typeof useBlockPrivateMessages>;
+  openWith: string | null;
+  onOpenWith: (personId: string | null) => void;
+}) {
+  const { userId } = useSession();
+  const { people, candidates } = useBlockChatPeople(block);
+  const zone = useZone();
+  const tone = block.type === "join" ? "join" : "free";
+  return (
+    <div className="slot -mx-1 overflow-hidden">
+      {tab === "everyone" ? (
+        <GroupChat
+          blockId={block.id}
+          blockType={block.type}
+          occurrence={occurrence}
+          userId={userId}
+          hostId={block.owner_id}
+          people={people}
+          zone={zone}
+        />
+      ) : (
+        <PrivateChats
+          blockId={block.id}
+          occurrence={occurrence}
+          userId={userId}
+          hostId={block.owner_id}
+          people={people}
+          candidates={candidates}
+          zone={zone}
+          tone={tone}
+          openWith={openWith}
+          onOpenWith={onOpenWith}
+          conversations={privateChats.conversations}
+          isLoading={privateChats.isLoading}
+          notSetUp={privateChats.notSetUp}
+        />
       )}
     </div>
   );

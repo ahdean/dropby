@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMessaging } from "@/components/messages/Messaging";
 import { useFeedback } from "@/components/ui/Feedback";
@@ -26,7 +26,6 @@ import { useProfiles } from "@/lib/data/profiles";
 import { useSession } from "@/lib/data/session";
 import { useConnections, useGroups } from "@/lib/data/social";
 import { DOOR_ICON, defaultTitleFor } from "@/lib/event-icon";
-import { blockChatPath, eventPath } from "@/lib/navigation";
 import type { Occurrence } from "@/lib/recurrence";
 import {
   addDays,
@@ -45,7 +44,8 @@ import type { CalendarBlock, Profile } from "@/lib/types";
 import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
 import { DayView } from "./DayView";
-import { EventPeek } from "./EventPeek";
+import { BlockPeek } from "./EventPeek";
+import type { SheetTab } from "@/components/event/Chat";
 import { FriendsDialog } from "./FriendsDialog";
 import { InviteDialog } from "./InviteDialog";
 import { OffscreenDialog, type OffscreenList } from "./OffscreenDialog";
@@ -88,7 +88,6 @@ function weeksAround(week: number): LoadedWeeks {
  * below only draw and report gestures.
  */
 export function CalendarScreen() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { userId } = useSession();
   const { toast, toastError, choose } = useFeedback();
@@ -206,7 +205,8 @@ export function CalendarScreen() {
   // --- what is open ---------------------------------------------------------
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [cluster, setCluster] = useState<FriendFreeCluster | null>(null);
-  const [peek, setPeek] = useState<{ blockId: string; occurrence: Occurrence } | null>(null);
+  /** The quick look over the calendar (events, and friends' free time), and which tab it opens on. */
+  const [peek, setPeek] = useState<{ blockId: string; occurrence: Occurrence; tab?: SheetTab } | null>(null);
   const [invite, setInvite] = useState<{ blockId: string; occurrence: number } | null>(null);
   const [offscreen, setOffscreen] = useState<OffscreenList | null>(null);
   const inviteBlock = invite ? (blocks.find((b) => b.id === invite.blockId) ?? null) : null;
@@ -253,19 +253,15 @@ export function CalendarScreen() {
     [actions, blocks, toast, toastError, userId, zone],
   );
 
-  const openItem = useCallback(
-    (item: CalendarItem) => {
-      if (!item.mine) {
-        // A friend's event: a quick look, right here.
-        if (item.block.type === "join") setPeek({ blockId: item.block.id, occurrence: item.occurrence });
-      } else if (item.block.type === "join") {
-        router.push(eventPath(item.block.id, item.occurrence.index));
-      } else {
-        setEditor({ mode: "edit", block: item.block, occurrence: item.occurrence });
-      }
-    },
-    [router],
-  );
+  const openItem = useCallback((item: CalendarItem) => {
+    if (item.mine && item.block.type === "free") {
+      // Your own free time: straight into editing it (its chat is a tab there).
+      setEditor({ mode: "edit", block: item.block, occurrence: item.occurrence });
+    } else if (item.block.type === "join") {
+      // An event, yours or a friend's: a quick look with its chat, right here.
+      setPeek({ blockId: item.block.id, occurrence: item.occurrence });
+    }
+  }, []);
 
   /** Something outside the week grid's hours: open it as if it had been tapped on the calendar. */
   const openEntry = useCallback(
@@ -439,10 +435,6 @@ export function CalendarScreen() {
           setEditor(null);
           if (wantsInvite) setInvite({ blockId, occurrence });
         }}
-        onOpenChat={(block, occurrence) => {
-          setEditor(null);
-          router.push(blockChatPath(block.id, occurrence.index));
-        }}
       />
       <FriendsDialog
         cluster={cluster}
@@ -455,18 +447,23 @@ export function CalendarScreen() {
         }}
         onChat={(item) => {
           setCluster(null);
-          router.push(blockChatPath(item.block.id, item.occurrence.index));
+          setPeek({ blockId: item.block.id, occurrence: item.occurrence, tab: "everyone" });
         }}
       />
-      <EventPeek
+      <BlockPeek
         block={peekBlock}
         occurrence={peek?.occurrence ?? null}
         host={peekBlock ? profiles.get(peekBlock.owner_id) : undefined}
         zone={zone}
+        initialTab={peek?.tab}
         onClose={() => setPeek(null)}
         onMessageHost={(block, occurrence) => {
           setPeek(null);
           messaging.openThread(block.owner_id, { blockId: block.id, occurrence: occurrence.index });
+        }}
+        onEdit={(block, occurrence) => {
+          setPeek(null);
+          setEditor({ mode: "edit", block, occurrence });
         }}
       />
       <OffscreenDialog

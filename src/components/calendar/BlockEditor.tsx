@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useState, type FormEvent } from "react";
+import { useId, useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
@@ -21,6 +21,8 @@ import type { BlockDraft, BlockType, CalendarBlock, Group, Profile } from "@/lib
 import { EVERYONE } from "@/lib/audience";
 import { AudiencePicker, type AudienceValue } from "./AudiencePicker";
 import { PictureField } from "./PictureField";
+import { SheetChat, SheetTabs, type SheetTab } from "@/components/event/Chat";
+import { useBlockPrivateMessages } from "@/lib/data/block-private";
 import type { DayRange } from "./useBlockGestures";
 
 export type EditorState =
@@ -119,8 +121,6 @@ interface EditorProps {
   onClose: () => void;
   /** Called after a successful save. `invite` asks the parent to open "Invite by text". */
   onSaved: (result: { blockId: string; occurrence: number; invite: boolean }) => void;
-  /** Go to the block's chat (offered when editing). */
-  onOpenChat?: (block: CalendarBlock, occurrence: Occurrence) => void;
 }
 
 /**
@@ -143,7 +143,6 @@ function EditorDialog({
   maxDay,
   onClose,
   onSaved,
-  onOpenChat,
 }: EditorProps & { state: EditorState }) {
   const { userId } = useSession();
   const actions = useBlockActions();
@@ -157,6 +156,7 @@ function EditorDialog({
   const ids = useId();
 
   const [form, setForm] = useState<Form>(() => initialForm(state, zone));
+  const [tab, setTab] = useState<SheetTab>("details");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -346,33 +346,24 @@ function EditorDialog({
     void save(false);
   };
 
-  return (
-    <Dialog
-      open
-      onClose={onClose}
-      title={editing ? "Edit block" : "New block"}
-      footer={
-        <>
-          {editing && (
-            <Button variant="danger" icon="trash" onClick={remove} disabled={busy} className="mr-auto">
-              Delete
-            </Button>
-          )}
-          <Button variant="dark" icon="send" onClick={() => save(true)} disabled={busy}>
-            {editing ? "Save & invite by text" : "Save & invite"}
-          </Button>
-          <Button type="submit" form={`${ids}-form`} variant={isJoin ? "join" : "free"} icon="check" busy={busy}>
-            Save
-          </Button>
-        </>
-      }
-    >
+  const footer = (
+    <>
+      {editing && (
+        <Button variant="danger" icon="trash" onClick={remove} disabled={busy} className="mr-auto">
+          Delete
+        </Button>
+      )}
+      <Button variant="dark" icon="send" onClick={() => save(true)} disabled={busy}>
+        {editing ? "Save & invite by text" : "Save & invite"}
+      </Button>
+      <Button type="submit" form={`${ids}-form`} variant={isJoin ? "join" : "free"} icon="check" busy={busy}>
+        Save
+      </Button>
+    </>
+  );
+
+  const details = (
       <form id={`${ids}-form`} onSubmit={submit} className="space-y-5">
-        {editing && onOpenChat && (
-          <Button variant="dark" icon="chat" onClick={() => onOpenChat(editing.block, editing.occurrence)} className="w-full">
-            Chat about this block
-          </Button>
-        )}
         <div>
           <div className="label">What is it?</div>
           <Segmented
@@ -558,11 +549,60 @@ function EditorDialog({
           </p>
         )}
       </form>
+  );
+
+  return (
+    <Dialog
+      open
+      onClose={onClose}
+      title={editing ? "Edit block" : "New block"}
+      // While a chat tab is showing, its own Send box sits at the bottom instead of Save.
+      footer={tab === "details" ? footer : undefined}
+    >
+      {editing ? (
+        <EditingTabs block={editing.block} occurrence={editing.occurrence.index} tab={tab} onTab={setTab}>
+          {details}
+        </EditingTabs>
+      ) : (
+        details
+      )}
       <PlacesDialog
         open={placesOpen !== null}
         onClose={() => setPlacesOpen(null)}
         suggestedAddress={placesOpen === "save" ? form.location.trim() : undefined}
       />
     </Dialog>
+  );
+}
+
+/**
+ * Editing a block: its details, and its chat (open and private) in tabs, so
+ * the chat can be read and answered from right here over the calendar.
+ */
+function EditingTabs({
+  block,
+  occurrence,
+  tab,
+  onTab,
+  children,
+}: {
+  block: CalendarBlock;
+  occurrence: number;
+  tab: SheetTab;
+  onTab: (tab: SheetTab) => void;
+  children: ReactNode;
+}) {
+  const { userId } = useSession();
+  const privateChats = useBlockPrivateMessages(block.id, occurrence, userId);
+  const [openWith, setOpenWith] = useState<string | null>(null);
+  return (
+    <>
+      <SheetTabs tab={tab} onTab={onTab} privateUnread={privateChats.unread} />
+      {tab === "details" ? (
+        children
+      ) : (
+        <SheetChat block={block} occurrence={occurrence} tab={tab} privateChats={privateChats} openWith={openWith} onOpenWith={setOpenWith} />
+      )}
+    </>
   );
 }
