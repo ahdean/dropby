@@ -4,7 +4,7 @@
 
 A social availability calendar. Friends show when they're **free** and when they're **hosting**, and see each other's openings at a glance. It runs in the browser and installs to a phone's home screen like an app.
 
-- **Blue = Free.** "I'm available." Friends see your avatar over that time on their calendar.
+- **Blue = Free.** "I'm available." Friends see your avatar over that time on their calendar, and can chat about it.
 - **Green = Join me.** "I'm hosting." Has an emoji, a page like a party invite, RSVPs and a chat.
 - **Gold = Locked in.** Someone said they're in. It's happening.
 
@@ -140,6 +140,7 @@ Files are numbered by date; run any you haven't run yet, oldest first. Running a
 | `20261114000100_direct_messages.sql` | Private messages between two people |
 | `20261115000100_saved_places.sql` | Your own list of nicknamed places ("Home") for filling in an event's location |
 | `20261126000100_pictures_and_hidden_places.sql` | Pictures on events, and crossing places out of "Used before" |
+| `20261127000100_block_chats.sql` | A chat in every block (Free time too), one per week, plus private chats inside a block |
 
 (Developers: `npm run db:push` applies whatever is pending.)
 
@@ -261,6 +262,7 @@ No setup needed: the database tests start a real Postgres in memory (PGlite), ap
 | `tests/db/messages.test.ts` | Private messages: who can write to whom, privacy, quotes |
 | `tests/db/places.test.ts` | Saved places: private to their owner |
 | `tests/db/pictures.test.ts` | Event pictures (own folder only, in the invite preview) and hidden places |
+| `tests/db/block-chats.test.ts` | Chats in blocks: Free time too, per week, who may write privately to whom, read receipts, the bell |
 | `tests/unit/audience.test.ts` | The "Shared with" list: everyone, groups and people ticking on and off |
 | `tests/unit/designs.test.ts` | The list of designs, and the Mara pixel art (sizes, colours, animation frames) |
 | `tests/unit/time.test.ts` | UTC ↔ local time, daylight saving, splitting by day, formatting |
@@ -319,9 +321,18 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 - **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
 - **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
 
+### Chats in blocks
+
+Every block, hosted events and Free time alike, has a page with a **Chat** panel and two tabs:
+
+- **Everyone**: an open group chat for everyone who can see the block. A weekly repeat has a separate chat for each week, like its RSVPs.
+- **Private**: one-to-one conversations that belong to the block (and week). Only the two people can read one. To keep strangers apart, you can only start one with someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its group chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
+
+Ways in: a friend's free time ("Chat" in the list that opens from their faces), a friend's event (quick look → "Chat"), your own Free time (tap it → "Chat about this block"), your own event's page, and the bell, which opens the exact conversation. "Message privately" on a block's page opens the private chat inside that block.
+
 ### Private messages
 
-One private conversation per pair of connections, reachable from the chat-bubble in the header, from a friend's block ("Message"), from an event page and from Connections. Opening it from a block attaches that block as a quote to the next message, so the other person knows what it is about. The quote is written by the database from the real block; only the two people can read the conversation.
+The permanent one-to-one conversations, separate from the chats in blocks: one per pair of connections, reachable from the chat-bubble in the header, from a friend's free time ("Message") and from Connections. Opening one from a block attaches that block as a quote to the next message, so the other person knows what it is about. The quote is written by the database from the real block; only the two people can read the conversation.
 
 ### Live updates
 
@@ -358,7 +369,7 @@ src/components/
   calendar/                week grid, day view, editor, quick look, sharing picker, invite dialog, drag gestures
   messages/                private conversations and the inbox
   places/                  managing saved places
-  event/                   event page and chat
+  event/                   the page of a block (event or Free time) and its chat
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome
   ui/                      buttons, dialogs, avatars, pixel icons

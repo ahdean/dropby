@@ -17,6 +17,7 @@ export function FriendsDialog({
   onClose,
   onHost,
   onMessage,
+  onChat,
 }: {
   cluster: FriendFreeCluster | null;
   profiles: Map<string, Profile>;
@@ -24,6 +25,8 @@ export function FriendsDialog({
   onHost: (cluster: FriendFreeCluster) => void;
   /** Start a private message to this friend, quoting their free block. */
   onMessage: (friendId: string, item: CalendarItem) => void;
+  /** Open the chat of this friend's free time (open to everyone who can see it, plus private chats). */
+  onChat: (item: CalendarItem) => void;
 }) {
   const overlap = cluster?.common ?? cluster?.peak ?? null;
   return (
@@ -58,7 +61,10 @@ export function FriendsDialog({
                       </div>
                     ))}
                   </div>
-                  <Button size="sm" variant="dark" icon="send" onClick={() => onMessage(userId, items[0])} aria-label={`Message ${person?.name ?? "this friend"}`}>
+                  <Button size="sm" variant="dark" icon="chat" onClick={() => onChat(items[0])} aria-label={`Chat in ${person?.name ?? "this friend"}'s free time`}>
+                    Chat
+                  </Button>
+                  <Button size="sm" variant="dark" icon="send" onClick={() => onMessage(userId, items[0])} aria-label={`Direct message to ${person?.name ?? "this friend"}`}>
                     Message
                   </Button>
                 </li>

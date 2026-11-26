@@ -26,7 +26,7 @@ import { useProfiles } from "@/lib/data/profiles";
 import { useSession } from "@/lib/data/session";
 import { useConnections, useGroups } from "@/lib/data/social";
 import { DOOR_ICON, defaultTitleFor } from "@/lib/event-icon";
-import { eventPath } from "@/lib/navigation";
+import { blockChatPath, eventPath } from "@/lib/navigation";
 import type { Occurrence } from "@/lib/recurrence";
 import {
   addDays,
@@ -439,6 +439,10 @@ export function CalendarScreen() {
           setEditor(null);
           if (wantsInvite) setInvite({ blockId, occurrence });
         }}
+        onOpenChat={(block, occurrence) => {
+          setEditor(null);
+          router.push(blockChatPath(block.id, occurrence.index));
+        }}
       />
       <FriendsDialog
         cluster={cluster}
@@ -448,6 +452,10 @@ export function CalendarScreen() {
         onMessage={(friendId, item) => {
           setCluster(null);
           messaging.openThread(friendId, { blockId: item.block.id, occurrence: item.occurrence.index });
+        }}
+        onChat={(item) => {
+          setCluster(null);
+          router.push(blockChatPath(item.block.id, item.occurrence.index));
         }}
       />
       <EventPeek

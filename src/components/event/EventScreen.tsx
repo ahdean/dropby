@@ -2,10 +2,9 @@
 
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { BlockEditor, type EditorState } from "@/components/calendar/BlockEditor";
 import { InviteDialog } from "@/components/calendar/InviteDialog";
-import { useMessaging } from "@/components/messages/Messaging";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { HeroEventIcon } from "@/components/ui/EventIcon";
@@ -18,12 +17,12 @@ import { useBlockPeople } from "@/lib/data/events";
 import { useProfiles } from "@/lib/data/profiles";
 import { useSession } from "@/lib/data/session";
 import { useConnections, useGroups } from "@/lib/data/social";
-import { eventPath } from "@/lib/navigation";
+import { blockChatPath, eventPath } from "@/lib/navigation";
 import { nextOccurrence, occurrenceAt, occurrenceExists } from "@/lib/recurrence";
 import { addDays, formatRange, utcToZoned, weekdayName, zoneAbbreviation } from "@/lib/time";
 import type { Profile, RsvpStatus } from "@/lib/types";
 import { useZone } from "@/lib/zone";
-import { Chat } from "./Chat";
+import { BlockChat } from "./Chat";
 
 function PersonChip({ person, note, onMessage }: { person: Profile | undefined; note?: string; onMessage?: () => void }) {
   return (
@@ -50,7 +49,7 @@ function Unavailable() {
   return (
     <main className="mx-auto flex w-full max-w-xl flex-1 flex-col items-center justify-center gap-4 px-4 py-10 text-center">
       <span className="text-[56px] leading-none" aria-hidden="true">🚪</span>
-      <h1 className="text-[13px] text-ink">This event isn&apos;t available</h1>
+      <h1 className="text-[13px] text-ink">This isn&apos;t available</h1>
       <p className="text-ink-dim">It may have been deleted, or it is no longer shared with you.</p>
       <Link href="/" className="btn tile tile-free">Back to calendar</Link>
     </main>
@@ -58,8 +57,10 @@ function Unavailable() {
 }
 
 /**
- * The page for one hosted event, in the spirit of a party invite: what, when,
- * where, who is hosting, who is in, and a chat.
+ * The page for one block. For a hosted event it is in the spirit of a party
+ * invite: what, when, where, who is hosting, who is in. For Free time it is a
+ * short card. Both end with the block's chat: an open one for everyone who
+ * can see the block, and private chats between two people.
  */
 export function EventScreen() {
   const { id } = useParams<{ id: string }>();
@@ -69,7 +70,6 @@ export function EventScreen() {
   const zone = useZone();
   const { toast, toastError, confirm } = useFeedback();
   const actions = useBlockActions();
-  const messaging = useMessaging();
 
   const { data: block, isLoading } = useBlock(id);
   const { data: people = [] } = useBlockPeople(id);
@@ -97,13 +97,6 @@ export function EventScreen() {
     return nextOccurrence(block);
   }, [block, requested, searchParams]);
 
-  // Free time has no event page: show it on the calendar instead.
-  useEffect(() => {
-    if (block && block.type === "free" && occurrence) {
-      router.replace(`/?day=${utcToZoned(occurrence.startIso, zone).dayKey}`);
-    }
-  }, [block, occurrence, router, zone]);
-
   if (isLoading && !block) {
     return (
       <main className="flex flex-1 items-center justify-center p-10" role="status">
@@ -112,7 +105,6 @@ export function EventScreen() {
     );
   }
   if (!block || !occurrence) return <Unavailable />;
-  if (block.type === "free") return null;
 
   const isHost = block.owner_id === userId;
   const host = names.get(block.owner_id);
@@ -130,8 +122,20 @@ export function EventScreen() {
     .filter((p): p is Profile => Boolean(p))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  /** A private message to one person, quoting this event. */
-  const messageAbout = (personId: string) => messaging.openThread(personId, { blockId: block.id, occurrence: occurrence.index });
+  /** Open the private chat with one person, inside this block. */
+  const messageAbout = (personId: string) => router.replace(blockChatPath(block.id, occurrence.index, personId));
+
+  // Who the viewer may start a private chat with here: the people taking part
+  // (host, people named or in a shared group, anyone who answered or chatted),
+  // and for the host, everyone the block is shared with.
+  const chatWith = searchParams.get("with");
+  const candidates = (() => {
+    const list = new Map<string, Profile>(people.map((p) => [p.id, p]));
+    if (isHost && block.audience === "all_connections") for (const person of connections) list.set(person.id, person);
+    return [...list.values()]
+      .filter((p) => p.id !== userId)
+      .sort((a, b) => Number(b.id === block.owner_id) - Number(a.id === block.owner_id) || a.name.localeCompare(b.name));
+  })();
 
   const answer = async (next: RsvpStatus) => {
     const value = myAnswer === next ? null : next; // tapping your answer again clears it
@@ -182,198 +186,266 @@ export function EventScreen() {
         Calendar
       </Link>
 
-      {/* the invite card */}
-      <article className={`panel overflow-hidden ${locked ? "!border-locked" : "!border-join"}`}>
-        <div className="relative h-3" aria-hidden="true">
-          <span className={`beam ${locked ? "beam-locked" : "beam-join"} inset-0`} />
-        </div>
-        <EventPicture path={block.picture_path} className="aspect-[16/9] max-h-[22rem] w-full border-b-2 border-black" />
-        <div className="space-y-4 p-4 sm:p-6">
-          <div className="flex items-start gap-4">
-            <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none sm:h-24 sm:w-24 sm:text-[58px]" aria-hidden="true">
-              <HeroEventIcon value={block.emoji} />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className={`mb-2 inline-flex items-center gap-2 font-display text-[9px] uppercase ${locked ? "text-locked" : "text-join"}`}>
-                {locked && <PixelIcon name="lock" size={11} />}
-                {locked ? "Locked in" : "Join me"}
-              </p>
-              <h1 className="break-words text-[15px] leading-relaxed text-ink sm:text-[18px]">
-                {block.title || "Join me"}
-              </h1>
+      {block.type === "join" ? (
+        <>
+          {/* the invite card */}
+          <article className={`panel overflow-hidden ${locked ? "!border-locked" : "!border-join"}`}>
+            <div className="relative h-3" aria-hidden="true">
+              <span className={`beam ${locked ? "beam-locked" : "beam-join"} inset-0`} />
             </div>
-          </div>
-
-          <dl className="space-y-3">
-            <div className="flex items-start gap-3">
-              <dt className="mt-1 text-join"><PixelIcon name="clock" size={16} title="When" /></dt>
-              <dd className="min-w-0">
-                <div className="text-[22px] leading-tight text-ink">{when}</div>
-                <div className="text-[17px] text-ink-faint">
-                  {zoneAbbreviation(occurrence.startIso, zone)} · shown in your time zone
+            <EventPicture path={block.picture_path} className="aspect-[16/9] max-h-[22rem] w-full border-b-2 border-black" />
+            <div className="space-y-4 p-4 sm:p-6">
+              <div className="flex items-start gap-4">
+                <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none sm:h-24 sm:w-24 sm:text-[58px]" aria-hidden="true">
+                  <HeroEventIcon value={block.emoji} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className={`mb-2 inline-flex items-center gap-2 font-display text-[9px] uppercase ${locked ? "text-locked" : "text-join"}`}>
+                    {locked && <PixelIcon name="lock" size={11} />}
+                    {locked ? "Locked in" : "Join me"}
+                  </p>
+                  <h1 className="break-words text-[15px] leading-relaxed text-ink sm:text-[18px]">
+                    {block.title || "Join me"}
+                  </h1>
                 </div>
-                {block.repeat_weekly && (
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-ink-dim">
-                    <PixelIcon name="repeat" size={12} />
-                    Every {weekdayName(occurrence.startIso, zone)}
-                    <span className="ml-1 inline-flex gap-1">
-                      <IconButton icon="left" label="Previous week" onClick={() => stepWeek(-1)} disabled={!hasPrevious} className="!min-h-[30px] !w-8" size={11} />
-                      <IconButton icon="right" label="Next week" onClick={() => stepWeek(1)} disabled={!hasNext} className="!min-h-[30px] !w-8" size={11} />
-                    </span>
+              </div>
+
+              <dl className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <dt className="mt-1 text-join"><PixelIcon name="clock" size={16} title="When" /></dt>
+                  <dd className="min-w-0">
+                    <div className="text-[22px] leading-tight text-ink">{when}</div>
+                    <div className="text-[17px] text-ink-faint">
+                      {zoneAbbreviation(occurrence.startIso, zone)} · shown in your time zone
+                    </div>
+                    {block.repeat_weekly && (
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-ink-dim">
+                        <PixelIcon name="repeat" size={12} />
+                        Every {weekdayName(occurrence.startIso, zone)}
+                        <span className="ml-1 inline-flex gap-1">
+                          <IconButton icon="left" label="Previous week" onClick={() => stepWeek(-1)} disabled={!hasPrevious} className="!min-h-[30px] !w-8" size={11} />
+                          <IconButton icon="right" label="Next week" onClick={() => stepWeek(1)} disabled={!hasNext} className="!min-h-[30px] !w-8" size={11} />
+                        </span>
+                      </div>
+                    )}
+                  </dd>
+                </div>
+
+                {block.location && (
+                  <div className="flex items-start gap-3">
+                    <dt className="mt-1 text-join"><PixelIcon name="pin" size={16} title="Where" /></dt>
+                    <dd className="min-w-0 break-words">
+                      <a href={mapsUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="link">
+                        {block.location}
+                      </a>
+                    </dd>
                   </div>
                 )}
-              </dd>
-            </div>
 
-            {block.location && (
-              <div className="flex items-start gap-3">
-                <dt className="mt-1 text-join"><PixelIcon name="pin" size={16} title="Where" /></dt>
-                <dd className="min-w-0 break-words">
-                  <a href={mapsUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="link">
-                    {block.location}
-                  </a>
-                </dd>
-              </div>
-            )}
+                <div className="flex items-center gap-3">
+                  <dt className="text-join"><PixelIcon name="star" size={16} title="Host" /></dt>
+                  <dd className="flex flex-wrap items-center gap-2">
+                    <Avatar person={host} size={28} />
+                    <span>{isHost ? "You're hosting" : `Hosted by ${host?.name ?? "a friend"}`}</span>
+                    {!isHost && (
+                      <Button size="sm" variant="dark" icon="send" onClick={() => messageAbout(block.owner_id)}>
+                        Message privately
+                      </Button>
+                    )}
+                  </dd>
+                </div>
+              </dl>
 
-            <div className="flex items-center gap-3">
-              <dt className="text-join"><PixelIcon name="star" size={16} title="Host" /></dt>
-              <dd className="flex flex-wrap items-center gap-2">
-                <Avatar person={host} size={28} />
-                <span>{isHost ? "You're hosting" : `Hosted by ${host?.name ?? "a friend"}`}</span>
-                {!isHost && (
-                  <Button size="sm" variant="dark" icon="send" onClick={() => messageAbout(block.owner_id)}>
-                    Message privately
+              {block.description && <p className="slot whitespace-pre-wrap break-words px-3 py-2 text-ink">{block.description}</p>}
+
+              {isHost && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button variant="stone" icon="edit" onClick={() => setEditor({ mode: "edit", block, occurrence })}>
+                    Edit
                   </Button>
-                )}
-              </dd>
-            </div>
-          </dl>
-
-          {block.description && <p className="slot whitespace-pre-wrap break-words px-3 py-2 text-ink">{block.description}</p>}
-
-          {isHost && (
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button variant="stone" icon="edit" onClick={() => setEditor({ mode: "edit", block, occurrence })}>
-                Edit
-              </Button>
-              <Button variant="join" icon="send" onClick={() => setInviteOpen(true)}>
-                Invite by text
-              </Button>
-            </div>
-          )}
-        </div>
-      </article>
-
-      {/* RSVP */}
-      <section aria-labelledby="rsvp-heading" className="panel p-4">
-        <h2 id="rsvp-heading" className="mb-3 text-[11px] text-ink">
-          {isHost ? "Who's coming" : "Are you in?"}
-        </h2>
-
-        {!block.rsvp_enabled ? (
-          <p className="text-ink-dim">No RSVP needed. Just drop by.</p>
-        ) : (
-          <>
-            {!isHost && (
-              <div className="mb-4 grid grid-cols-2 gap-3" role="group" aria-label="Your answer">
-                <Button
-                  variant={myAnswer === "in" ? "locked" : "dark"}
-                  icon="check"
-                  aria-pressed={myAnswer === "in"}
-                  busy={saving === "in"}
-                  onClick={() => answer("in")}
-                  className="!min-h-[56px]"
-                >
-                  I&apos;m in
-                </Button>
-                <Button
-                  variant={myAnswer === "out" ? "stone" : "dark"}
-                  icon="x"
-                  aria-pressed={myAnswer === "out"}
-                  busy={saving === "out"}
-                  onClick={() => answer("out")}
-                  className="!min-h-[56px]"
-                >
-                  Can&apos;t make it
-                </Button>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              <div>
-                <div className="label !text-locked">In ({going.length})</div>
-                {going.length === 0 ? (
-                  <p className="text-ink-dim">{isHost ? "Nobody yet. Friends will see this on their calendar." : "Be the first!"}</p>
-                ) : (
-                  <ul className="flex flex-wrap gap-2">
-                    {going.map((r) => (
-                      <PersonChip
-                        key={r.user_id}
-                        person={names.get(r.user_id)}
-                        note={r.user_id === userId ? "(you)" : undefined}
-                        onMessage={isHost ? () => messageAbout(r.user_id) : undefined}
-                      />
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {notGoing.length > 0 && (
-                <div>
-                  <div className="label">Can&apos;t make it ({notGoing.length})</div>
-                  <ul className="flex flex-wrap gap-2 opacity-70">
-                    {notGoing.map((r) => (
-                      <PersonChip
-                        key={r.user_id}
-                        person={names.get(r.user_id)}
-                        note={r.user_id === userId ? "(you)" : undefined}
-                        onMessage={isHost ? () => messageAbout(r.user_id) : undefined}
-                      />
-                    ))}
-                  </ul>
+                  <Button variant="join" icon="send" onClick={() => setInviteOpen(true)}>
+                    Invite by text
+                  </Button>
                 </div>
               )}
             </div>
-          </>
-        )}
-      </section>
+          </article>
 
-      {/* audience */}
-      <section aria-labelledby="shared-heading" className="panel p-4">
-        <h2 id="shared-heading" className="mb-3 text-[11px] text-ink">Shared with</h2>
-        <ul className="flex flex-wrap gap-2">
-          {block.audience === "all_connections" && (
-            <li className="flex items-center gap-2 border-2 border-line bg-panel-2 px-3 py-1">
-              <PixelIcon name="users" size={14} />
-              {isHost ? `All your connections (${connectionIds.length})` : `All of ${host?.name ?? "the host"}'s connections`}
-            </li>
-          )}
-          {groupNames.map((name) => (
-            <li key={name} className="flex items-center gap-2 border-2 border-join/60 bg-panel-2 px-3 py-1">
-              <PixelIcon name="users" size={14} className="text-join" />
-              {name}
-            </li>
-          ))}
-          {invited.map((person) => (
-            <PersonChip
-              key={person.id}
-              person={person}
-              note={person.id === userId ? "(you)" : undefined}
-              onMessage={isHost ? () => messageAbout(person.id) : undefined}
-            />
-          ))}
-        </ul>
-        {block.audience === "custom" && invited.length === 0 && (
-          <p className="text-ink-dim">Nobody yet. {isHost ? "Edit the event to pick people, or invite someone by text." : ""}</p>
-        )}
-        {!isHost && directlyShared && (
-          <button type="button" className="btn-ghost mt-3" onClick={leave}>
-            Remove this from my calendar
-          </button>
-        )}
-      </section>
+          {/* RSVP */}
+          <section aria-labelledby="rsvp-heading" className="panel p-4">
+            <h2 id="rsvp-heading" className="mb-3 text-[11px] text-ink">
+              {isHost ? "Who's coming" : "Are you in?"}
+            </h2>
 
-      <Chat blockId={block.id} userId={userId} hostId={block.owner_id} people={names} zone={zone} />
+            {!block.rsvp_enabled ? (
+              <p className="text-ink-dim">No RSVP needed. Just drop by.</p>
+            ) : (
+              <>
+                {!isHost && (
+                  <div className="mb-4 grid grid-cols-2 gap-3" role="group" aria-label="Your answer">
+                    <Button
+                      variant={myAnswer === "in" ? "locked" : "dark"}
+                      icon="check"
+                      aria-pressed={myAnswer === "in"}
+                      busy={saving === "in"}
+                      onClick={() => answer("in")}
+                      className="!min-h-[56px]"
+                    >
+                      I&apos;m in
+                    </Button>
+                    <Button
+                      variant={myAnswer === "out" ? "stone" : "dark"}
+                      icon="x"
+                      aria-pressed={myAnswer === "out"}
+                      busy={saving === "out"}
+                      onClick={() => answer("out")}
+                      className="!min-h-[56px]"
+                    >
+                      Can&apos;t make it
+                    </Button>
+                  </div>
+                )}
+
+                <div className="space-y-3">
+                  <div>
+                    <div className="label !text-locked">In ({going.length})</div>
+                    {going.length === 0 ? (
+                      <p className="text-ink-dim">{isHost ? "Nobody yet. Friends will see this on their calendar." : "Be the first!"}</p>
+                    ) : (
+                      <ul className="flex flex-wrap gap-2">
+                        {going.map((r) => (
+                          <PersonChip
+                            key={r.user_id}
+                            person={names.get(r.user_id)}
+                            note={r.user_id === userId ? "(you)" : undefined}
+                            onMessage={isHost ? () => messageAbout(r.user_id) : undefined}
+                          />
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  {notGoing.length > 0 && (
+                    <div>
+                      <div className="label">Can&apos;t make it ({notGoing.length})</div>
+                      <ul className="flex flex-wrap gap-2 opacity-70">
+                        {notGoing.map((r) => (
+                          <PersonChip
+                            key={r.user_id}
+                            person={names.get(r.user_id)}
+                            note={r.user_id === userId ? "(you)" : undefined}
+                            onMessage={isHost ? () => messageAbout(r.user_id) : undefined}
+                          />
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* audience */}
+          <section aria-labelledby="shared-heading" className="panel p-4">
+            <h2 id="shared-heading" className="mb-3 text-[11px] text-ink">Shared with</h2>
+            <ul className="flex flex-wrap gap-2">
+              {block.audience === "all_connections" && (
+                <li className="flex items-center gap-2 border-2 border-line bg-panel-2 px-3 py-1">
+                  <PixelIcon name="users" size={14} />
+                  {isHost ? `All your connections (${connectionIds.length})` : `All of ${host?.name ?? "the host"}'s connections`}
+                </li>
+              )}
+              {groupNames.map((name) => (
+                <li key={name} className="flex items-center gap-2 border-2 border-join/60 bg-panel-2 px-3 py-1">
+                  <PixelIcon name="users" size={14} className="text-join" />
+                  {name}
+                </li>
+              ))}
+              {invited.map((person) => (
+                <PersonChip
+                  key={person.id}
+                  person={person}
+                  note={person.id === userId ? "(you)" : undefined}
+                  onMessage={isHost ? () => messageAbout(person.id) : undefined}
+                />
+              ))}
+            </ul>
+            {block.audience === "custom" && invited.length === 0 && (
+              <p className="text-ink-dim">Nobody yet. {isHost ? "Edit the event to pick people, or invite someone by text." : ""}</p>
+            )}
+            {!isHost && directlyShared && (
+              <button type="button" className="btn-ghost mt-3" onClick={leave}>
+                Remove this from my calendar
+              </button>
+            )}
+          </section>
+
+        </>
+      ) : (
+        <>
+          {/* Free time: a short card */}
+          <article className="panel overflow-hidden !border-free">
+            <div className="relative h-3" aria-hidden="true">
+              <span className="beam inset-0" />
+            </div>
+            <div className="space-y-4 p-4 sm:p-6">
+              <div className="flex items-start gap-4">
+                <Avatar person={host} size={64} />
+                <div className="min-w-0 flex-1">
+                  <p className="mb-2 font-display text-[9px] uppercase text-free">Free</p>
+                  <h1 className="break-words text-[15px] leading-relaxed text-ink sm:text-[18px]">
+                    {isHost ? "You're free" : `${host?.name ?? "A friend"} is free`}
+                  </h1>
+                  {block.title && <p className="mt-1 break-words text-ink-dim">“{block.title}”</p>}
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <span className="mt-1 text-free"><PixelIcon name="clock" size={16} title="When" /></span>
+                <div className="min-w-0">
+                  <div className="text-[22px] leading-tight text-ink">{when}</div>
+                  <div className="text-[17px] text-ink-faint">
+                    {zoneAbbreviation(occurrence.startIso, zone)} · shown in your time zone
+                  </div>
+                  {block.repeat_weekly && (
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-ink-dim">
+                      <PixelIcon name="repeat" size={12} />
+                      Every {weekdayName(occurrence.startIso, zone)}
+                      <span className="ml-1 inline-flex gap-1">
+                        <IconButton icon="left" label="Previous week" onClick={() => stepWeek(-1)} disabled={!hasPrevious} className="!min-h-[30px] !w-8" size={11} />
+                        <IconButton icon="right" label="Next week" onClick={() => stepWeek(1)} disabled={!hasNext} className="!min-h-[30px] !w-8" size={11} />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {isHost ? (
+                  <Button variant="stone" icon="edit" onClick={() => setEditor({ mode: "edit", block, occurrence })}>
+                    Edit
+                  </Button>
+                ) : (
+                  <Button variant="dark" icon="lock" onClick={() => messageAbout(block.owner_id)}>
+                    Message {host?.name?.split(" ")[0] ?? "them"} privately
+                  </Button>
+                )}
+              </div>
+            </div>
+          </article>
+        </>
+      )}
+
+      <BlockChat
+        // A fresh panel for each week, and when a link asks for a particular private chat.
+        key={`${occurrence.index}:${chatWith ?? ""}`}
+        blockId={block.id}
+        blockType={block.type}
+        occurrence={occurrence.index}
+        userId={userId}
+        hostId={block.owner_id}
+        people={names}
+        candidates={candidates}
+        zone={zone}
+        initialWith={chatWith}
+      />
 
       {isHost && (
         <>

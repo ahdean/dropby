@@ -70,11 +70,26 @@ export interface Mutual extends Profile {
   group_names: string[];
 }
 
+/** A message in a block's open group chat. */
 export interface MessageRow {
   id: string;
   block_id: string;
+  /** Which week of a weekly repeat (0 for a one-off). Missing before the block-chats database file is run. */
+  occurrence?: number;
   user_id: string;
   body: string;
+  created_at: string;
+}
+
+/** A private message between two people inside one block (and week). */
+export interface BlockPrivateMessage {
+  id: string;
+  block_id: string;
+  occurrence: number;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  read_at: string | null;
   created_at: string;
 }
 
@@ -92,7 +107,8 @@ export type NotificationType =
   | "connected"
   | "group_added"
   | "invite_accepted"
-  | "dm";
+  | "dm"
+  | "block_dm";
 
 export interface NotificationRow {
   id: string;

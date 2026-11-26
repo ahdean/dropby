@@ -119,6 +119,8 @@ interface EditorProps {
   onClose: () => void;
   /** Called after a successful save. `invite` asks the parent to open "Invite by text". */
   onSaved: (result: { blockId: string; occurrence: number; invite: boolean }) => void;
+  /** Go to the block's chat (offered when editing). */
+  onOpenChat?: (block: CalendarBlock, occurrence: Occurrence) => void;
 }
 
 /**
@@ -141,6 +143,7 @@ function EditorDialog({
   maxDay,
   onClose,
   onSaved,
+  onOpenChat,
 }: EditorProps & { state: EditorState }) {
   const { userId } = useSession();
   const actions = useBlockActions();
@@ -365,6 +368,11 @@ function EditorDialog({
       }
     >
       <form id={`${ids}-form`} onSubmit={submit} className="space-y-5">
+        {editing && onOpenChat && (
+          <Button variant="dark" icon="chat" onClick={() => onOpenChat(editing.block, editing.occurrence)} className="w-full">
+            Chat about this block
+          </Button>
+        )}
         <div>
           <div className="label">What is it?</div>
           <Segmented

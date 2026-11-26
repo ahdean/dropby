@@ -7,7 +7,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { PixelIcon, type IconName } from "@/components/ui/PixelIcon";
 import { useNotificationActions, useNotifications } from "@/lib/data/notifications";
 import { iconAsText } from "@/lib/event-icon";
-import { eventPath } from "@/lib/navigation";
+import { blockChatPath, eventPath } from "@/lib/navigation";
 import { describeWhen } from "@/lib/share";
 import { timeAgo, utcToZoned } from "@/lib/time";
 import type { NotificationRow } from "@/lib/types";
@@ -42,8 +42,23 @@ function render(n: NotificationRow, zone: string): Rendered {
       return n.data.status === "in"
         ? { icon: "lock", tone: "text-locked", text: `${who} is in for ${what || "your event"}`, detail: when, href: event }
         : { icon: "x", tone: "text-ink-dim", text: `${who} can't make ${what || "your event"}`, detail: when, href: event };
-    case "chat":
-      return { icon: "chat", tone: "text-join", text: `${who} wrote in ${what || "an event"}`, detail: n.data.preview ? `“${n.data.preview}”` : undefined, href: `${event}#chat` };
+    case "chat": {
+      return {
+        icon: "chat",
+        tone: n.data.block_type === "free" ? "text-free" : "text-join",
+        text: n.data.block_type === "free" ? `${who} wrote in a free-time chat` : `${who} wrote in ${what || "an event"}`,
+        detail: n.data.preview ? `“${n.data.preview}”` : undefined,
+        href: n.block_id ? blockChatPath(n.block_id, n.occurrence ?? 0) : "/",
+      };
+    }
+    case "block_dm":
+      return {
+        icon: "lock",
+        tone: n.data.block_type === "free" ? "text-free" : "text-join",
+        text: n.data.block_type === "free" ? `${who} wrote to you privately about free time` : `${who} wrote to you privately in ${what || "an event"}`,
+        detail: n.data.preview ? `“${n.data.preview}”` : undefined,
+        href: n.block_id ? blockChatPath(n.block_id, n.occurrence ?? 0, n.actor_id) : "/",
+      };
     case "dm":
       return {
         icon: "send",

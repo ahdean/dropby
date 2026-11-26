@@ -120,9 +120,9 @@ function QuoteCard({
   );
 }
 
-function quoteHref(quote: MessageQuote, blockId: string | null, occurrence: number, zone: string): string | null {
+function quoteHref(blockId: string | null, occurrence: number): string | null {
   if (!blockId) return null; // the block has been deleted; the quote is all that is left
-  return quote.block_type === "join" ? eventPath(blockId, occurrence) : `/?day=${utcToZoned(quote.start_at, zone).dayKey}`;
+  return eventPath(blockId, occurrence); // events and Free time both have a page
 }
 
 /** The quote that will go out with the next message: built from the live block. */
@@ -263,7 +263,7 @@ function ThreadDialog({ otherId, quote, onClose }: { otherId: string; quote?: Pe
                     {message.quote && (
                       <QuoteCard
                         quote={message.quote}
-                        href={quoteHref(message.quote, message.block_id, message.occurrence, zone)}
+                        href={quoteHref(message.block_id, message.occurrence)}
                         userId={userId}
                         zone={zone}
                         onNavigate={onClose}

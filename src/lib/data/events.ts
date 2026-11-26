@@ -31,73 +31,115 @@ export function useBlockPeople(blockId: string) {
   });
 }
 
-/** The chat thread of an event, kept live while the page is open. */
-export function useMessages(blockId: string, enabled: boolean) {
+/** True when the failure means "the database has not got the block-chats file yet". */
+export function isBlockChatsNotSetUp(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  return Boolean(
+    e &&
+      ((e.code === "42703" && /occurrence/.test(e.message ?? "")) ||
+        e.code === "PGRST205" ||
+        e.code === "42P01" ||
+        /block_private_messages/.test(e.message ?? "")),
+  );
+}
+
+export interface GroupChat {
+  messages: MessageRow[];
+  isLoading: boolean;
+  /**
+   * The database predates per-week chats: the chat is shown as one thread
+   * for the whole block, as it was before (events only).
+   */
+  legacy: boolean;
+}
+
+/** The open group chat of one week of a block, kept live while the page is open. */
+export function useMessages(blockId: string, occurrence: number, enabled = true): GroupChat {
   const queryClient = useQueryClient();
+  const key = keys.messages(blockId, occurrence);
 
   const query = useQuery({
-    queryKey: keys.messages(blockId),
+    queryKey: key,
     enabled,
-    queryFn: async (): Promise<MessageRow[]> => {
-      const { data, error } = await getSupabase()
+    queryFn: async (): Promise<{ rows: MessageRow[]; legacy: boolean }> => {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from("messages")
+        .select("id, block_id, occurrence, user_id, body, created_at")
+        .eq("block_id", blockId)
+        .eq("occurrence", occurrence)
+        .order("created_at", { ascending: true })
+        .limit(500);
+      if (!error) return { rows: data, legacy: false };
+      if (!isBlockChatsNotSetUp(error)) throw error;
+      // Older database: one thread per block.
+      const old = await supabase
         .from("messages")
         .select("id, block_id, user_id, body, created_at")
         .eq("block_id", blockId)
         .order("created_at", { ascending: true })
         .limit(500);
-      if (error) throw error;
-      return data;
+      if (old.error) throw old.error;
+      return { rows: old.data, legacy: true };
     },
   });
 
   useEffect(() => {
     if (!enabled) return;
     const supabase = getSupabase();
+    const patch = (update: (rows: MessageRow[]) => MessageRow[]) =>
+      queryClient.setQueryData<{ rows: MessageRow[]; legacy: boolean }>(keys.messages(blockId, occurrence), (old) =>
+        old ? { ...old, rows: update(old.rows) } : old,
+      );
     const channel = supabase
-      .channel(`messages:${blockId}`)
+      .channel(`messages:${blockId}:${occurrence}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `block_id=eq.${blockId}` },
         (payload) => {
           const message = payload.new as MessageRow;
-          queryClient.setQueryData<MessageRow[]>(keys.messages(blockId), (old) =>
-            !old || old.some((m) => m.id === message.id) ? old : [...old, message],
-          );
+          if ((message.occurrence ?? 0) !== occurrence) return; // another week's chat
+          patch((rows) => (rows.some((m) => m.id === message.id) ? rows : [...rows, message]));
           // A new author may not be in the people list yet.
           queryClient.invalidateQueries({ queryKey: keys.blockPeople(blockId) });
         },
       )
       .on("postgres_changes", { event: "DELETE", schema: "public", table: "messages" }, (payload) => {
         const id = (payload.old as { id?: string }).id;
-        if (!id) return;
-        queryClient.setQueryData<MessageRow[]>(keys.messages(blockId), (old) => old?.filter((m) => m.id !== id));
+        if (id) patch((rows) => rows.filter((m) => m.id !== id));
       })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [blockId, enabled, queryClient]);
+  }, [blockId, enabled, occurrence, queryClient]);
 
-  return query;
+  return { messages: query.data?.rows ?? EMPTY_MESSAGES, isLoading: query.isLoading, legacy: query.data?.legacy ?? false };
 }
+const EMPTY_MESSAGES: MessageRow[] = [];
 
-export function useMessageActions(blockId: string, userId: string) {
+export function useMessageActions(blockId: string, occurrence: number, userId: string, legacy: boolean) {
   const queryClient = useQueryClient();
+  const key = keys.messages(blockId, occurrence);
+  const patch = (update: (rows: MessageRow[]) => MessageRow[]) =>
+    queryClient.setQueryData<{ rows: MessageRow[]; legacy: boolean }>(key, (old) => (old ? { ...old, rows: update(old.rows) } : old));
   return {
     send: async (body: string) => {
       const id = crypto.randomUUID();
-      const message: MessageRow = { id, block_id: blockId, user_id: userId, body, created_at: new Date().toISOString() };
-      queryClient.setQueryData<MessageRow[]>(keys.messages(blockId), (old) => [...(old ?? []), message]);
-      const { error } = await getSupabase().from("messages").insert({ id, block_id: blockId, body });
+      const message: MessageRow = { id, block_id: blockId, occurrence, user_id: userId, body, created_at: new Date().toISOString() };
+      patch((rows) => [...rows, message]);
+      const { error } = await getSupabase()
+        .from("messages")
+        .insert(legacy ? { id, block_id: blockId, body } : { id, block_id: blockId, occurrence, body });
       if (error) {
-        queryClient.setQueryData<MessageRow[]>(keys.messages(blockId), (old) => old?.filter((m) => m.id !== id));
+        patch((rows) => rows.filter((m) => m.id !== id));
         throw error;
       }
     },
     remove: async (messageId: string) => {
       const { error } = await getSupabase().from("messages").delete().eq("id", messageId);
       if (error) throw error;
-      queryClient.setQueryData<MessageRow[]>(keys.messages(blockId), (old) => old?.filter((m) => m.id !== messageId));
+      patch((rows) => rows.filter((m) => m.id !== messageId));
     },
   };
 }

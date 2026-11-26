@@ -130,11 +130,11 @@ describe("event chat", () => {
     expect(await db.asError(outsider, `insert into public.messages (block_id, body) values ($1, 'hello?')`, [event])).toMatch(/row-level security/);
   });
 
-  it("is not available on free time", async () => {
+  it("is available on free time too (since block chats were added)", async () => {
     const [host, guest] = await db.createUsers("Host", "Guest");
     await db.connect(host, guest);
     const free = await db.createBlock(host, { type: "free" });
-    expect(await db.asError(guest, `insert into public.messages (block_id, body) values ($1, 'hi')`, [free])).toMatch(/row-level security/);
+    expect(await db.asError(guest, `insert into public.messages (block_id, body) values ($1, 'hi')`, [free])).toBeNull();
   });
 
   it("cannot be written in someone else's name", async () => {

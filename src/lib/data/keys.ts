@@ -13,7 +13,10 @@ export const keys = {
   hiddenPlaces: ["hidden-places"] as const,
   block: (id: string) => ["block", id] as const,
   blockPeople: (id: string) => ["block", id, "people"] as const,
-  messages: (blockId: string) => ["block", blockId, "messages"] as const,
+  /** A block's group chat for one week. */
+  messages: (blockId: string, occurrence: number) => ["block", blockId, "messages", occurrence] as const,
+  /** The viewer's private conversations inside one block and week. */
+  blockPrivate: (blockId: string, occurrence: number) => ["block", blockId, "private", occurrence] as const,
   invites: (blockId: string | null) => ["invites", blockId ?? "connect"] as const,
   connections: ["connections"] as const,
   groups: ["groups"] as const,

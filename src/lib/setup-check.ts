@@ -213,6 +213,22 @@ export async function runSetupChecks(): Promise<SetupCheck[]> {
     );
   }
 
+  if (databaseReady) {
+    // Chats in every block: a week column on the group chat, and private chats inside blocks.
+    const weekly = await getJson(`${url}/rest/v1/messages?select=occurrence&limit=0`, { headers: { apikey: publishable } });
+    const privateChats = await getJson(`${url}/rest/v1/block_private_messages?select=id&limit=0`, { headers: { apikey: publishable } });
+    const exists = [weekly, privateChats].every((r) => !("error" in r) && [200, 401, 403].includes(r.status));
+    checks.push(
+      exists
+        ? { label: "Chats in every block", status: "ok", detail: "Created." }
+        : {
+            label: "Chats in every block",
+            status: "todo",
+            detail: "Not switched on yet. Run the newest file in supabase/migrations (…block_chats.sql) in Supabase → SQL Editor.",
+          },
+    );
+  }
+
   // --- 4. the secret key in action, and the storage bucket --------------------
   if (secret && secretKind !== "publishable") {
     try {
