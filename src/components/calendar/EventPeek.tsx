@@ -24,6 +24,8 @@ export interface SheetRequest {
   occurrence?: number;
   /** Start the message box on a private message to this person. */
   to?: string | null;
+  /** Put the cursor in the message box (from a hover "write a message" button). */
+  focus?: boolean;
 }
 
 /**
@@ -104,6 +106,7 @@ function SheetLoader({
       block={block}
       occurrence={occurrence}
       initialTo={request.to ?? EVERYONE}
+      focus={Boolean(request.focus)}
       zone={zone}
       onClose={onClose}
     />
@@ -114,12 +117,14 @@ function Sheet({
   block,
   occurrence,
   initialTo,
+  focus,
   zone,
   onClose,
 }: {
   block: CalendarBlock;
   occurrence: Occurrence;
   initialTo: ChatTarget;
+  focus: boolean;
   zone: string;
   onClose: () => void;
 }) {
@@ -169,7 +174,7 @@ function Sheet({
   );
 
   return (
-    <Dialog open onClose={onClose} title={title} footer={<ChatBox chat={chat} block={block} to={to} onTo={setTo} />}>
+    <Dialog open onClose={onClose} title={title} footer={<ChatBox chat={chat} block={block} to={to} onTo={setTo} autoFocus={focus} />}>
       <div className="space-y-4">
         {isEvent && <EventPicture path={block.picture_path} className="slot aspect-[16/9] max-h-52 w-full" />}
 

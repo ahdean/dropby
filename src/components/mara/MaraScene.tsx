@@ -10,10 +10,10 @@ import {
   GRASS_PALETTE,
   GRASS_TILE,
   GRASS_TUFT,
-  MARA_BODY,
-  MARA_FACE,
-  MARA_FACE_BLINK,
-  MARA_FACE_OPEN,
+  MARA_SIT,
+  MARA_SIT_OPEN,
+  MARA_WALK_A,
+  MARA_WALK_B,
   spriteRuns,
 } from "./sprites";
 
@@ -21,10 +21,12 @@ import {
 const W = 120;
 const H = 74;
 
-const MARA_X = 12;
-const MARA_Y = 30; // top of the ears; the body follows under the face
+/** Where the mara stands at the start (left); it walks WALK_DISTANCE to the right to sit by the alpaca. */
+const MARA_X = 6;
+const WALK_DISTANCE = 52; // used by @keyframes ms-move in globals.css, through --walk
+const GROUND = 70; // feet of both animals
 const ALPACA_X = 82;
-const ALPACA_Y = 30;
+const ALPACA_Y = GROUND - 40;
 
 const FLOWERS: [number, number][] = [
   [4, 12],
@@ -40,35 +42,36 @@ const TUFTS: [number, number][] = [
   [111, 65],
 ];
 
-/** The speech bubble, with a pixel border and a tail pointing at the mara. */
+/** The speech bubble, with a pixel border and a tail pointing down at the sitting mara. */
 function Bubble() {
   const ink = "#2a1a0e";
   const paper = "#fffbf0";
+  const x = 28; // left edge
+  const y = 22; // top edge
+  const w = 46;
+  const h = 15;
   return (
     <g className="ms-bubble">
       {/* border, with the corners cut for a rounded pixel look */}
-      <rect x={35} y={8} width={46} height={1} fill={ink} />
-      <rect x={35} y={22} width={46} height={1} fill={ink} />
-      <rect x={34} y={9} width={1} height={13} fill={ink} />
-      <rect x={81} y={9} width={1} height={13} fill={ink} />
-      <rect x={35} y={9} width={46} height={13} fill={paper} />
-      {/* the tail, stepping down and left towards the mara's head */}
-      <rect x={38} y={22} width={5} height={1} fill={paper} />
-      <rect x={37} y={22} width={1} height={1} fill={ink} />
-      <rect x={43} y={22} width={1} height={1} fill={ink} />
-      <rect x={36} y={23} width={1} height={1} fill={ink} />
-      <rect x={37} y={23} width={4} height={1} fill={paper} />
-      <rect x={41} y={23} width={1} height={1} fill={ink} />
-      <rect x={35} y={24} width={1} height={1} fill={ink} />
-      <rect x={36} y={24} width={3} height={1} fill={paper} />
-      <rect x={39} y={24} width={1} height={1} fill={ink} />
-      <rect x={34} y={25} width={1} height={1} fill={ink} />
-      <rect x={35} y={25} width={2} height={1} fill={paper} />
-      <rect x={37} y={25} width={1} height={1} fill={ink} />
-      <rect x={33} y={26} width={3} height={1} fill={ink} />
+      <rect x={x + 1} y={y} width={w - 2} height={1} fill={ink} />
+      <rect x={x + 1} y={y + h - 1} width={w - 2} height={1} fill={ink} />
+      <rect x={x} y={y + 1} width={1} height={h - 2} fill={ink} />
+      <rect x={x + w - 1} y={y + 1} width={1} height={h - 2} fill={ink} />
+      <rect x={x + 1} y={y + 1} width={w - 2} height={h - 2} fill={paper} />
+      {/* the tail, stepping down and right towards the mara's head */}
+      <rect x={x + 32} y={y + h - 1} width={5} height={1} fill={paper} />
+      <rect x={x + 31} y={y + h - 1} width={1} height={1} fill={ink} />
+      <rect x={x + 37} y={y + h - 1} width={1} height={1} fill={ink} />
+      <rect x={x + 32} y={y + h} width={1} height={1} fill={ink} />
+      <rect x={x + 33} y={y + h} width={4} height={1} fill={paper} />
+      <rect x={x + 37} y={y + h} width={1} height={1} fill={ink} />
+      <rect x={x + 34} y={y + h + 1} width={1} height={1} fill={ink} />
+      <rect x={x + 35} y={y + h + 1} width={2} height={1} fill={paper} />
+      <rect x={x + 37} y={y + h + 1} width={1} height={1} fill={ink} />
+      <rect x={x + 36} y={y + h + 2} width={3} height={1} fill={ink} />
       <text
-        x={58}
-        y={18.5}
+        x={x + w / 2}
+        y={y + 10.5}
         textAnchor="middle"
         fontSize={7}
         fill={ink}
@@ -81,9 +84,10 @@ function Bubble() {
 }
 
 /**
- * A little pixel scene for the Mara design: a mara sitting in the grass next
- * to an alpaca. After a moment the mara opens its mouth and says "wheet!".
- * The alpaca blinks and chews; the grass sways. Tapping it plays it again.
+ * A little pixel scene for the Mara design: a small mara walks across the
+ * grass to an alpaca, sits down next to it, opens its mouth and says
+ * "wheet!", then turns round, walks back, and does it all again. The alpaca
+ * blinks and chews; the grass sways. Tapping it starts it from the top.
  * With "reduce motion" switched on it is a still picture, mid-"wheet".
  * The timing is in globals.css (search for "ms-").
  */
@@ -112,20 +116,33 @@ export function MaraScene({ className = "" }: { className?: string }) {
           <SpriteGroup key={`${x},${y}`} art={FLOWER} x={x} y={y} palette={GRASS_PALETTE} />
         ))}
 
-        {/* shadows on the grass */}
-        <rect x={MARA_X + 2} y={69} width={20} height={2} fill="#5a8e33" />
-        <rect x={ALPACA_X + 4} y={69} width={22} height={2} fill="#5a8e33" />
+        {/* the alpaca's shadow on the grass */}
+        <rect x={ALPACA_X + 4} y={GROUND - 1} width={22} height={2} fill="#5a8e33" />
 
         {/* the alpaca: still, blinking, chewing */}
         <SpriteGroup art={ALPACA} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca" />
         <SpriteGroup art={ALPACA_BLINK} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-blink" />
         <SpriteGroup art={ALPACA_CHEW} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-chew" />
 
-        {/* the mara: body, and its face closed, open ("wheet!") or blinking */}
-        <SpriteGroup art={MARA_BODY} x={MARA_X} y={MARA_Y + 24} />
-        <SpriteGroup art={MARA_FACE} x={MARA_X} y={MARA_Y} className="ms-face" />
-        <SpriteGroup art={MARA_FACE_OPEN} x={MARA_X} y={MARA_Y} className="ms-face-open" />
-        <SpriteGroup art={MARA_FACE_BLINK} x={MARA_X} y={MARA_Y} className="ms-face-blink" />
+        {/* the mara: walks over (moving group), turns round to walk back (facing
+            group), and is either walking, standing or sitting (one of each shown) */}
+        <g transform={`translate(${MARA_X} 0)`}>
+          <g className="ms-move" style={{ ["--walk" as string]: `${WALK_DISTANCE}px` }}>
+            <g className="ms-facing">
+              <g className="ms-stand">
+                <SpriteGroup art={MARA_WALK_B} y={GROUND - MARA_WALK_B.height} />
+              </g>
+              <g className="ms-walk">
+                <SpriteGroup art={MARA_WALK_A} y={GROUND - MARA_WALK_A.height} className="ms-step-a" />
+                <SpriteGroup art={MARA_WALK_B} y={GROUND - MARA_WALK_B.height} className="ms-step-b" />
+              </g>
+              <g className="ms-sit">
+                <SpriteGroup art={MARA_SIT} y={GROUND - MARA_SIT.height} className="ms-mouth-shut" />
+                <SpriteGroup art={MARA_SIT_OPEN} y={GROUND - MARA_SIT_OPEN.height} className="ms-mouth-open" />
+              </g>
+            </g>
+          </g>
+        </g>
 
         <Bubble />
 

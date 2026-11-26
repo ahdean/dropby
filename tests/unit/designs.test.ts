@@ -52,6 +52,16 @@ describe("the Mara design's pixel art", () => {
     expect([art.ALPACA_BLINK.height, art.ALPACA_CHEW.height]).toEqual([art.ALPACA.height, art.ALPACA.height]);
   });
 
+  it("has the walking and sitting frames lined up for the animation", () => {
+    const differingRows = (a: art.Sprite, b: art.Sprite) => a.rows.flatMap((row, i) => (row === b.rows[i] ? [] : [i]));
+    expect([art.MARA_WALK_A.width, art.MARA_WALK_B.width, art.MARA_SIT.width]).toEqual([24, 24, 24]);
+    // The two steps differ only in the legs; sitting with the mouth open differs only at the mouth.
+    expect(differingRows(art.MARA_WALK_A, art.MARA_WALK_B).every((row) => row >= 12)).toBe(true);
+    expect(differingRows(art.MARA_SIT, art.MARA_SIT_OPEN)).toEqual([8, 9]);
+    // Smaller than the alpaca, as a real mara is.
+    expect(art.MARA_SIT.height).toBeLessThan(art.ALPACA.height / 1.5);
+  });
+
   it("is drawn as runs of pixels that cover exactly the coloured ones", () => {
     const runs = art.spriteRuns(art.MARA_FACE);
     const covered = runs.reduce((sum, run) => sum + run.w, 0);

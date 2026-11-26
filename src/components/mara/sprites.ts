@@ -272,3 +272,68 @@ export const GRASS_TUFT = sprite([
 
 /** A little flower (3 × 3). */
 export const FLOWER = sprite([".f.", "fyf", ".f."]);
+
+// ---------------------------------------------------------------------------
+// The mara from the side, facing right: walking (two steps, 24 × 17),
+// sitting and sitting with its mouth open ("wheet!", 24 × 20). Used in the scene,
+// where it is smaller than the alpaca, as a real mara would be.
+// ---------------------------------------------------------------------------
+const SIDE_BODY = [
+  "..................kk....",
+  ".................kbbk...",
+  ".................kbpk...",
+  ".................kbpk...",
+  "................kbbbkk..",
+  "...kkkkkkkkk...kbbbbbbk.",
+  "..kdbbbbbbbbkkkbbbkhbbbk",
+  ".kwdbbbbbbbbbbbbbbkebbbn",
+  ".kwdbbbbbbbbbbbbbbblllkk",
+  ".kwdbbbbbbbbbbbbbbllllk.",
+  "..kdbbbbbbbbbbbbbbkkkk..",
+  "...kdbbbbbbbbbbllk......",
+];
+
+export const MARA_WALK_A = sprite([
+  ...SIDE_BODY,
+  "....kbbkkkkkkkbbk.......",
+  "...kbbk......kbbk.......",
+  "..kbbk........kbbk......",
+  ".kbbk..........kbbk.....",
+  ".kkk............kkkk....",
+]);
+
+export const MARA_WALK_B = sprite([
+  ...SIDE_BODY,
+  "....kbbkkkkkkkbbk.......",
+  "....kbbk.....kbbk.......",
+  "....kbbk.....kbbk.......",
+  "....kbbk.....kbbk.......",
+  "....kkkk.....kkkk.......",
+]);
+
+const SIT_ROWS = [
+  "..............kk........",
+  ".............kbbk.......",
+  ".............kbpk.......",
+  ".............kbpk.......",
+  "............kbbbkk......",
+  "...........kbbbbbbk.....",
+  "...........kbbbkhbbk....",
+  "...........kbbbbkebbbn..",
+  "...........kbbbbbblllkk.",
+  "...........kbbbbbllllk..",
+  "..........kbbbbbbkkkk...",
+  ".........kbbbbbbbk......",
+  "........kbbbbbbblk......",
+  ".......kdbbbbbbblk......",
+  "......kwdbbbbbbblk......",
+  ".....kwwdbbbbbkblk......",
+  ".....kwwdbbbbbkblk......",
+  ".....kwddbbbbbkblk......",
+  "....kkddbbbbbkkblkk.....",
+  "....kkkkkkkkkk.kkkk.....",
+];
+
+export const MARA_SIT = sprite(SIT_ROWS);
+/** Sitting, mouth a little open. */
+export const MARA_SIT_OPEN = sprite(patch(SIT_ROWS, [[8, 20, "o"], [8, 21, "o"], [9, 19, "o"], [9, 20, "o"]]));

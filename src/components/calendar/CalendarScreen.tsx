@@ -44,6 +44,7 @@ import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
 import { DayView } from "./DayView";
 import { BlockSheet, type SheetRequest } from "./EventPeek";
+import { QuickActionsContext, type QuickActions } from "./Beams";
 import { FriendsDialog } from "./FriendsDialog";
 import { InviteDialog } from "./InviteDialog";
 import { OffscreenDialog, type OffscreenList } from "./OffscreenDialog";
@@ -273,6 +274,31 @@ export function CalendarScreen() {
     else setSheet({ blockId: item.block.id, occurrence: item.occurrence.index });
   }, []);
 
+  /** The buttons that drop down from a block on hover (computers): answer, or write a message. */
+  const quickActions = useMemo<QuickActions>(
+    () => ({
+      rsvp: (item, status) => {
+        const current = item.block.rsvps.find((r) => r.occurrence === item.occurrence.index && r.user_id === userId)?.status ?? null;
+        const next = current === status ? null : status; // the same answer again clears it
+        actions
+          .setRsvp(item.block, item.occurrence.index, next)
+          .then(() => {
+            if (next === "in") toast("You're in! It's locked in.", "success");
+          })
+          .catch((error) => toastError(error, "Could not save your answer."));
+      },
+      message: (item) => {
+        if (item.mine) setEditor({ mode: "edit", block: item.block, occurrence: item.occurrence, focusChat: true });
+        else setSheet({ blockId: item.block.id, occurrence: item.occurrence.index, focus: true });
+      },
+      messageCluster: (c) => {
+        if (c.userIds.length === 1) setSheet({ blockId: c.items[0].block.id, occurrence: c.items[0].occurrence.index, focus: true });
+        else setCluster(c);
+      },
+    }),
+    [actions, toast, toastError, userId],
+  );
+
   /** A link (notification, quoted message) to one of your own blocks: the editor, scrolled to its chat. */
   const openOwnFromLink = useCallback((block: CalendarBlock, occurrence: Occurrence, to: string | null) => {
     setSheet(null);
@@ -400,6 +426,7 @@ export function CalendarScreen() {
             or turn it into something you&apos;re hosting.
           </p>
         )}
+        <QuickActionsContext value={quickActions}>
         {view === "grid" ? (
           <WeekGrid
             days={gridDays}
@@ -431,6 +458,7 @@ export function CalendarScreen() {
             onOpenCluster={setCluster}
           />
         )}
+        </QuickActionsContext>
         {isLoading && (
           <p className="pointer-events-none absolute inset-x-0 top-1/2 animate-blink text-center font-display text-[10px] text-ink-dim" role="status">
             Loading…

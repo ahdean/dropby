@@ -229,16 +229,28 @@ export function ChatBox({
   block,
   to,
   onTo,
+  autoFocus = false,
 }: {
   chat: BlockChatState;
   block: CalendarBlock;
   to: ChatTarget;
   onTo: (to: ChatTarget) => void;
+  /** Put the cursor in the box straight away (opened from a "write a message" button). */
+  autoFocus?: boolean;
 }) {
   const { toastError } = useFeedback();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const target = to === EVERYONE ? null : chat.people.get(to);
+  const input = useRef<HTMLInputElement>(null);
+
+  // Opened to write a message: put the cursor in the box. A moment later than
+  // mounting, because a window that has just opened takes the focus first.
+  useEffect(() => {
+    if (!autoFocus) return;
+    const timer = window.setTimeout(() => input.current?.focus(), 60);
+    return () => window.clearTimeout(timer);
+  }, [autoFocus]);
   const privateOk = !chat.privateUnavailable && chat.targets.length > 0;
 
   const send = async (event: FormEvent) => {
@@ -292,6 +304,7 @@ export function ChatBox({
         autoComplete="off"
         enterKeyHint="send"
         disabled={chat.unavailable}
+        ref={input}
       />
       <Button
         type="submit"

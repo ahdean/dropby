@@ -157,8 +157,6 @@ function EditorDialog({
   const uploadPicture = useEventPictureUpload();
   const places = useMyPlaces();
   const { places: savedPlaces } = useSavedPlaces();
-  // Places typed on earlier events that have not been saved under a nickname.
-  const usedPlaces = places.filter((place) => !savedPlaces.some((saved) => sameText(saved.address, place)));
   const [placesOpen, setPlacesOpen] = useState<"save" | "manage" | null>(null);
   const { toast, toastError, choose } = useFeedback();
   const ids = useId();
@@ -500,25 +498,6 @@ function EditorDialog({
                   </li>
                 </ul>
               </div>
-              {usedPlaces.length > 0 && (
-                <div className="mt-2">
-                  <div className="label !mb-1">Used before</div>
-                  <ul className="flex flex-wrap gap-2">
-                    {usedPlaces.slice(0, 5).map((place) => (
-                      <li key={place} className="max-w-full">
-                        <button
-                          type="button"
-                          onClick={() => set("location", place)}
-                          aria-pressed={sameText(form.location, place)}
-                          className={`btn btn-sm tile max-w-full ${sameText(form.location, place) ? "tile-join" : "tile-dark"}`}
-                        >
-                          <span className="truncate">{place}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
             </div>
             <PictureField
               id={`${ids}-picture`}
@@ -626,7 +605,7 @@ function EditorChat({
       )}
       <div className="label !mb-0">Chat</div>
       <ChatList chat={chat} block={block} zone={zone} />
-      <ChatBox chat={chat} block={block} to={to} onTo={setTo} />
+      <ChatBox chat={chat} block={block} to={to} onTo={setTo} autoFocus={focus} />
     </section>
   );
 }

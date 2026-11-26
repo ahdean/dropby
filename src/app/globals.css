@@ -293,18 +293,34 @@
   display: none !important;
 }
 
-/* The mara scene (src/components/mara/MaraScene.tsx). One 7-second loop:
-   the alpaca blinks at 1s, the mara opens its mouth at 1.8s, "wheet!" pops
-   up at 2.1s and stays until 5s, the alpaca chews, the mara blinks at 5.8s. */
-.mara-scene g[class^="ms-"],
-.mara-scene g[class*=" ms-"] {
-  animation-duration: 7s;
+/* The mara scene (src/components/mara/MaraScene.tsx). One 12-second loop:
+     0–0.5s    the mara stands at the left
+     0.5–4s    it walks over to the alpaca
+     4–7.7s    it sits; at 4.6s it opens its mouth and "wheet!" pops up
+     7.7–8s    it gets up and turns round
+     8–11.4s   it walks back
+     11.4–12s  it turns to face the alpaca again
+   The alpaca blinks now and then and chews while the mara is talking. */
+/* (:where keeps this general rule weaker than the specific ones below, such as the quick leg swap.) */
+.mara-scene :where(g[class^="ms-"], g[class*=" ms-"]) {
+  animation-duration: 12s;
   animation-iteration-count: infinite;
   animation-timing-function: steps(1, end);
 }
-.mara-scene .ms-face { animation-name: ms-face; }
-.mara-scene .ms-face-open { opacity: 0; animation-name: ms-face-open; }
-.mara-scene .ms-face-blink { opacity: 0; animation-name: ms-face-blink; }
+.mara-scene .ms-move { animation-name: ms-move; animation-timing-function: linear; }
+.mara-scene .ms-facing {
+  animation-name: ms-facing;
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+}
+.mara-scene .ms-stand { animation-name: ms-stand; }
+.mara-scene .ms-walk { opacity: 0; animation-name: ms-walk; }
+.mara-scene .ms-sit { opacity: 0; animation-name: ms-sit; }
+.mara-scene .ms-mouth-open { opacity: 0; animation-name: ms-mouth-open; }
+.mara-scene .ms-mouth-shut { animation-name: ms-mouth-shut; }
+/* the legs: two steps, swapped quickly the whole time (only seen while walking) */
+.mara-scene .ms-step-a { animation-name: ms-step-a; animation-duration: 0.36s; }
+.mara-scene .ms-step-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.36s; }
 .mara-scene .ms-alpaca { animation-name: ms-alpaca; }
 .mara-scene .ms-alpaca-blink { opacity: 0; animation-name: ms-alpaca-blink; }
 .mara-scene .ms-alpaca-chew { opacity: 0; animation-name: ms-alpaca-chew; }
@@ -312,7 +328,7 @@
   opacity: 0;
   animation-name: ms-bubble;
   transform-box: fill-box;
-  transform-origin: 0% 100%;
+  transform-origin: 75% 100%;
 }
 .mara-scene .ms-sway {
   animation-name: ms-sway;
@@ -322,36 +338,48 @@
   animation-delay: -0.7s;
 }
 
-@keyframes ms-face { 0% { opacity: 1; } 25.7% { opacity: 0; } 45.7% { opacity: 1; } 83% { opacity: 0; } 86% { opacity: 1; } }
-@keyframes ms-face-open { 0% { opacity: 0; } 25.7% { opacity: 1; } 45.7% { opacity: 0; } }
-@keyframes ms-face-blink { 0% { opacity: 0; } 83% { opacity: 1; } 86% { opacity: 0; } }
-@keyframes ms-alpaca {
-  0% { opacity: 1; } 14% { opacity: 0; } 16.5% { opacity: 1; } 51% { opacity: 0; } 53% { opacity: 1; }
-  55% { opacity: 0; } 57% { opacity: 1; } 63% { opacity: 0; } 65.5% { opacity: 1; }
+@keyframes ms-move {
+  0%, 4.2% { transform: translateX(0); }
+  33.3%, 66.7% { transform: translateX(var(--walk, 52px)); }
+  95%, 100% { transform: translateX(0); }
 }
-@keyframes ms-alpaca-blink { 0% { opacity: 0; } 14% { opacity: 1; } 16.5% { opacity: 0; } 63% { opacity: 1; } 65.5% { opacity: 0; } }
-@keyframes ms-alpaca-chew { 0% { opacity: 0; } 51% { opacity: 1; } 53% { opacity: 0; } 55% { opacity: 1; } 57% { opacity: 0; } }
+@keyframes ms-facing { 0% { transform: scaleX(1); } 64.2% { transform: scaleX(-1); } 95% { transform: scaleX(1); } }
+@keyframes ms-stand { 0% { opacity: 1; } 4.2% { opacity: 0; } 64.2% { opacity: 1; } 66.7% { opacity: 0; } 95% { opacity: 1; } }
+@keyframes ms-walk { 0% { opacity: 0; } 4.2% { opacity: 1; } 33.3% { opacity: 0; } 66.7% { opacity: 1; } 95% { opacity: 0; } }
+@keyframes ms-sit { 0% { opacity: 0; } 33.3% { opacity: 1; } 64.2% { opacity: 0; } }
+@keyframes ms-mouth-open { 0% { opacity: 0; } 38.3% { opacity: 1; } 52% { opacity: 0; } }
+@keyframes ms-mouth-shut { 0% { opacity: 1; } 38.3% { opacity: 0; } 52% { opacity: 1; } }
+@keyframes ms-step-a { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes ms-step-b { 0% { opacity: 0; } 50% { opacity: 1; } }
+@keyframes ms-alpaca {
+  0% { opacity: 1; } 12% { opacity: 0; } 13.5% { opacity: 1; } 42% { opacity: 0; } 43.5% { opacity: 1; }
+  45% { opacity: 0; } 46.5% { opacity: 1; } 75% { opacity: 0; } 76.5% { opacity: 1; }
+}
+@keyframes ms-alpaca-blink { 0% { opacity: 0; } 12% { opacity: 1; } 13.5% { opacity: 0; } 75% { opacity: 1; } 76.5% { opacity: 0; } }
+@keyframes ms-alpaca-chew { 0% { opacity: 0; } 42% { opacity: 1; } 43.5% { opacity: 0; } 45% { opacity: 1; } 46.5% { opacity: 0; } }
 @keyframes ms-bubble {
   0% { opacity: 0; transform: scale(0.5); }
-  30% { opacity: 1; transform: scale(0.75); }
-  31.5% { opacity: 1; transform: scale(1); }
-  71.4% { opacity: 0; transform: scale(1); }
+  40% { opacity: 1; transform: scale(0.75); }
+  41% { opacity: 1; transform: scale(1); }
+  60% { opacity: 0; transform: scale(1); }
 }
 @keyframes ms-sway { 0% { transform: translateX(0); } 50% { transform: translateX(1px); } }
 
-/* Reduce motion: a still picture, mid-"wheet". */
+/* Reduce motion: a still picture, the mara sitting by the alpaca, mid-"wheet". */
 @media (prefers-reduced-motion: reduce) {
-  .mara-scene g[class^="ms-"],
-  .mara-scene g[class*=" ms-"] {
+  .mara-scene :where(g[class^="ms-"], g[class*=" ms-"]) {
     animation: none !important;
   }
-  .mara-scene .ms-face,
-  .mara-scene .ms-face-blink,
+  .mara-scene .ms-move { transform: translateX(var(--walk, 52px)); }
+  .mara-scene .ms-stand,
+  .mara-scene .ms-walk,
+  .mara-scene .ms-mouth-shut,
   .mara-scene .ms-alpaca-blink,
   .mara-scene .ms-alpaca-chew {
     opacity: 0;
   }
-  .mara-scene .ms-face-open,
+  .mara-scene .ms-sit,
+  .mara-scene .ms-mouth-open,
   .mara-scene .ms-alpaca,
   .mara-scene .ms-bubble {
     opacity: 1;
@@ -732,6 +760,32 @@ dialog::backdrop {
   background: var(--backdrop);
   /* scanlines */
   background-image: repeating-linear-gradient(to bottom, transparent 0 2px, var(--backdrop-lines) 2px 4px);
+}
+
+/* Quick buttons that drop down from a calendar block on hover (src/components/calendar/Beams.tsx).
+   Only where there is a mouse; touch screens tap to open the block instead. */
+.hover-actions {
+  display: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .has-hover-actions:hover > .hover-actions,
+  .has-hover-actions:focus-within > .hover-actions {
+    display: flex;
+  }
+  /* Lift the hovered block, and its day's row (a faded past day is a layer of
+     its own), so the buttons sit over the rows below. */
+  .has-hover-actions:hover,
+  .has-hover-actions:focus-within {
+    z-index: 25;
+  }
+  [data-day-row]:has(.has-hover-actions:hover),
+  [data-day-row]:has(.has-hover-actions:focus-within) {
+    position: relative;
+    z-index: 26;
+  }
+}
+.dragging .hover-actions {
+  display: none !important;
 }
 
 /* While a block is being dragged: no text selection, no touch scrolling. */

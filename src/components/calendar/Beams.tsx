@@ -1,13 +1,15 @@
 "use client";
 
-import type { CSSProperties, KeyboardEvent } from "react";
+import { createContext, useContext, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { EventIcon } from "@/components/ui/EventIcon";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { iconAsText } from "@/lib/event-icon";
 import type { BlockStatus, CalendarItem, FriendFreeCluster, OffscreenEntry } from "@/lib/calendar/model";
 import { addDays, formatDayKey, formatMinutesShort, formatSpan } from "@/lib/time";
-import type { Profile } from "@/lib/types";
+import { useSession } from "@/lib/data/session";
+import type { Profile, RsvpStatus } from "@/lib/types";
+import { fractionOf } from "./geometry";
 import type { Ghost } from "./useBlockGestures";
 
 /**
@@ -15,6 +17,72 @@ import type { Ghost } from "./useBlockGestures";
  * (position and size) so the same components serve the week grid, where time
  * runs left to right, and the day view, where it runs top to bottom.
  */
+
+// ---------------------------------------------------------------------------
+// Quick actions on hover (computers only): answer or write without opening anything
+// ---------------------------------------------------------------------------
+
+export interface QuickActions {
+  /** Answer a friend's event ("I'm in" / "Can't make it"; the same answer again clears it). */
+  rsvp: (item: CalendarItem, status: RsvpStatus) => void;
+  /** Open a block with its message box ready to type in. */
+  message: (item: CalendarItem) => void;
+  /** Friends' free time: one friend opens straight away, several show the list. */
+  messageCluster: (cluster: FriendFreeCluster) => void;
+}
+
+/** Provided by the calendar screen; the beams below use it for their hover buttons. */
+export const QuickActionsContext = createContext<QuickActions | null>(null);
+
+/**
+ * A little row of buttons that drops down while the pointer is over a block
+ * (or a keyboard user tabs into it). Hidden on touch screens, where a tap
+ * opens the block as usual; see .hover-actions in globals.css.
+ */
+function HoverActions({ place, children }: { place: string; children: ReactNode }) {
+  return (
+    <span
+      className={`hover-actions absolute z-[1] gap-1 border-2 border-black bg-panel p-[3px] ${place}`}
+      // Keys pressed here are for these buttons, not for the block underneath.
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      {children}
+    </span>
+  );
+}
+
+function ActionButton({
+  icon,
+  label,
+  active = false,
+  activeClass = "tile-locked",
+  onClick,
+}: {
+  icon: "check" | "x" | "chat";
+  label: string;
+  active?: boolean;
+  activeClass?: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      title={label}
+      aria-pressed={icon === "chat" ? undefined : active}
+      className={`btn tile !min-h-[28px] !w-8 !p-0 ${active ? activeClass : "tile-dark"}`}
+    >
+      <PixelIcon name={icon} size={12} />
+    </button>
+  );
+}
+
+/** Where the drop-down sits: under the block (aligned to whichever end keeps it on screen), or inside a tall one. */
+function actionsPlace(item: CalendarItem, vertical: boolean): string {
+  if (vertical) return "right-1 top-1";
+  return fractionOf(item.startMin) > 0.6 ? "right-0 top-full mt-[3px]" : "left-0 top-full mt-[3px]";
+}
 
 export const STATUS_LABEL: Record<BlockStatus, string> = {
   free: "Free",
@@ -113,6 +181,7 @@ export function MyBeam({
       onOpen(item);
     }
   };
+  const actions = useContext(QuickActionsContext);
   const capStart = vertical ? "inset-x-[-2px] top-[-2px] h-3 w-auto cursor-ns-resize" : "left-[-2px] cursor-ew-resize";
   const capEnd = vertical ? "inset-x-[-2px] bottom-[-2px] top-auto h-3 w-auto cursor-ns-resize" : "right-[-2px] cursor-ew-resize";
   return (
@@ -125,10 +194,15 @@ export function MyBeam({
       data-item={item.key}
       onKeyDown={onKeyDown}
       style={style}
-      className={`beam ${STATUS_BEAM[item.status]} ${vertical ? "vbeam" : ""} cursor-grab touch-manipulation select-none ${
+      className={`beam has-hover-actions ${STATUS_BEAM[item.status]} ${vertical ? "vbeam" : ""} cursor-grab touch-manipulation select-none ${
         dimmed ? "opacity-30" : ""
       } ${item.block.type === "join" ? "z-[3]" : "z-[2]"}`}
     >
+      {actions && (
+        <HoverActions place={actionsPlace(item, vertical)}>
+          <ActionButton icon="chat" label="Open the chat" onClick={() => actions.message(item)} />
+        </HoverActions>
+      )}
       {/* An end that carries on out of view has no handle to grab, just an arrow. */}
       {item.cutStart ? (
         <CutMark edge="start" vertical={vertical} />
@@ -145,7 +219,11 @@ export function MyBeam({
   );
 }
 
-/** A friend's hosted event: hollow, shows their emoji and face, opens the event page. */
+/**
+ * A friend's hosted event: hollow, shows their emoji and face; a tap opens
+ * it. On a computer, hovering drops down ✓ (I'm in), ✗ (can't make it) and
+ * a chat button.
+ */
 export function FriendEventBeam({
   item,
   host,
@@ -160,26 +238,41 @@ export function FriendEventBeam({
   onOpen: (item: CalendarItem) => void;
 }) {
   const label = describeFriendEvent(item, host);
+  const actions = useContext(QuickActionsContext);
+  const { userId } = useSession();
+  const myAnswer = item.block.rsvps.find((r) => r.occurrence === item.occurrence.index && r.user_id === userId)?.status ?? null;
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(item)}
-      aria-label={label}
-      title={label}
-      style={style}
-      className={`beam ${STATUS_BEAM[item.status]} beam-hollow z-[4] flex min-w-0 items-center gap-1 overflow-hidden px-1 text-left ${
-        vertical ? "flex-col items-start py-1" : ""
-      }`}
-    >
-      <EventIcon value={item.block.emoji} size={17} max={1} />
-      <Avatar person={host} size={16} className="shrink-0" />
-      {item.status === "locked" && <PixelIcon name="lock" size={10} className="shrink-0 text-locked" />}
-      {item.block.title && <span className="truncate text-[16px] leading-none text-ink">{item.block.title}</span>}
-    </button>
+    <div style={style} className="has-hover-actions absolute z-[4]">
+      <button
+        type="button"
+        onClick={() => onOpen(item)}
+        aria-label={label}
+        title={label}
+        className={`beam ${STATUS_BEAM[item.status]} beam-hollow inset-0 flex min-w-0 items-center gap-1 overflow-hidden px-1 text-left ${
+          vertical ? "flex-col items-start py-1" : ""
+        }`}
+      >
+        <EventIcon value={item.block.emoji} size={17} max={1} />
+        <Avatar person={host} size={16} className="shrink-0" />
+        {item.status === "locked" && <PixelIcon name="lock" size={10} className="shrink-0 text-locked" />}
+        {item.block.title && <span className="truncate text-[16px] leading-none text-ink">{item.block.title}</span>}
+      </button>
+      {actions && (
+        <HoverActions place={actionsPlace(item, vertical)}>
+          {item.block.rsvp_enabled && (
+            <>
+              <ActionButton icon="check" label="I'm in" active={myAnswer === "in"} onClick={() => actions.rsvp(item, "in")} />
+              <ActionButton icon="x" label="Can't make it" active={myAnswer === "out"} activeClass="tile-stone" onClick={() => actions.rsvp(item, "out")} />
+            </>
+          )}
+          <ActionButton icon="chat" label="Write a message" onClick={() => actions.message(item)} />
+        </HoverActions>
+      )}
+    </div>
   );
 }
 
-/** The stack of friends' faces over the time they are free. */
+/** The stack of friends' faces over the time they are free (with a chat button on hover). */
 export function FriendStack({
   cluster,
   people,
@@ -195,17 +288,28 @@ export function FriendStack({
   const from = Math.min(...cluster.items.map((i) => i.fullStartMin));
   const to = Math.max(...cluster.items.map((i) => i.fullEndMin));
   const label = `${names.join(", ")} ${names.length === 1 ? "is" : "are"} free ${formatDayKey(cluster.dayKey)}, ${formatSpan(cluster.dayKey, from, to)}. Open for details.`;
+  const actions = useContext(QuickActionsContext);
   return (
-    <button
-      type="button"
-      onClick={() => onOpen(cluster)}
-      aria-label={label}
-      title={label}
-      style={style}
-      className="absolute z-[5] flex items-center justify-center rounded-full hover:brightness-110"
-    >
-      <AvatarStack people={people} size={26} max={3} />
-    </button>
+    <div style={style} className="has-hover-actions absolute z-[5]">
+      <button
+        type="button"
+        onClick={() => onOpen(cluster)}
+        aria-label={label}
+        title={label}
+        className="flex items-center justify-center rounded-full hover:brightness-110"
+      >
+        <AvatarStack people={people} size={26} max={3} />
+      </button>
+      {actions && (
+        <HoverActions place="left-1/2 top-full -translate-x-1/2 mt-[3px]">
+          <ActionButton
+            icon="chat"
+            label={names.length === 1 ? `Write to ${names[0]} about this` : "Write a message"}
+            onClick={() => actions.messageCluster(cluster)}
+          />
+        </HoverActions>
+      )}
+    </div>
   );
 }
 
