@@ -197,6 +197,22 @@ export async function runSetupChecks(): Promise<SetupCheck[]> {
     );
   }
 
+  if (databaseReady) {
+    // Event pictures add a column to blocks; hidden places add a table. Both come from the same file.
+    const pictures = await getJson(`${url}/rest/v1/blocks?select=picture_path&limit=0`, { headers: { apikey: publishable } });
+    const hidden = await getJson(`${url}/rest/v1/hidden_places?select=place_key&limit=0`, { headers: { apikey: publishable } });
+    const exists = [pictures, hidden].every((r) => !("error" in r) && [200, 401, 403].includes(r.status));
+    checks.push(
+      exists
+        ? { label: "Event pictures and hidden places", status: "ok", detail: "Created." }
+        : {
+            label: "Event pictures and hidden places",
+            status: "todo",
+            detail: "Not switched on yet. Run the newest file in supabase/migrations (…pictures_and_hidden_places.sql) in Supabase → SQL Editor.",
+          },
+    );
+  }
+
   // --- 4. the secret key in action, and the storage bucket --------------------
   if (secret && secretKind !== "publishable") {
     try {

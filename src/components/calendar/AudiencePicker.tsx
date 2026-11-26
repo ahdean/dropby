@@ -1,21 +1,71 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { PixelIcon } from "@/components/ui/PixelIcon";
-import type { AudienceMode, Group, Profile } from "@/lib/types";
+import {
+  groupMembers,
+  groupState,
+  isEveryone,
+  selectedPeople,
+  toggleEveryone,
+  toggleGroup,
+  togglePerson,
+  type AudienceValue,
+  type GroupState,
+} from "@/lib/audience";
+import type { Group, Profile } from "@/lib/types";
 
-export interface AudienceValue {
-  audience: AudienceMode;
-  userIds: string[];
-  groupIds: string[];
+export type { AudienceValue };
+
+/** The tick box on each row: ticked, part-ticked (some of a group) or empty. */
+function Tick({ state }: { state: GroupState }) {
+  return (
+    <span
+      className={`tile flex h-8 w-8 shrink-0 items-center justify-center ${state === "none" ? "tile-dark" : "tile-join"}`}
+      aria-hidden="true"
+    >
+      {state === "all" && <PixelIcon name="check" size={14} />}
+      {state === "some" && <span className="h-[3px] w-3 bg-current" />}
+    </span>
+  );
+}
+
+function Row({
+  state,
+  label,
+  onToggle,
+  children,
+  strong = false,
+}: {
+  state: GroupState;
+  label: string;
+  onToggle: () => void;
+  children: ReactNode;
+  strong?: boolean;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={state === "all" ? true : state === "some" ? "mixed" : false}
+        aria-label={label}
+        onClick={onToggle}
+        className={`flex w-full items-center gap-3 px-2 py-1.5 text-left hover:bg-panel-3 ${strong ? "bg-panel-2/60" : ""}`}
+      >
+        <Tick state={state} />
+        <span className={`flex min-w-0 flex-1 items-center gap-2 ${state === "none" ? "text-ink-faint" : "text-ink"}`}>{children}</span>
+      </button>
+    </li>
+  );
 }
 
 /**
- * Who a block is shared with.
- *
- * Starts as "all connections". Every person has a ✓ and an ✗ to tap; tapping
- * an ✗ switches to a hand-picked list with everyone else still ticked. Groups
- * are one tap each and can be combined with either mode.
+ * Who a block is shared with: one list, everyone ticked to start with.
+ * "Everyone" at the top ticks or unticks all connections; each group ticks or
+ * unticks all of its members; each person can be ticked on their own. The
+ * rules are in lib/audience.ts.
  */
 export function AudiencePicker({
   value,
@@ -28,121 +78,66 @@ export function AudiencePicker({
   connections: Profile[];
   groups: Group[];
 }) {
-  const all = value.audience === "all_connections";
-  const isIncluded = (id: string) => all || value.userIds.includes(id);
+  const ids = connections.map((c) => c.id);
+  const selected = selectedPeople(value, ids, groups);
+  const everyone = isEveryone(value, ids, groups);
+  const usefulGroups = groups.filter((g) => groupMembers(g, ids).length > 0);
 
-  const setPerson = (id: string, include: boolean) => {
-    // Leaving "all connections": start from everyone, then apply the change.
-    const base = all ? connections.map((c) => c.id) : value.userIds;
-    const userIds = include ? [...new Set([...base, id])] : base.filter((x) => x !== id);
-    onChange({ ...value, audience: "custom", userIds });
-  };
-
-  const toggleGroup = (id: string) => {
-    const groupIds = value.groupIds.includes(id) ? value.groupIds.filter((x) => x !== id) : [...value.groupIds, id];
-    onChange({ ...value, groupIds });
-  };
-
-  const selectedCount = all ? connections.length : value.userIds.filter((id) => connections.some((c) => c.id === id)).length;
-  const nobody = !all && value.userIds.length === 0 && value.groupIds.length === 0;
+  const status = everyone
+    ? `Everyone you're connected to (${connections.length} now), including people you connect with later.`
+    : selected.size === 0
+      ? "Nobody yet: only you can see this until you tick someone."
+      : `${selected.size} of ${connections.length} ${connections.length === 1 ? "person" : "people"}. People you connect with later won't see it.`;
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-2" role="radiogroup" aria-label="Who can see this">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={all}
-          onClick={() => onChange({ ...value, audience: "all_connections" })}
-          className={`btn tile flex-1 ${all ? "tile-locked" : "tile-dark"}`}
-        >
-          <PixelIcon name="users" size={15} />
-          All connections
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={!all}
-          onClick={() => onChange({ ...value, audience: "custom", userIds: all ? [] : value.userIds })}
-          className={`btn tile flex-1 ${!all ? "tile-locked" : "tile-dark"}`}
-        >
-          <PixelIcon name="check" size={15} />
-          Pick people
-        </button>
-      </div>
-
+    <div className="space-y-2">
       <p className="text-[17px] text-ink-faint" role="status">
-        {all
-          ? `Everyone you're connected to (${connections.length} now), including people you connect with later.`
-          : nobody
-            ? "Nobody yet: only you can see this until you pick someone."
-            : `${selectedCount} ${selectedCount === 1 ? "person" : "people"}${value.groupIds.length > 0 ? ` + ${value.groupIds.length} ${value.groupIds.length === 1 ? "group" : "groups"}` : ""}.`}
+        {status}
       </p>
-
-      {groups.length > 0 && (
-        <div>
-          <div className="label">Groups (tap to add)</div>
-          <div className="flex flex-wrap gap-2">
-            {groups.map((group) => {
-              const on = value.groupIds.includes(group.id);
-              return (
-                <button
-                  key={group.id}
-                  type="button"
-                  aria-pressed={on}
-                  onClick={() => toggleGroup(group.id)}
-                  className={`btn btn-sm tile ${on ? "tile-join" : "tile-dark"}`}
-                >
-                  {on && <PixelIcon name="check" size={12} />}
-                  {group.name}
-                  <span className={on ? "text-stone-ink" : "text-ink-dim"}>({group.member_ids.length})</span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
+      {connections.length === 0 ? (
+        <p className="slot px-3 py-2 text-ink-dim">
+          No connections yet. Save this block, then use &quot;Invite by text&quot; to bring a friend in.
+        </p>
+      ) : (
+        <ul className="slot max-h-72 divide-y-2 divide-black overflow-y-auto" aria-label="Who can see this">
+          <Row
+            state={everyone ? "all" : selected.size > 0 ? "some" : "none"}
+            label={`Everyone (${connections.length})`}
+            onToggle={() => onChange(toggleEveryone(value, ids, groups))}
+            strong
+          >
+            <PixelIcon name="users" size={16} className="shrink-0" />
+            <span className="truncate">Everyone</span>
+            <span className="text-ink-dim">({connections.length})</span>
+          </Row>
+          {usefulGroups.map((group) => {
+            const count = groupMembers(group, ids).length;
+            return (
+              <Row
+                key={group.id}
+                state={groupState(group, selected, ids)}
+                label={`Group: ${group.name} (${count})`}
+                onToggle={() => onChange(toggleGroup(value, group, ids, groups))}
+              >
+                <PixelIcon name="users" size={14} className="shrink-0 text-ink-dim" />
+                <span className="truncate">{group.name}</span>
+                <span className="text-ink-dim">({count})</span>
+              </Row>
+            );
+          })}
+          {connections.map((person) => (
+            <Row
+              key={person.id}
+              state={selected.has(person.id) ? "all" : "none"}
+              label={person.name}
+              onToggle={() => onChange(togglePerson(value, person.id, ids, groups))}
+            >
+              <Avatar person={person} size={26} />
+              <span className="truncate">{person.name}</span>
+            </Row>
+          ))}
+        </ul>
       )}
-
-      <div>
-        <div className="label">People</div>
-        {connections.length === 0 ? (
-          <p className="slot px-3 py-2 text-ink-dim">
-            No connections yet. Save this block, then use &quot;Invite by text&quot; to bring a friend in.
-          </p>
-        ) : (
-          <ul className="slot max-h-56 divide-y-2 divide-black overflow-y-auto">
-            {connections.map((person) => {
-              const included = isIncluded(person.id);
-              return (
-                <li key={person.id} className="flex items-center gap-3 px-2 py-1.5">
-                  <Avatar person={person} size={28} />
-                  <span className={`min-w-0 flex-1 truncate ${included ? "text-ink" : "text-ink-faint line-through"}`}>{person.name}</span>
-                  <span className="flex shrink-0 gap-1" role="group" aria-label={`Share with ${person.name}`}>
-                    <button
-                      type="button"
-                      aria-label={`Include ${person.name}`}
-                      aria-pressed={included}
-                      onClick={() => setPerson(person.id, true)}
-                      className={`btn tile !min-h-[38px] !w-11 !p-0 ${included ? "tile-join" : "tile-dark"}`}
-                    >
-                      <PixelIcon name="check" size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Leave out ${person.name}`}
-                      aria-pressed={!included}
-                      onClick={() => setPerson(person.id, false)}
-                      className={`btn tile !min-h-[38px] !w-11 !p-0 ${!included ? "tile-danger" : "tile-dark"}`}
-                    >
-                      <PixelIcon name="x" size={14} />
-                    </button>
-                  </span>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
     </div>
   );
 }

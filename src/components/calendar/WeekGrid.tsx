@@ -420,7 +420,7 @@ export function WeekGrid({
         </div>
 
         <div ref={topSentinel} className="flex h-10 items-center justify-center text-[17px] text-ink-faint">
-          {canLoadEarlier ? "Loading earlier weeks…" : "This is as far back as dropby goes."}
+          {canLoadEarlier ? "Loading earlier weeks…" : "This is as far back as wheet goes."}
         </div>
 
         {days.map((day, index) => {
@@ -453,7 +453,7 @@ export function WeekGrid({
         })}
 
         <div ref={bottomSentinel} className="flex h-12 items-center justify-center px-3 text-center text-[17px] text-ink-faint">
-          {canLoadLater ? "Loading more weeks…" : "That's as far ahead as dropby goes for now (about two years)."}
+          {canLoadLater ? "Loading more weeks…" : "That's as far ahead as wheet goes for now (about two years)."}
         </div>
       </div>
     </div>

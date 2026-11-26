@@ -19,11 +19,14 @@ export function Header() {
   return (
     <header className="app-header sticky top-0 z-40 border-b-2 border-black bg-panel/95 pt-[env(safe-area-inset-top)] backdrop-blur-[2px]">
       <div className="mx-auto flex h-14 max-w-[1500px] items-center justify-between gap-3 px-3 sm:px-5">
-        <Link href="/" aria-label="dropby, back to calendar" className="shrink-0">
+        <Link href="/" aria-label="wheet, back to calendar" className="shrink-0">
           <Logo />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3" aria-label="Main">
-          <IconButton icon="help" label="How dropby works" onClick={() => setHelpOpen(true)} />
+          <IconButton icon="help" label="How wheet works" onClick={() => setHelpOpen(true)} />
+          <Link href="/connections" className="btn tile tile-dark !min-h-[40px] !w-10 !p-0" aria-label="Connections" title="Connections">
+            <PixelIcon name="users" size={16} />
+          </Link>
           <span className="relative inline-flex">
             <Link
               href="/messages"

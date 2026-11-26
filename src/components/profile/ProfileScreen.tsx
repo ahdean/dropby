@@ -1,5 +1,6 @@
 "use client";
 
+import { DesignPicker } from "./DesignPicker";
 import Link from "next/link";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { PlacesManager } from "@/components/places/PlacesManager";
@@ -161,6 +162,11 @@ export function ProfileScreen() {
         <PlacesManager />
       </Card>
 
+      <Card title="Design">
+        <DesignPicker />
+        <p className="mt-2 text-[17px] text-ink-faint">Remembered on this device only. More designs will appear here.</p>
+      </Card>
+
       <Card title="This device">
         <div>
           <label htmlFor="profile-zone" className="label">
@@ -168,11 +174,11 @@ export function ProfileScreen() {
           </label>
           <ZonePicker id="profile-zone" />
           <p className="mt-2 text-[17px] text-ink-faint">
-            Every time in dropby is shown in this zone. The choice is remembered on this device only.
+            Every time in wheet is shown in this zone. The choice is remembered on this device only.
           </p>
         </div>
         <p className="text-[17px] text-ink-faint">
-          Tip: add dropby to your home screen. On iPhone: Share, then &quot;Add to Home Screen&quot;. On Android: menu, then &quot;Install app&quot;.
+          Tip: add wheet to your home screen. On iPhone: Share, then &quot;Add to Home Screen&quot;. On Android: menu, then &quot;Install app&quot;.
         </p>
         <Button variant="dark" icon="logout" onClick={leave}>
           Sign out

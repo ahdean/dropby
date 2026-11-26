@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { HeroEventIcon } from "@/components/ui/EventIcon";
+import { EventPicture } from "@/components/ui/EventPicture";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { INVITE_COOKIE } from "@/lib/constants";
 import { occurrenceAt } from "@/lib/recurrence";
@@ -34,7 +35,7 @@ export function InviteCard({ token, preview }: { token: string; preview: InviteP
         <span className="text-[48px] leading-none" aria-hidden="true">🚪</span>
         <h1 className="text-[13px] text-ink">This invite has closed</h1>
         <p className="text-ink-dim">The link has expired or was switched off. Ask your friend to send a new one.</p>
-        <Link href="/login" className="btn tile tile-dark">Sign in to dropby</Link>
+        <Link href="/login" className="btn tile tile-dark">Sign in to wheet</Link>
       </div>
     );
   }
@@ -66,6 +67,7 @@ export function InviteCard({ token, preview }: { token: string; preview: InviteP
 
         {block && (
           <>
+            {isEvent && <EventPicture path={block.picture_path} className="slot aspect-[16/9] max-h-56 w-full" />}
             <div className="flex items-start gap-4">
               {isEvent && (
                 <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none" aria-hidden="true">
@@ -105,7 +107,7 @@ export function InviteCard({ token, preview }: { token: string; preview: InviteP
           {isEvent ? "Sign up to see details & RSVP" : "Sign up to connect"}
         </Link>
         <p className="text-center text-[17px] text-ink-faint">
-          dropby is a shared calendar for friends. Sign up with your phone number and you&apos;re connected with {inviter.name}. Already have an account? The same button signs you in.
+          wheet is a shared calendar for friends. Sign up with your phone number and you&apos;re connected with {inviter.name}. Already have an account? The same button signs you in.
         </p>
       </div>
     </article>

@@ -108,11 +108,11 @@ function QuoteCard({
       </span>
     </>
   );
-  const className = `mb-1 flex max-w-full items-start gap-2 border-l-4 bg-black/40 px-2 py-1 text-left text-[17px] ${
+  const className = `mb-1 flex max-w-full items-start gap-2 border-l-4 bg-void/50 px-2 py-1 text-left text-[17px] ${
     isEvent ? "border-join" : "border-free"
   }`;
   return href ? (
-    <Link href={href} onClick={onNavigate} className={`${className} hover:bg-black/60`} aria-label={`About: ${whose} ${what}, ${when}. Open`}>
+    <Link href={href} onClick={onNavigate} className={`${className} hover:bg-void/80`} aria-label={`About: ${whose} ${what}, ${when}. Open`}>
       {content}
     </Link>
   ) : (

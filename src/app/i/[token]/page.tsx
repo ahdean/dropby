@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Logo } from "@/components/shell/Logo";
 import { getPublicEnv } from "@/lib/env";
+import { eventPictureSrc } from "@/lib/event-picture";
 import { iconAsText } from "@/lib/event-icon";
 import type { InvitePreview } from "@/lib/types";
 import { InviteCard } from "./InviteCard";
@@ -40,9 +41,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ? `${iconAsText(preview.block.emoji)} ${preview.block.title ?? "Join me"}`.trim()
         : `${preview.inviter.name} is free`;
   const description = preview
-    ? `${preview.inviter.name} invited you on dropby. Tap to see when and say if you're in.`
+    ? `${preview.inviter.name} invited you on wheet. Tap to see when and say if you're in.`
     : "This invite link is no longer valid.";
-  return { title, description, robots: { index: false, follow: false }, openGraph: { title: `${title} · dropby`, description } };
+  // The event's picture, if it has one, becomes the picture in the link bubble.
+  const picture = preview?.block?.type === "join" ? eventPictureSrc(preview.block.picture_path) : null;
+  return {
+    title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: { title: `${title} · wheet`, description, ...(picture ? { images: [picture] } : {}) },
+  };
 }
 
 async function Preview({ params }: Props) {

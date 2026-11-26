@@ -10,7 +10,7 @@ import { createSupabaseServer } from "@/lib/supabase/server";
 export type ActionResult<T = object> = ({ ok: true } & T) | { ok: false; error: string };
 
 const BAD_PHONE = "Enter a 10-digit US mobile number.";
-const NOT_CONFIGURED = "dropby is not connected to its database yet. See the README for setup.";
+const NOT_CONFIGURED = "wheet is not connected to its database yet. See the README for setup.";
 
 /** Turn Supabase auth errors into something a person can act on. */
 function friendly(error: { message?: string; code?: string; status?: number } | null | undefined): string {

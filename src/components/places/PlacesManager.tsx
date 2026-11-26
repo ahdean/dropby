@@ -5,7 +5,9 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
-import { useSavedPlaceActions, useSavedPlaces } from "@/lib/data/saved-places";
+import { useMyPlaces } from "@/lib/data/blocks";
+import { useHiddenPlaceActions, useSavedPlaceActions, useSavedPlaces } from "@/lib/data/saved-places";
+import { placeKey } from "@/lib/places";
 import type { SavedPlace } from "@/lib/types";
 
 const NOT_SET_UP =
@@ -17,9 +19,12 @@ function PlaceForm({
   submitLabel,
   onSubmit,
   onCancel,
+  focusName = false,
 }: {
   initial?: SavedPlace;
   submitLabel: string;
+  /** Put the cursor in the name box straight away (after "Save" on a used place). */
+  focusName?: boolean;
   onSubmit: (name: string, address: string) => Promise<void>;
   onCancel?: () => void;
 }) {
@@ -53,7 +58,16 @@ function PlaceForm({
         <label htmlFor={`place-name-${key}`} className="sr-only">
           Name
         </label>
-        <input id={`place-name-${key}`} className="field" value={name} maxLength={40} placeholder="Name, e.g. Home" onChange={(e) => setName(e.target.value)} required />
+        <input
+          id={`place-name-${key}`}
+          className="field"
+          value={name}
+          maxLength={40}
+          placeholder="Name, e.g. Home"
+          onChange={(e) => setName(e.target.value)}
+          required
+          autoFocus={focusName}
+        />
       </div>
       <div>
         <label htmlFor={`place-address-${key}`} className="sr-only">
@@ -84,14 +98,22 @@ function PlaceForm({
 }
 
 /**
- * Add, rename, re-address and delete saved places. Used on the profile page
- * and, in a dialog, from the event editor.
+ * Add, rename, re-address and delete saved places, and tidy the "Used before"
+ * suggestions (save one under a name, or cross it out). Used on the profile
+ * page and, in a dialog, from the event editor.
  */
 export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string }) {
   const { places, isLoading, notSetUp } = useSavedPlaces();
   const actions = useSavedPlaceActions();
+  const hiddenActions = useHiddenPlaceActions();
+  const used = useMyPlaces();
   const { toast, toastError } = useFeedback();
   const [editing, setEditing] = useState<string | null>(null);
+  // The address the "Add a place" form starts from: one passed in, or a used place being saved.
+  const [suggestion, setSuggestion] = useState<{ address: string; focus: boolean } | null>(
+    suggestedAddress ? { address: suggestedAddress, focus: false } : null,
+  );
+  const usedNotSaved = used.filter((place) => !places.some((saved) => placeKey(saved.address) === placeKey(place)));
 
   if (notSetUp) {
     return (
@@ -108,6 +130,18 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
       toast(`"${place.name}" deleted.`, "info", {
         label: "Undo",
         onClick: () => void actions.add(place.name, place.address).catch((error) => toastError(error)),
+      });
+    } catch (error) {
+      toastError(error);
+    }
+  };
+
+  const hide = async (place: string) => {
+    try {
+      await hiddenActions.hide(place);
+      toast(`"${place}" won't be suggested any more.`, "info", {
+        label: "Undo",
+        onClick: () => void hiddenActions.unhide(place).catch((error) => toastError(error)),
       });
     } catch (error) {
       toastError(error);
@@ -158,16 +192,45 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
         </ul>
       )}
 
+      {usedNotSaved.length > 0 && (
+        <div>
+          <div className="label">Used before</div>
+          <p className="mb-2 text-[17px] text-ink-faint">
+            From your past events. Save one under a name, or cross it out to stop it being suggested (your events keep it).
+          </p>
+          <ul className="slot divide-y-2 divide-black">
+            {usedNotSaved.map((place) => (
+              <li key={place} className="flex items-center gap-3 px-3 py-1.5">
+                <span className="shrink-0 text-ink-faint">
+                  <PixelIcon name="clock" size={13} />
+                </span>
+                <span className="min-w-0 flex-1 truncate text-ink-dim">{place}</span>
+                <IconButton
+                  icon="plus"
+                  label={`Save "${place}" under a name`}
+                  onClick={() => setSuggestion({ address: place, focus: true })}
+                  className="!min-h-[38px] !w-10"
+                  size={13}
+                />
+                <IconButton icon="x" label={`Stop suggesting "${place}"`} onClick={() => hide(place)} className="!min-h-[38px] !w-10" size={13} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <div>
         <div className="label">Add a place</div>
         <PlaceForm
           // Re-create the form when a different address is suggested, so it starts from that.
-          key={suggestedAddress ?? ""}
-          initial={suggestedAddress ? { id: "new", name: "", address: suggestedAddress } : undefined}
+          key={suggestion?.address ?? ""}
+          initial={suggestion ? { id: "new", name: "", address: suggestion.address } : undefined}
+          focusName={suggestion?.focus}
           submitLabel="Add"
           onSubmit={async (name, address) => {
             await actions.add(name, address);
             toast(`"${name.trim()}" saved.`, "success");
+            setSuggestion(null);
           }}
         />
       </div>

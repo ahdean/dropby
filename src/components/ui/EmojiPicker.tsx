@@ -10,7 +10,7 @@ import { PixelIcon } from "./PixelIcon";
  *
  * Tap an icon to add it; tap it again to take it off. The first one is the
  * main icon: it suggests the title and is the one shown where space is tight.
- * There is a short row of favourites (starting with dropby's own green door),
+ * There is a short row of favourites (starting with wheet's own green door),
  * a longer list that can be expanded, and a box for typing any other emoji.
  * The lists live in lib/event-icon.ts.
  */
@@ -25,6 +25,8 @@ export function EmojiPicker({
 }) {
   const [expanded, setExpanded] = useState(false);
   const [full, setFull] = useState(false);
+  // The example smiley goes away while the box is being typed in, so it is not mistaken for a choice.
+  const [typing, setTyping] = useState(false);
   const selected = splitIcons(value);
 
   const toggle = (icon: string) => {
@@ -108,7 +110,9 @@ export function EmojiPicker({
             setFull(false);
             onChange(joinIcons(next));
           }}
-          placeholder="🙂"
+          placeholder={typing ? "" : "🙂"}
+          onFocus={() => setTyping(true)}
+          onBlur={() => setTyping(false)}
           inputMode="text"
           autoComplete="off"
         />

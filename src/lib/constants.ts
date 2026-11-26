@@ -48,9 +48,10 @@ export const AVATAR_BUCKET = "avatars";
 export const AVATAR_SIZE = 256;
 
 /** Cookie that remembers an invite link across the sign-in flow. */
+// Named before the app was renamed; kept so invites already in progress still work.
 export const INVITE_COOKIE = "dropby_invite";
 
 /** Browsers cap cookie lifetimes at 400 days; ask for the maximum. */
 export const SESSION_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
-export const APP_NAME = "dropby";
+export const APP_NAME = "wheet";

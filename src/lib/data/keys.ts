@@ -9,6 +9,8 @@ export const keys = {
   places: ["places"] as const,
   /** The viewer's own nicknamed places. */
   savedPlaces: ["saved-places"] as const,
+  /** Places the viewer crossed out of "Used before". */
+  hiddenPlaces: ["hidden-places"] as const,
   block: (id: string) => ["block", id] as const,
   blockPeople: (id: string) => ["block", id, "people"] as const,
   messages: (blockId: string) => ["block", blockId, "messages"] as const,

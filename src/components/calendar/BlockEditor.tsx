@@ -11,13 +11,16 @@ import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
 import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
 import { PlacesDialog } from "@/components/places/PlacesManager";
-import { draftFromBlock, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
+import { draftFromBlock, isPicturesNotSetUp, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
+import { removeEventPictureIfUnused, useEventPictureUpload } from "@/lib/data/event-pictures";
 import { useSavedPlaces } from "@/lib/data/saved-places";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
 import { addDays, formatDayKey, formatMinutes, formatSpan, minutesFromDay, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
 import type { BlockDraft, BlockType, CalendarBlock, Group, Profile } from "@/lib/types";
+import { EVERYONE } from "@/lib/audience";
 import { AudiencePicker, type AudienceValue } from "./AudiencePicker";
+import { PictureField } from "./PictureField";
 import type { DayRange } from "./useBlockGestures";
 
 export type EditorState =
@@ -39,11 +42,14 @@ interface Form {
   emoji: string;
   location: string;
   description: string;
+  /** The picture already stored for this event (null: none, or removed). */
+  picturePath: string | null;
+  /** A newly chosen picture, uploaded when the event is saved. */
+  pictureFile: File | null;
   rsvp: boolean;
   audience: AudienceValue;
 }
 
-const EVERYONE: AudienceValue = { audience: "all_connections", userIds: [], groupIds: [] };
 
 function initialForm(state: EditorState, zone: string): Form {
   if (state.mode === "create") {
@@ -57,6 +63,8 @@ function initialForm(state: EditorState, zone: string): Form {
       emoji: state.preset?.emoji ?? DOOR_ICON,
       location: "",
       description: "",
+      picturePath: null,
+      pictureFile: null,
       rsvp: true,
       audience: state.preset?.audience ?? EVERYONE,
     };
@@ -74,6 +82,8 @@ function initialForm(state: EditorState, zone: string): Form {
     emoji: block.emoji ?? DOOR_ICON,
     location: block.location ?? "",
     description: block.description ?? "",
+    picturePath: block.picture_path ?? null,
+    pictureFile: null,
     rsvp: block.rsvp_enabled,
     audience: { audience: block.audience, userIds: block.shared_user_ids, groupIds: block.shared_group_ids },
   };
@@ -134,6 +144,7 @@ function EditorDialog({
 }: EditorProps & { state: EditorState }) {
   const { userId } = useSession();
   const actions = useBlockActions();
+  const uploadPicture = useEventPictureUpload();
   const places = useMyPlaces();
   const { places: savedPlaces } = useSavedPlaces();
   // Places typed on earlier events that have not been saved under a nickname.
@@ -229,28 +240,37 @@ function EditorDialog({
     setError(problem);
     if (problem) return;
 
-    const draft = toDraft(form);
+    const originalPicture = editing?.block.picture_path ?? null;
     setBusy(true);
     try {
       let blockId: string;
       let occurrence = 0;
 
+      // A weekly event: ask first, so nothing is uploaded if the person backs out.
+      const repeating = state.mode === "edit" && state.block.repeat_weekly && form.repeat;
+      const scope = repeating
+        ? await choose({
+            title: "This repeats weekly",
+            body: "Apply your changes to just this one, or to every week?",
+            choices: [
+              { value: "one", label: "Just this one", variant: "stone" },
+              { value: "all", label: "Every week", variant: "free" },
+            ],
+          })
+        : null;
+      if (repeating && !scope) return;
+
+      // The picture: upload a new one; otherwise only mention it if it was removed.
+      const nextPicture = form.type !== "join" ? null : form.pictureFile ? await uploadPicture(form.pictureFile) : form.picturePath;
+      const draft: BlockDraft = { ...toDraft(form), picture_path: nextPicture !== originalPicture ? nextPicture : undefined };
+
       if (state.mode === "create") {
         blockId = await actions.create(draft);
-      } else if (!state.block.repeat_weekly || !form.repeat) {
+      } else if (!repeating) {
         // A one-off block, or a weekly one being turned into a one-off.
         await actions.update(state.block, draft);
         blockId = state.block.id;
       } else {
-        const scope = await choose({
-          title: "This repeats weekly",
-          body: "Apply your changes to just this one, or to every week?",
-          choices: [
-            { value: "one", label: "Just this one", variant: "stone" },
-            { value: "all", label: "Every week", variant: "free" },
-          ],
-        });
-        if (!scope) return;
         if (scope === "one") {
           blockId = await actions.detachOccurrence(state.block, state.occurrence.index, { ...draft, repeat_weekly: false });
         } else {
@@ -262,9 +282,15 @@ function EditorDialog({
         }
       }
       toast("Saved", "success");
+      if (draft.picture_path !== undefined) void removeEventPictureIfUnused(originalPicture);
       onSaved({ blockId, occurrence, invite });
     } catch (failure) {
-      toastError(failure, "Could not save. Please try again.");
+      toastError(
+        isPicturesNotSetUp(failure)
+          ? "Event pictures are not switched on yet: the newest database file has to be run in Supabase (see README)."
+          : failure,
+        "Could not save. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -274,6 +300,7 @@ function EditorDialog({
     if (!editing) return;
     const { block, occurrence } = editing;
     try {
+      let deletedBlock = !block.repeat_weekly;
       if (!block.repeat_weekly) {
         await actions.remove(block);
       } else {
@@ -289,9 +316,14 @@ function EditorDialog({
         if (!scope) return;
         if (scope === "one") await actions.skipOccurrence(block, occurrence.index);
         else if (scope === "following") await actions.endSeriesAt(block, occurrence.index);
-        else await actions.remove(block);
+        else {
+          await actions.remove(block);
+          deletedBlock = true;
+        }
       }
       onClose();
+      // The whole event is gone: its picture file can go too (unless a split-off week still uses it).
+      if (deletedBlock) void removeEventPictureIfUnused(block.picture_path);
       if (block.type === "free" && !block.repeat_weekly) {
         // Free time is cheap to restore exactly; an event's answers and chat would be lost, so no Undo there.
         toast("Deleted.", "info", {
@@ -406,7 +438,7 @@ function EditorDialog({
             </div>
             <div>
               <label htmlFor={`${ids}-title`} className="label">Title</label>
-              <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="dropby" onChange={(e) => set("title", e.target.value)} />
+              <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="wheet" onChange={(e) => set("title", e.target.value)} />
             </div>
             <div>
               <label htmlFor={`${ids}-location`} className="label">Where</label>
@@ -482,6 +514,13 @@ function EditorDialog({
                 </div>
               )}
             </div>
+            <PictureField
+              id={`${ids}-picture`}
+              path={form.picturePath}
+              file={form.pictureFile}
+              onPick={(file) => setForm((f) => ({ ...f, pictureFile: file }))}
+              onRemove={() => setForm((f) => ({ ...f, pictureFile: null, picturePath: null }))}
+            />
             <div>
               <label htmlFor={`${ids}-description`} className="label">Details</label>
               <textarea id={`${ids}-description`} className="field" rows={3} value={form.description} maxLength={2000} placeholder="Bring a topping!" onChange={(e) => set("description", e.target.value)} />

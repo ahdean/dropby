@@ -9,6 +9,7 @@ import { useMessaging } from "@/components/messages/Messaging";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button, IconButton } from "@/components/ui/Button";
 import { HeroEventIcon } from "@/components/ui/EventIcon";
+import { EventPicture } from "@/components/ui/EventPicture";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { statusOf } from "@/lib/calendar/model";
@@ -186,6 +187,7 @@ export function EventScreen() {
         <div className="relative h-3" aria-hidden="true">
           <span className={`beam ${locked ? "beam-locked" : "beam-join"} inset-0`} />
         </div>
+        <EventPicture path={block.picture_path} className="aspect-[16/9] max-h-[22rem] w-full border-b-2 border-black" />
         <div className="space-y-4 p-4 sm:p-6">
           <div className="flex items-start gap-4">
             <span className="tile flex h-20 w-20 shrink-0 items-center justify-center text-[48px] leading-none sm:h-24 sm:w-24 sm:text-[58px]" aria-hidden="true">

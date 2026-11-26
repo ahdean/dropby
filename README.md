@@ -1,4 +1,6 @@
-# dropby
+# wheet
+
+(Formerly "dropby". The GitHub repository and the Vercel project still carry the old name; that's fine and changes nothing for users.)
 
 A social availability calendar. Friends show when they're **free** and when they're **hosting**, and see each other's openings at a glance. It runs in the browser and installs to a phone's home screen like an app.
 
@@ -37,7 +39,7 @@ You need three free accounts: **Supabase** (the database), **Vercel** (the hosti
 
 ### Step 1: Supabase (about 15 minutes)
 
-1. Go to [supabase.com](https://supabase.com), sign up, and click **New project**. Pick any name (for example `dropby`), set a database password (save it somewhere), and choose a region near your users. Wait for it to finish setting up.
+1. Go to [supabase.com](https://supabase.com), sign up, and click **New project**. Pick any name (for example `wheet`), set a database password (save it somewhere), and choose a region near your users. Wait for it to finish setting up.
 2. **Create the database tables.** In the left menu open **SQL Editor**. For each file in this repository's [`supabase/migrations`](supabase/migrations) folder, **in order of the number at the start of its name** (`20261111000100_schema.sql` first):
    - open the file on GitHub, click **Raw**, select all and copy;
    - paste into a new query in the SQL Editor and click **Run**;
@@ -49,7 +51,7 @@ You need three free accounts: **Supabase** (the database), **Vercel** (the hosti
    - **Publishable key**, starts with `sb_publishable_` (older projects: the `anon` key)
    - **Secret key**, starts with `sb_secret_` (older projects: the `service_role` key). Treat this like a password.
 4. **Leave these settings at their defaults:**
-   - **Authentication → Sign In / Providers → Email**: keep it **enabled**. dropby never sends email, but the test sign-in in step 3 relies on it internally.
+   - **Authentication → Sign In / Providers → Email**: keep it **enabled**. wheet never sends email, but the test sign-in in step 3 relies on it internally.
    - **Authentication → Sessions**: leave "time-box" and "inactivity timeout" **off**, so people stay signed in.
 
 ### Step 2: Vercel (about 10 minutes)
@@ -65,7 +67,7 @@ You need three free accounts: **Supabase** (the database), **Vercel** (the hosti
    | `DEV_LOGIN_ENABLED` | `true` |
    | `DEV_LOGIN_CODE` | six digits of your choosing, e.g. `482913` |
 
-3. Click **Deploy**. After a minute or two you get an address like `https://dropby-xxxx.vercel.app`.
+3. Click **Deploy**. After a minute or two you get an address like `https://<project>-xxxx.vercel.app`.
 4. Add one more environment variable, **`NEXT_PUBLIC_SITE_URL`**, set to that address (no slash at the end), then **Deployments → ⋯ → Redeploy**. Invite links use this address.
 5. Back in Supabase, open **Authentication → URL Configuration** and set **Site URL** to the same address.
 
@@ -88,7 +90,7 @@ To fill the app with demo people and plans, see [Demo data](#demo-data).
 The simplest route is **Twilio Verify**: Twilio handles the sender numbers and US carrier registration for you.
 
 1. Sign up at [twilio.com](https://www.twilio.com) and **upgrade the account** (add a payment method). A trial account can only text numbers you've verified by hand.
-2. In the Twilio Console open **Verify → Services → Create new**. Name it `dropby`, enable the **SMS** channel, and create it. Copy the **Service SID** (starts with `VA`).
+2. In the Twilio Console open **Verify → Services → Create new**. Name it `wheet` (the name appears in the text people receive), enable the **SMS** channel, and create it. Copy the **Service SID** (starts with `VA`).
 3. From the Twilio Console home page copy your **Account SID** (starts with `AC`) and **Auth Token**.
 4. In Supabase open **Authentication → Sign In / Providers → Phone**:
    - turn **Enable Phone provider** on;
@@ -107,15 +109,25 @@ Good to know:
 - **Using a plain Twilio phone number instead of Verify** also works (choose `Twilio` as the provider and supply a Messaging Service SID), but US carriers then require "A2P 10DLC" registration, which takes days to weeks.
 - **People who signed up with dev login keep their accounts.** They are ordinary phone accounts; the same number with a texted code signs into the same account.
 
-### Step 5 (later): your own domain
+### Step 5 (later): your own domain (wheet.me)
 
-In Vercel open **Settings → Domains** and add the domain. Then update `NEXT_PUBLIC_SITE_URL` in Vercel and the **Site URL** in Supabase to the new address, and redeploy.
+Once the domain is bought (any registrar works, or buy it inside Vercel under **Domains**, which skips step 2):
+
+1. In Vercel open your project → **Settings → Domains**, add `wheet.me`, and accept the suggestion to also add `www.wheet.me` redirecting to it.
+2. Vercel then shows the DNS records to create at your registrar (usually an **A** record for `wheet.me` and a **CNAME** for `www`). Add them there and wait until Vercel shows **Valid Configuration** (minutes to a few hours).
+3. In Vercel → **Settings → Environment Variables**, set `NEXT_PUBLIC_SITE_URL` to `https://wheet.me` (no slash at the end). This is the address put into invite links.
+4. In Supabase → **Authentication → URL Configuration**, set **Site URL** to `https://wheet.me` and add `https://wheet.me/**` under **Redirect URLs**.
+5. In Vercel → **Deployments**, open the newest one and choose **Redeploy** so the new address is built in.
+
+The old `…vercel.app` address keeps working, so invite links already sent still open.
+
+If you named the Twilio Verify service `dropby` in step 4, rename it to `wheet` in Twilio (**Verify → Services → your service → General settings**), since that name appears in the text people receive.
 
 ---
 
 ## Updating the database
 
-Most updates to dropby only change the app, and Vercel deploys them by itself. Now and then a new feature needs a change to the database too. When that happens a new file appears in [`supabase/migrations`](supabase/migrations), and it has to be run once:
+Most updates to wheet only change the app, and Vercel deploys them by itself. Now and then a new feature needs a change to the database too. When that happens a new file appears in [`supabase/migrations`](supabase/migrations), and it has to be run once:
 
 1. Open the new file on GitHub, click **Raw**, select all and copy.
 2. In Supabase open **SQL Editor**, paste into a new query and click **Run**.
@@ -127,6 +139,7 @@ Files are numbered by date; run any you haven't run yet, oldest first. Running a
 | `20261111000100` … `000500` | Everything the first version needs (step 1.2 above) |
 | `20261114000100_direct_messages.sql` | Private messages between two people |
 | `20261115000100_saved_places.sql` | Your own list of nicknamed places ("Home") for filling in an event's location |
+| `20261126000100_pictures_and_hidden_places.sql` | Pictures on events, and crossing places out of "Used before" |
 
 (Developers: `npm run db:push` applies whatever is pending.)
 
@@ -247,6 +260,8 @@ No setup needed: the database tests start a real Postgres in memory (PGlite), ap
 | `tests/db/events.test.ts` | RSVPs, chat, notifications, invite links |
 | `tests/db/messages.test.ts` | Private messages: who can write to whom, privacy, quotes |
 | `tests/db/places.test.ts` | Saved places: private to their owner |
+| `tests/db/pictures.test.ts` | Event pictures (own folder only, in the invite preview) and hidden places |
+| `tests/unit/audience.test.ts` | The "Shared with" list: everyone, groups and people ticking on and off |
 | `tests/unit/time.test.ts` | UTC ↔ local time, daylight saving, splitting by day, formatting |
 | `tests/unit/recurrence.test.ts` | Weekly repeats across daylight-saving changes and time zones |
 | `tests/unit/intervals.test.ts` | Block overlap, snapping, dragging, resizing, stacking |
@@ -270,9 +285,10 @@ When you change a rule in `supabase/migrations`, add or update a test in `tests/
 
 Every block has an audience:
 
-- **All connections** (the default): everyone you're connected to, now and later; or
-- **Picked people**: a ✓/✗ per person; and
-- any **groups** you add on top.
+- **Everyone** (the default): everyone you're connected to, now and later; or
+- **Picked people**: the people ticked in the "Shared with" list.
+
+In the editor everyone starts ticked. The **Everyone** row ticks or unticks all of them, each group row ticks or unticks its members, and people can be ticked one by one. When everyone ends up ticked the block goes back to **Everyone**, which also includes people you connect with later. (Blocks saved before this list existed may also be shared with whole groups; their members show as ticked.)
 
 One database function, `private.can_view_block`, decides whether a person may read a block, and every policy that protects blocks, RSVPs, chat messages and share lists goes through it. This is enforced by Postgres row-level security, not by the app: a block that wasn't shared with you never leaves the database.
 
@@ -289,11 +305,14 @@ Phone number plus a texted one-time code (Supabase Auth). The session is kept in
 
 ### Invites
 
-Inviting someone who isn't on dropby creates an unguessable link and a ready-written text, and hands it to the phone's own messaging app. dropby's servers never send texts on a user's behalf. The link shows a small public preview (no address, no guest list); signing up from it connects the newcomer to the sharer. Links last 30 days and can be switched off.
+Inviting someone who isn't on wheet creates an unguessable link and a ready-written text, and hands it to the phone's own messaging app. wheet's servers never send texts on a user's behalf. The link shows a small public preview (no address, no guest list); signing up from it connects the newcomer to the sharer. Links last 30 days and can be switched off.
 
 ### Small conveniences
 
 - **Saved places.** Keep a private list of nicknamed places ("Home" → the full address) on the profile page or from the event editor ("Manage"). When hosting, tap one to fill in "Where"; guests see the address, never your nickname. The editor also offers locations typed on your earlier events ("Used before").
+- **Used before.** The places from your earlier events are listed under "Used before" in the places manager: **+** saves one under a nickname, **✗** stops it being suggested (the events themselves keep their address; Undo brings it back).
+- **Event pictures.** A hosted event can have a picture (editor → "Add a picture"). It is shrunk on the phone before upload and shown on the event page, in a friend's quick look, on the invite preview and in the link bubble when an invite is texted. The file sits in the `event-pictures` storage bucket under the host's own folder; like profile pictures, anyone holding its address can load it, and the address is only handed out with the event itself.
+- **Designs.** Profile → **Design** switches the look (for now "Retro night", the default, and "Light"). The choice is remembered on each device.
 - **Several icons.** An event can carry up to four icons; the first is the main one, which suggests the title and is the one drawn where space is tight.
 - **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
 - **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
@@ -318,6 +337,7 @@ supabase/migrations/     The database: tables, security rules, triggers. START H
   …400_rpc.sql             functions the app calls (connect, mutuals, invites)
   …500_storage_realtime.sql  avatars bucket, realtime
   2026111400…_direct_messages.sql  private messages (added later; see "Updating the database")
+  2026111500…, 2026112600…   saved places; event pictures and hidden places
 
 src/lib/                 Logic with no screens in it (all unit-tested)
   constants.ts             product settings: hours shown, snap, weeks ahead …
@@ -325,6 +345,9 @@ src/lib/                 Logic with no screens in it (all unit-tested)
   recurrence.ts            weekly repeats
   calendar/intervals.ts    overlap, snapping, drag maths, stacking
   calendar/model.ts        rows → what the calendar draws
+  audience.ts              the "Shared with" list: everyone, groups, people
+  themes.ts                the designs and how the chosen one is applied
+  event-picture.ts         where event pictures are stored
   data/                    reading and writing Supabase (one file per area)
   supabase/                Supabase clients (browser, server, admin) and the request proxy
   auth/dev-login.ts        the test sign-in
@@ -357,7 +380,8 @@ public/sw.js             service worker (installable app); public/offline.html i
 
 - **Hours shown, snap interval, how far ahead the calendar goes, invite lifetime:** `src/lib/constants.ts`.
 - **Colours and the retro look:** the tokens at the top of `src/app/globals.css`. Blue/green/gold are defined once and used everywhere.
-- **Event icons** (the favourites row and the longer list in the editor): `src/lib/event-icon.ts`. The default is dropby's own green open door.
+- **A new design:** add it to the list in `src/lib/themes.ts` and give it a `:root[data-theme="…"]` block of colours in `src/app/globals.css` (copy the "Light" block). The Profile page lists it automatically.
+- **Event icons** (the favourites row and the longer list in the editor): `src/lib/event-icon.ts`. The default is wheet's own green open door.
 - **Interface icons:** each is a 12×12 bitmap in `src/components/ui/PixelIcon.tsx`. App icons and the favicon: `node scripts/make-icons.mjs`.
 - **A database rule:** add a **new** file in `supabase/migrations` (never edit one that has already been applied to the live database), add a test in `tests/db`, then apply it (SQL Editor, or `npm run db:push`).
 - **More countries for phone numbers:** `src/lib/phone.ts` and the `+1` shown on the sign-in form.

@@ -2,7 +2,7 @@
  * The icon of a hosted event.
  *
  * It is stored in `blocks.emoji` as text. Usually that is an emoji, but the
- * default is dropby's own green open door, which is not an emoji: it is stored
+ * default is wheet's own green open door, which is not an emoji: it is stored
  * as the marker below and drawn as a pixel icon wherever the app shows it.
  * In plain text (a text message, a browser tab title) the door emoji stands in.
  */
@@ -86,7 +86,7 @@ export function toggleIcon(icons: readonly string[], icon: string): string[] {
  * can always type your own).
  */
 export const FAVORITE_ICONS: { value: string; label: string; title: string }[] = [
-  { value: DOOR_ICON, label: "Open door (drop by)", title: "dropby" },
+  { value: DOOR_ICON, label: "Open door (drop by)", title: "wheet" },
   { value: "🏠", label: "At home", title: "house hang" },
   { value: "🍴", label: "Restaurant", title: "restaurant hang" },
   { value: "🍝", label: "A meal", title: "dinner" },
@@ -102,9 +102,16 @@ export function defaultTitleFor(value: string | null | undefined): string {
 }
 
 /** Is this title one of the automatic ones (or empty), i.e. safe to replace when the icon changes? */
+/** Suggested titles from before the app was renamed: still treated as automatic, so they get replaced. */
+const OLD_SUGGESTED_TITLES = ["dropby"];
+
 export function isAutomaticTitle(title: string | null | undefined): boolean {
   const text = (title ?? "").trim().toLowerCase();
-  return text === "" || FAVORITE_ICONS.some((favourite) => favourite.title.toLowerCase() === text);
+  return (
+    text === "" ||
+    OLD_SUGGESTED_TITLES.includes(text) ||
+    FAVORITE_ICONS.some((favourite) => favourite.title.toLowerCase() === text)
+  );
 }
 
 /** The longer list, shown when the picker is expanded. Any emoji can also be typed. */

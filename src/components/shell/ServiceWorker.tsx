@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 /**
- * Registers the service worker (public/sw.js) that makes dropby installable
+ * Registers the service worker (public/sw.js) that makes wheet installable
  * and gives it an offline screen. Only in production builds: in development a
  * service worker gets in the way of hot reloading.
  */

@@ -66,7 +66,7 @@ function CutMark({ edge, vertical }: { edge: "start" | "end"; vertical: boolean 
     ? edge === "start" ? "inset-x-0 top-0 justify-center pt-[2px]" : "inset-x-0 bottom-0 justify-center pb-[2px]"
     : edge === "start" ? "inset-y-0 left-0 items-center pl-[2px]" : "inset-y-0 right-0 items-center pr-[2px]";
   return (
-    <span className={`pointer-events-none absolute flex text-[var(--hi)] ${place}`} aria-hidden="true">
+    <span className={`pointer-events-none absolute flex text-[var(--core)] ${place}`} aria-hidden="true">
       <PixelIcon name={name} size={9} />
     </span>
   );
@@ -251,7 +251,7 @@ export function OffscreenTab({
       aria-label={label}
       title={label}
       style={style}
-      className={`absolute z-[8] flex h-[16px] items-center gap-[3px] border-2 border-current bg-black/90 px-[3px] font-display text-[8px] leading-none hover:bg-panel-3 ${STATUS_TEXT[entryStatus(first)]}`}
+      className={`absolute z-[8] flex h-[16px] items-center gap-[3px] border-2 border-current bg-panel px-[3px] font-display text-[8px] leading-none hover:bg-panel-3 ${STATUS_TEXT[entryStatus(first)]}`}
     >
       {side === "before" && <PixelIcon name="left" size={8} />}
       <span>{formatMinutesShort(start)}</span>

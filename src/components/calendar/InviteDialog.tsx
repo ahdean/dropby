@@ -17,10 +17,10 @@ import type { CalendarBlock } from "@/lib/types";
 import { useZone } from "@/lib/zone";
 
 /**
- * Invite someone who is not on dropby yet.
+ * Invite someone who is not on wheet yet.
  *
  * Makes a fresh, unguessable link and a ready-to-send text. The message is
- * handed to the phone's own messaging app; dropby never sends texts itself.
+ * handed to the phone's own messaging app; wheet never sends texts itself.
  * `block = null` invites someone to simply connect.
  */
 export function InviteDialog({

@@ -1,10 +1,10 @@
 import type { MetadataRoute } from "next";
 
-/** Web app manifest: what makes dropby installable to a phone's home screen. */
+/** Web app manifest: what makes wheet installable to a phone's home screen. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "dropby",
-    short_name: "dropby",
+    name: "wheet",
+    short_name: "wheet",
     description: "See when your friends are free and what they're hosting, at a glance.",
     id: "/",
     start_url: "/",

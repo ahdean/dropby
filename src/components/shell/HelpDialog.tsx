@@ -14,7 +14,7 @@ function Swatch({ kind }: { kind: "free" | "join" | "locked" }) {
 
 export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
-    <Dialog open={open} onClose={onClose} title="How dropby works" footer={<Button variant="free" onClick={onClose}>Got it</Button>}>
+    <Dialog open={open} onClose={onClose} title="How wheet works" footer={<Button variant="free" onClick={onClose}>Got it</Button>}>
       <div className="space-y-4">
         <ul className="space-y-3">
           <li className="flex items-center gap-3">

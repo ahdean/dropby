@@ -3,7 +3,8 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { MAX_WEEKS_AHEAD, MAX_WEEKS_BACK } from "../constants";
-import { rankPlaces } from "../places";
+import { rankPlaces, type PlaceUse } from "../places";
+import { useHiddenPlaces } from "./saved-places";
 import { shiftSeries } from "../recurrence";
 import { getSupabase } from "../supabase/client";
 import { addDays, startOfWeek, todayKey, zonedToUtc, type DayKey } from "../time";
@@ -85,9 +86,10 @@ const EMPTY: CalendarBlock[] = [];
 /** Locations the viewer has put on their own events before, most used first (see lib/places.ts). */
 export function useMyPlaces() {
   const { userId } = useSession();
+  const { hidden } = useHiddenPlaces();
   const query = useQuery({
     queryKey: keys.places,
-    queryFn: async (): Promise<string[]> => {
+    queryFn: async (): Promise<PlaceUse[]> => {
       const { data, error } = await getSupabase()
         .from("blocks")
         .select("location, updated_at")
@@ -96,11 +98,12 @@ export function useMyPlaces() {
         .order("updated_at", { ascending: false })
         .limit(300);
       if (error) throw error;
-      return rankPlaces(data);
+      return data;
     },
     staleTime: 5 * 60_000,
   });
-  return query.data ?? EMPTY_PLACES;
+  // Places crossed out of "Used before" are left out.
+  return useMemo(() => (query.data ? rankPlaces(query.data, 12, hidden) : EMPTY_PLACES), [query.data, hidden]);
 }
 const EMPTY_PLACES: string[] = [];
 
@@ -145,9 +148,18 @@ function draftColumns(draft: BlockDraft) {
     emoji: isJoin ? clean(draft.emoji) : null,
     location: isJoin ? clean(draft.location) : null,
     description: isJoin ? clean(draft.description) : null,
+    // Only sent when it is being set or cleared, so the app keeps working on a
+    // database where the picture column has not been added yet.
+    ...(draft.picture_path !== undefined ? { picture_path: isJoin ? draft.picture_path : null } : {}),
     rsvp_enabled: draft.rsvp_enabled,
     audience: draft.audience,
   };
+}
+
+/** True when saving failed because the database file that adds event pictures has not been run. */
+export function isPicturesNotSetUp(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  return Boolean(e && /picture_path/.test(e.message ?? "") && (e.code === "PGRST204" || e.code === "42703"));
 }
 
 /** Make the stored audience lists match the wanted ones: remove what left, add what is new. */
@@ -209,6 +221,7 @@ function draftFromBlock(block: CalendarBlock): BlockDraft {
     emoji: block.emoji,
     location: block.location,
     description: block.description,
+    picture_path: block.picture_path,
     rsvp_enabled: block.rsvp_enabled,
     audience: block.audience,
     shared_user_ids: block.shared_user_ids,

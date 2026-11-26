@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* =============================================================================
-   dropby design system: one retro theme
+   wheet design system
    -----------------------------------------------------------------------------
    Look: a 16-bit DOS puzzle game. Black starfield, bevelled stone and steel
    tiles, and glowing beams for time blocks.
@@ -14,7 +14,10 @@
    Each state also has its own beam pattern, so the difference does not rely
    on colour alone. Text colours all meet WCAG AA (4.5:1) on their background.
 
-   To restyle the app, start with the tokens in @theme below.
+   Designs: the colour tokens in @theme and the surface variables in :root
+   below are the default design ("Retro night"). Every other design (the list
+   is in src/lib/themes.ts) overrides them in a :root[data-theme="…"] block
+   further down; nothing else changes between designs.
    ============================================================================= */
 
 @theme {
@@ -80,6 +83,119 @@
   50% { opacity: 0.55; }
 }
 
+/* Surfaces that are not plain colour tokens. These are the "Retro night" values. */
+:root {
+  --outline: #000; /* the 2px pixel outline around tiles, panels and fields */
+  --well: #05070d; /* inside of fields and recessed slots */
+  --well-edge: #000;
+  --plate: rgb(3 4 10 / 0.82); /* label plates on beams */
+  --beam-base: #000; /* beams glow out of this */
+  --mesh: #3a3d47; /* steel frame around the calendar */
+  --mesh-shade: rgb(0 0 0 / 0.45);
+  --mesh-hi: #8f93a0;
+  --mesh-lo: #1b1d24;
+  --grid-line: rgb(49 57 87 / 0.8);
+  --grid-line-faint: rgb(49 57 87 / 0.32);
+  --weekend: rgb(35 41 65 / 0.28);
+  --backdrop: rgb(0 0 0 / 0.72);
+  --backdrop-lines: rgb(0 0 0 / 0.35);
+  /* coloured tiles (buttons, "today", the selected view) */
+  --fill-free: var(--color-free);
+  --fill-join: var(--color-join);
+  --fill-locked: var(--color-locked);
+  --fill-danger: var(--color-danger);
+  /* subtle stars: a few sparse layers of single pixels */
+  --page-pattern:
+    radial-gradient(1px 1px at 23px 41px, rgb(255 255 255 / 0.7) 50%, transparent 51%),
+    radial-gradient(1px 1px at 151px 97px, rgb(255 255 255 / 0.45) 50%, transparent 51%),
+    radial-gradient(1px 1px at 87px 173px, rgb(190 215 255 / 0.6) 50%, transparent 51%),
+    radial-gradient(2px 2px at 211px 29px, rgb(255 240 200 / 0.35) 50%, transparent 51%),
+    radial-gradient(1px 1px at 301px 233px, rgb(255 255 255 / 0.4) 50%, transparent 51%),
+    radial-gradient(1px 1px at 59px 311px, rgb(200 220 255 / 0.35) 50%, transparent 51%);
+  --page-pattern-size: 260px 260px, 340px 340px, 290px 290px, 470px 470px, 410px 410px, 370px 370px;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Light
+   -----------------------------------------------------------------------------
+   The same tiles, beams and pixel fonts on a bright background. Coloured
+   text is darker than in the night design so it stays readable on white
+   (all at least 4.5:1); coloured tiles keep their bright fills.
+   -------------------------------------------------------------------------- */
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --color-void: #e4e7ee;
+  --color-panel: #ffffff;
+  --color-panel-2: #f1f3f7;
+  --color-panel-3: #e2e6ee;
+  --color-line: #b4bccc;
+  --color-edge-hi: #ffffff;
+  --color-edge-lo: #8790a5;
+  --color-black: #a3abbd; /* the thin separating lines */
+
+  --color-ink: #121622;
+  --color-ink-dim: #3b4358;
+  --color-ink-faint: #596178;
+
+  --color-stone: #c6cad3;
+  --color-stone-hi: #f4f5f8;
+  --color-stone-lo: #7c8294;
+  --color-stone-ink: #0a0c12;
+
+  --color-free: #0a66b8;
+  --color-free-hi: #d6ecff;
+  --color-free-lo: #084a87;
+  --color-join: #0c6e35;
+  --color-join-hi: #d4f7e2;
+  --color-join-lo: #0a5429;
+  --color-locked: #8a5500;
+  --color-locked-hi: #ffefc2;
+  --color-locked-lo: #6b4300;
+  --color-danger: #c02a2a;
+
+  --outline: #3b4255;
+  --well: #ffffff;
+  --well-edge: #8790a5;
+  --plate: rgb(255 255 255 / 0.92);
+  --beam-base: #ffffff;
+  --mesh: #b9bec9;
+  --mesh-shade: rgb(60 66 85 / 0.22);
+  --mesh-hi: #eef0f4;
+  --mesh-lo: #6f7689;
+  --grid-line: rgb(120 130 155 / 0.5);
+  --grid-line-faint: rgb(120 130 155 / 0.22);
+  --weekend: rgb(120 130 160 / 0.1);
+  --backdrop: rgb(18 22 34 / 0.45);
+  --backdrop-lines: rgb(0 0 0 / 0.06);
+  --fill-free: #5fbcff;
+  --fill-join: #4fdc8a;
+  --fill-locked: #ffc93a;
+  --fill-danger: #ff7272;
+  /* faint pixel dots instead of stars */
+  --page-pattern: radial-gradient(1px 1px at 1px 1px, rgb(70 80 110 / 0.22) 50%, transparent 51%);
+  --page-pattern-size: 16px 16px;
+}
+/* In light designs the middle line of a beam is dark, so it shows on the light body. */
+:root[data-theme="light"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="light"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="light"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="light"] .beam-hollow {
+  box-shadow: none;
+}
+/* Dimming by darkening reads as "dark button" on a light page; fade instead. */
+:root[data-theme="light"] .btn:disabled {
+  filter: grayscale(0.7);
+  opacity: 0.5;
+}
+
 /* Sizes that differ between phones and wider screens. */
 :root {
   --header-h: 58px; /* the site header, including its border */
@@ -108,15 +224,8 @@ body {
   line-height: 1.25;
   letter-spacing: 0.01em;
   background-color: var(--color-void);
-  /* subtle stars: a few sparse layers of single pixels */
-  background-image:
-    radial-gradient(1px 1px at 23px 41px, rgb(255 255 255 / 0.7) 50%, transparent 51%),
-    radial-gradient(1px 1px at 151px 97px, rgb(255 255 255 / 0.45) 50%, transparent 51%),
-    radial-gradient(1px 1px at 87px 173px, rgb(190 215 255 / 0.6) 50%, transparent 51%),
-    radial-gradient(2px 2px at 211px 29px, rgb(255 240 200 / 0.35) 50%, transparent 51%),
-    radial-gradient(1px 1px at 301px 233px, rgb(255 255 255 / 0.4) 50%, transparent 51%),
-    radial-gradient(1px 1px at 59px 311px, rgb(200 220 255 / 0.35) 50%, transparent 51%);
-  background-size: 260px 260px, 340px 340px, 290px 290px, 470px 470px, 410px 410px, 370px 370px;
+  background-image: var(--page-pattern);
+  background-size: var(--page-pattern-size);
   background-attachment: fixed;
   min-height: 100dvh;
   -webkit-font-smoothing: none;
@@ -177,7 +286,7 @@ button:disabled {
     color: var(--color-stone-ink);
     border: 2px solid;
     border-color: var(--color-stone-hi) var(--color-stone-lo) var(--color-stone-lo) var(--color-stone-hi);
-    box-shadow: 0 0 0 2px #000;
+    box-shadow: 0 0 0 2px var(--outline);
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='48' height='48'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='1.1' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='48' height='48' filter='url(%23n)' opacity='0.45'/></svg>");
   }
 
@@ -186,25 +295,25 @@ button:disabled {
     background-color: var(--color-panel);
     border: 2px solid;
     border-color: var(--color-edge-hi) var(--color-edge-lo) var(--color-edge-lo) var(--color-edge-hi);
-    box-shadow: 0 0 0 2px #000;
+    box-shadow: 0 0 0 2px var(--outline);
   }
 
   /* Recessed slot: inputs and the calendar tracks. */
   .slot {
-    background-color: #05070d;
+    background-color: var(--well);
     border: 2px solid;
-    border-color: #000 var(--color-line) var(--color-line) #000;
+    border-color: var(--well-edge) var(--color-line) var(--color-line) var(--well-edge);
   }
 
   /* Steel mesh frame around the calendar board. */
   .mesh {
-    background-color: #3a3d47;
+    background-color: var(--mesh);
     background-image:
       repeating-linear-gradient(45deg, rgb(255 255 255 / 0.16) 0 2px, transparent 2px 6px),
-      repeating-linear-gradient(-45deg, rgb(0 0 0 / 0.45) 0 2px, transparent 2px 6px);
+      repeating-linear-gradient(-45deg, var(--mesh-shade) 0 2px, transparent 2px 6px);
     border: 2px solid;
-    border-color: #8f93a0 #1b1d24 #1b1d24 #8f93a0;
-    box-shadow: 0 0 0 2px #000;
+    border-color: var(--mesh-hi) var(--mesh-lo) var(--mesh-lo) var(--mesh-hi);
+    box-shadow: 0 0 0 2px var(--outline);
   }
 
   /* ---------------------------------------------------------------------------
@@ -241,15 +350,15 @@ button:disabled {
     font-size: 18px;
   }
   /* coloured tiles: bright fill, black text (all ≥ 8:1) */
-  .tile-free { background-color: var(--color-free); border-color: var(--color-free-hi) var(--color-free-lo) var(--color-free-lo) var(--color-free-hi); }
-  .tile-join { background-color: var(--color-join); border-color: var(--color-join-hi) var(--color-join-lo) var(--color-join-lo) var(--color-join-hi); }
-  .tile-locked { background-color: var(--color-locked); border-color: var(--color-locked-hi) var(--color-locked-lo) var(--color-locked-lo) var(--color-locked-hi); }
-  .tile-danger { background-color: var(--color-danger); border-color: #ffd0d0 #8d1f1f #8d1f1f #ffd0d0; }
+  .tile-free { background-color: var(--fill-free); border-color: var(--color-free-hi) var(--color-free-lo) var(--color-free-lo) var(--color-free-hi); }
+  .tile-join { background-color: var(--fill-join); border-color: var(--color-join-hi) var(--color-join-lo) var(--color-join-lo) var(--color-join-hi); }
+  .tile-locked { background-color: var(--fill-locked); border-color: var(--color-locked-hi) var(--color-locked-lo) var(--color-locked-lo) var(--color-locked-hi); }
+  .tile-danger { background-color: var(--fill-danger); border-color: #ffd0d0 #8d1f1f #8d1f1f #ffd0d0; }
   .tile-dark {
     background-color: var(--color-panel-3);
     background-image: none;
     color: var(--color-ink);
-    border-color: var(--color-edge-hi) #000 #000 var(--color-edge-hi);
+    border-color: var(--color-edge-hi) var(--outline) var(--outline) var(--color-edge-hi);
   }
 
   /* text-like button */
@@ -279,11 +388,11 @@ button:disabled {
     font-family: var(--font-body);
     font-size: 22px;
     line-height: 1.1;
-    background-color: #05070d;
+    background-color: var(--well);
     border: 2px solid;
-    border-color: #000 var(--color-line) var(--color-line) #000;
+    border-color: var(--well-edge) var(--color-line) var(--color-line) var(--well-edge);
     border-radius: 0;
-    box-shadow: 0 0 0 2px #000;
+    box-shadow: 0 0 0 2px var(--outline);
     appearance: none;
   }
   .field::placeholder {
@@ -317,17 +426,21 @@ button:disabled {
     --c: var(--color-free);
     --hi: var(--color-free-hi);
     --lo: var(--color-free-lo);
+    /* the bright line along the middle (a darker line in light designs) */
+    --core: var(--hi);
+    /* the colour the body glows in (brighter than the edge in light designs) */
+    --body: var(--c);
     position: absolute;
     border-top: 2px solid var(--c);
     border-bottom: 2px solid var(--c);
     background:
       /* white-hot core */
-      linear-gradient(to bottom, transparent calc(50% - 2px), var(--hi) calc(50% - 2px), var(--hi) calc(50% + 2px), transparent calc(50% + 2px)),
+      linear-gradient(to bottom, transparent calc(50% - 2px), var(--core) calc(50% - 2px), var(--core) calc(50% + 2px), transparent calc(50% + 2px)),
       /* coloured glow body */
       linear-gradient(to bottom,
-        color-mix(in srgb, var(--c) 14%, #000),
-        color-mix(in srgb, var(--c) 46%, #000) 50%,
-        color-mix(in srgb, var(--c) 14%, #000));
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
     box-shadow: 0 0 10px color-mix(in srgb, var(--c) 60%, transparent);
   }
   .beam-join {
@@ -336,11 +449,11 @@ button:disabled {
     --lo: var(--color-join-lo);
     /* dashed core distinguishes hosting from free without relying on colour */
     background:
-      repeating-linear-gradient(to right, var(--hi) 0 10px, transparent 10px 16px) center / 100% 4px no-repeat,
+      repeating-linear-gradient(to right, var(--core) 0 10px, transparent 10px 16px) center / 100% 4px no-repeat,
       linear-gradient(to bottom,
-        color-mix(in srgb, var(--c) 14%, #000),
-        color-mix(in srgb, var(--c) 46%, #000) 50%,
-        color-mix(in srgb, var(--c) 14%, #000));
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
   }
   .beam-locked {
     --c: var(--color-locked);
@@ -349,17 +462,17 @@ button:disabled {
     /* double core */
     background:
       linear-gradient(to bottom,
-        transparent calc(50% - 5px), var(--hi) calc(50% - 5px), var(--hi) calc(50% - 2px),
+        transparent calc(50% - 5px), var(--core) calc(50% - 5px), var(--core) calc(50% - 2px),
         transparent calc(50% - 2px), transparent calc(50% + 2px),
-        var(--hi) calc(50% + 2px), var(--hi) calc(50% + 5px), transparent calc(50% + 5px)),
+        var(--core) calc(50% + 2px), var(--core) calc(50% + 5px), transparent calc(50% + 5px)),
       linear-gradient(to bottom,
-        color-mix(in srgb, var(--c) 14%, #000),
-        color-mix(in srgb, var(--c) 46%, #000) 50%,
-        color-mix(in srgb, var(--c) 14%, #000));
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
   }
   /* A friend's event: hollow, so it reads as "theirs, not mine". */
   .beam-hollow {
-    background: color-mix(in srgb, var(--c) 10%, #000);
+    background: color-mix(in srgb, var(--c) 10%, var(--beam-base));
     border: 2px dashed var(--c);
     box-shadow: 0 0 6px color-mix(in srgb, var(--c) 35%, transparent);
   }
@@ -379,7 +492,7 @@ button:disabled {
     background-color: #9a9ea9;
     border: 2px solid;
     border-color: #e6e8ee #3f434d #3f434d #e6e8ee;
-    box-shadow: 0 0 0 1px #000;
+    box-shadow: 0 0 0 1px var(--outline);
   }
   .cap::after {
     content: "";
@@ -408,8 +521,8 @@ button:disabled {
     font-size: 16px;
     line-height: 1.1;
     white-space: nowrap;
-    background: rgb(3 4 10 / 0.82);
-    border: 1px solid color-mix(in srgb, var(--c, var(--color-line)) 60%, #000);
+    background: var(--plate);
+    border: 1px solid color-mix(in srgb, var(--c, var(--color-line)) 60%, var(--beam-base));
   }
 
   /* ---------------------------------------------------------------------------
@@ -429,12 +542,12 @@ button:disabled {
     font-size: 8px;
     line-height: 1;
     color: #000;
-    background: var(--color-locked);
-    border: 2px solid #000;
+    background: var(--fill-locked);
+    border: 2px solid var(--outline);
   }
   .divider {
     height: 2px;
-    background: #000;
+    background: var(--outline);
     border-bottom: 2px solid var(--color-line);
   }
   .link {
@@ -454,9 +567,9 @@ dialog {
   max-height: none;
 }
 dialog::backdrop {
-  background: rgb(0 0 0 / 0.72);
+  background: var(--backdrop);
   /* scanlines */
-  background-image: repeating-linear-gradient(to bottom, transparent 0 2px, rgb(0 0 0 / 0.35) 2px 4px);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 2px, var(--backdrop-lines) 2px 4px);
 }
 
 /* While a block is being dragged: no text selection, no touch scrolling. */
@@ -474,26 +587,26 @@ dialog::backdrop {
   /* Week grid: hour lines (strong) and half-hour lines (faint). --hours is set on the grid. */
   .track {
     background-image:
-      linear-gradient(to right, rgb(49 57 87 / 0.8) 0 2px, transparent 2px),
-      linear-gradient(to right, rgb(49 57 87 / 0.32) 0 1px, transparent 1px);
+      linear-gradient(to right, var(--grid-line) 0 2px, transparent 2px),
+      linear-gradient(to right, var(--grid-line-faint) 0 1px, transparent 1px);
     background-size:
       calc(100% / var(--hours, 18)) 100%,
       calc(100% / (var(--hours, 18) * 2)) 100%;
   }
   /* When hours are narrow (phones), half-hour lines would only add noise. */
   .track-compact {
-    background-image: linear-gradient(to right, rgb(49 57 87 / 0.8) 0 1px, transparent 1px);
+    background-image: linear-gradient(to right, var(--grid-line) 0 1px, transparent 1px);
     background-size: calc(100% / var(--hours, 18)) 100%;
   }
   .track-weekend {
-    background-color: rgb(35 41 65 / 0.28);
+    background-color: var(--weekend);
   }
 
   /* Day view: the same lines, running across. */
   .vtrack {
     background-image:
-      linear-gradient(to bottom, rgb(49 57 87 / 0.8) 0 2px, transparent 2px),
-      linear-gradient(to bottom, rgb(49 57 87 / 0.32) 0 1px, transparent 1px);
+      linear-gradient(to bottom, var(--grid-line) 0 2px, transparent 2px),
+      linear-gradient(to bottom, var(--grid-line-faint) 0 1px, transparent 1px);
     background-size:
       100% calc(100% / var(--hours, 18)),
       100% calc(100% / (var(--hours, 18) * 2));
@@ -513,34 +626,34 @@ dialog::backdrop {
     border-left: 2px solid var(--c);
     border-right: 2px solid var(--c);
     background:
-      linear-gradient(to right, transparent calc(50% - 2px), var(--hi) calc(50% - 2px), var(--hi) calc(50% + 2px), transparent calc(50% + 2px)),
+      linear-gradient(to right, transparent calc(50% - 2px), var(--core) calc(50% - 2px), var(--core) calc(50% + 2px), transparent calc(50% + 2px)),
       linear-gradient(to right,
-        color-mix(in srgb, var(--c) 14%, #000),
-        color-mix(in srgb, var(--c) 46%, #000) 50%,
-        color-mix(in srgb, var(--c) 14%, #000));
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
   }
   .vbeam.beam-join {
     background:
-      repeating-linear-gradient(to bottom, var(--hi) 0 10px, transparent 10px 16px) center / 4px 100% no-repeat,
+      repeating-linear-gradient(to bottom, var(--core) 0 10px, transparent 10px 16px) center / 4px 100% no-repeat,
       linear-gradient(to right,
-        color-mix(in srgb, var(--c) 14%, #000),
-        color-mix(in srgb, var(--c) 46%, #000) 50%,
-        color-mix(in srgb, var(--c) 14%, #000));
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
   }
   .vbeam.beam-locked {
     background:
       linear-gradient(to right,
-        transparent calc(50% - 5px), var(--hi) calc(50% - 5px), var(--hi) calc(50% - 2px),
+        transparent calc(50% - 5px), var(--core) calc(50% - 5px), var(--core) calc(50% - 2px),
         transparent calc(50% - 2px), transparent calc(50% + 2px),
-        var(--hi) calc(50% + 2px), var(--hi) calc(50% + 5px), transparent calc(50% + 5px)),
+        var(--core) calc(50% + 2px), var(--core) calc(50% + 5px), transparent calc(50% + 5px)),
       linear-gradient(to right,
-        color-mix(in srgb, var(--c) 14%, #000),
-        color-mix(in srgb, var(--c) 46%, #000) 50%,
-        color-mix(in srgb, var(--c) 14%, #000));
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
   }
   .beam-hollow,
   .vbeam.beam-hollow {
-    background: color-mix(in srgb, var(--c) 10%, #000);
+    background: color-mix(in srgb, var(--c) 10%, var(--beam-base));
     border: 2px dashed var(--c);
     box-shadow: 0 0 6px color-mix(in srgb, var(--c) 35%, transparent);
   }

@@ -1,5 +1,5 @@
 /**
- * Inviting someone who is not on dropby yet.
+ * Inviting someone who is not on wheet yet.
  *
  * The app never sends texts itself. It writes the message and hands it to the
  * phone's own messaging app (an `sms:` link or the system share sheet), with
@@ -33,7 +33,7 @@ export function inviteMessage(opts: {
   const { inviterName, block, zone, url } = opts;
   const who = inviterName.trim() || "A friend";
   if (!block) {
-    return `${who} wants to connect on dropby, where we share when we're free and what we're hosting: ${url}`;
+    return `${who} wants to connect on wheet, where we share when we're free and what we're hosting: ${url}`;
   }
   const when = describeWhen(block, zone);
   if (block.type === "join") {

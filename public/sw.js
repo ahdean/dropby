@@ -1,5 +1,5 @@
 /*
- * dropby service worker.
+ * wheet service worker.
  *
  * Deliberately small and conservative:
  *   - Makes the app installable and gives it an "you're offline" screen.
@@ -10,7 +10,7 @@
  *
  * Bump VERSION to make every device drop its old cache.
  */
-const VERSION = "dropby-v2";
+const VERSION = "wheet-v3";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [OFFLINE_URL, "/icons/icon-192.png"];
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { EventPicture } from "@/components/ui/EventPicture";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EventIcon } from "@/components/ui/EventIcon";
@@ -89,6 +90,7 @@ export function EventPeek({
       }
     >
       <div className="space-y-4">
+        <EventPicture path={block.picture_path} className="slot aspect-[16/9] max-h-52 w-full" />
         <div className="flex items-center gap-2 text-ink-dim">
           <Avatar person={host} size={28} />
           <span>

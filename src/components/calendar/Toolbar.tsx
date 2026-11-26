@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button, IconButton } from "@/components/ui/Button";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { addDays, formatDayKey, startOfWeek, weekdayOf, type DayKey } from "@/lib/time";
@@ -21,9 +20,9 @@ function LegendItem({ beam, label }: { beam: string; label: string }) {
 const WEEKDAY_LETTER = ["", "M", "T", "W", "T", "F", "S", "S"];
 
 /**
- * The single strip above the calendar: "Today", where you are (tap it to jump
- * to any date), the colour key on wider screens, the weeks/day switch and the
- * way to Connections. Moving through time is done by scrolling the calendar.
+ * The single strip above the calendar, all on the left: "Today", where you are
+ * (tap it to jump to any date) and the weeks/day switch; the colour key sits
+ * on the right on wide screens. Moving through time is done by scrolling.
  */
 export function Toolbar({
   view,
@@ -85,42 +84,36 @@ export function Toolbar({
           />
         </span>
 
-        <ul className="ml-3 hidden items-center gap-x-4 lg:flex" aria-label="What the colours mean">
+        <div className="flex shrink-0" role="radiogroup" aria-label="Calendar view">
+          <button
+            type="button"
+            role="radio"
+            aria-checked={view === "grid"}
+            aria-label="Weeks view"
+            onClick={() => onViewChange("grid")}
+            className={`btn btn-sm tile ${view === "grid" ? "tile-locked" : "tile-dark"}`}
+          >
+            <PixelIcon name="grid" size={13} />
+            <span className="hidden sm:inline">Weeks</span>
+          </button>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={view === "day"}
+            aria-label="Day view"
+            onClick={() => onViewChange("day")}
+            className={`btn btn-sm tile ${view === "day" ? "tile-locked" : "tile-dark"}`}
+          >
+            <PixelIcon name="day" size={13} />
+            <span className="hidden sm:inline">Day</span>
+          </button>
+        </div>
+
+        <ul className="ml-auto hidden items-center gap-x-4 lg:flex" aria-label="What the colours mean">
           <LegendItem beam="" label="Free" />
           <LegendItem beam="beam-join" label="Join me" />
           <LegendItem beam="beam-locked" label="Locked in" />
         </ul>
-
-        <div className="ml-auto flex shrink-0 items-center gap-2">
-          <div className="flex" role="radiogroup" aria-label="Calendar view">
-            <button
-              type="button"
-              role="radio"
-              aria-checked={view === "grid"}
-              aria-label="Weeks view"
-              onClick={() => onViewChange("grid")}
-              className={`btn btn-sm tile ${view === "grid" ? "tile-locked" : "tile-dark"}`}
-            >
-              <PixelIcon name="grid" size={13} />
-              <span className="hidden sm:inline">Weeks</span>
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={view === "day"}
-              aria-label="Day view"
-              onClick={() => onViewChange("day")}
-              className={`btn btn-sm tile ${view === "day" ? "tile-locked" : "tile-dark"}`}
-            >
-              <PixelIcon name="day" size={13} />
-              <span className="hidden sm:inline">Day</span>
-            </button>
-          </div>
-          <Link href="/connections" className="btn btn-sm tile tile-dark" aria-label="Connections">
-            <PixelIcon name="users" size={13} />
-            <span className="hidden sm:inline">Connections</span>
-          </Link>
-        </div>
       </div>
 
       {view === "day" && (

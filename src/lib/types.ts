@@ -31,6 +31,11 @@ export interface BlockRow {
   emoji: string | null;
   location: string | null;
   description: string | null;
+  /**
+   * Path of the event's picture in the "event-pictures" bucket, or null.
+   * (Missing altogether until the database file that adds it has been run.)
+   */
+  picture_path?: string | null;
   rsvp_enabled: boolean;
   audience: AudienceMode;
   created_at: string;
@@ -172,6 +177,7 @@ export interface InvitePreview {
     end_at: string;
     tz: string;
     repeat_weekly: boolean;
+    picture_path?: string | null;
   } | null;
 }
 
@@ -186,6 +192,8 @@ export interface BlockDraft {
   emoji: string | null;
   location: string | null;
   description: string | null;
+  /** The event's picture. Left out (undefined) to leave it as it is. */
+  picture_path?: string | null;
   rsvp_enabled: boolean;
   audience: AudienceMode;
   shared_user_ids: string[];

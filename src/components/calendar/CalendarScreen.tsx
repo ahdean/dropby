@@ -53,6 +53,7 @@ import { Toolbar, type CalendarView } from "./Toolbar";
 import { WeekGrid } from "./WeekGrid";
 import type { DayRange } from "./useBlockGestures";
 
+// Named before the app was renamed; kept so the saved choice survives.
 const VIEW_STORAGE_KEY = "dropby:view";
 
 /** Blocks are fetched for whole stretches of this many weeks, so scrolling a little does not refetch. */

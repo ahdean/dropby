@@ -55,22 +55,22 @@ describe("invite text", () => {
     end_at: zonedToUtc("2026-11-20", 21 * 60 + 30, NY),
     repeat_weekly: false,
   };
-  const url = inviteUrl("https://dropby.example/", "abc123XYZ789");
+  const url = inviteUrl("https://wheet.example/", "abc123XYZ789");
 
   it("builds the link from the site address and the token", () => {
-    expect(url).toBe("https://dropby.example/i/abc123XYZ789");
+    expect(url).toBe("https://wheet.example/i/abc123XYZ789");
   });
 
   it("describes a hosted event with its emoji, title, time and link", () => {
     expect(inviteMessage({ inviterName: "Alex", block: event, zone: NY, url })).toBe(
-      "Alex is hosting 🍕 Pizza night · Fri, Nov 20 · 7 – 9:30 PM. See the details and say if you're in: https://dropby.example/i/abc123XYZ789",
+      "Alex is hosting 🍕 Pizza night · Fri, Nov 20 · 7 – 9:30 PM. See the details and say if you're in: https://wheet.example/i/abc123XYZ789",
     );
   });
 
   it("describes free time, and a plain connect invite", () => {
     const free = { ...event, type: "free" as const, title: null, emoji: null };
     expect(inviteMessage({ inviterName: "Alex", block: free, zone: NY, url })).toContain("Alex is free Fri, Nov 20 · 7 – 9:30 PM.");
-    expect(inviteMessage({ inviterName: "", block: null, zone: NY, url })).toMatch(/^A friend wants to connect on dropby/);
+    expect(inviteMessage({ inviterName: "", block: null, zone: NY, url })).toMatch(/^A friend wants to connect on wheet/);
   });
 
   it("writes the built-in door icon as the door emoji, since a text message cannot show the drawn one", () => {
@@ -83,7 +83,7 @@ describe("invite text", () => {
   });
 
   it("suggests a title for each favourite icon, without overwriting one the person typed", () => {
-    expect(defaultTitleFor(DOOR_ICON)).toBe("dropby");
+    expect(defaultTitleFor(DOOR_ICON)).toBe("wheet");
     expect(defaultTitleFor("🏠")).toBe("house hang");
     expect(defaultTitleFor("🌳")).toBe("park hang");
     expect(defaultTitleFor("🍕")).toBe(""); // not a favourite: no suggestion
@@ -91,6 +91,8 @@ describe("invite text", () => {
     expect(isAutomaticTitle("")).toBe(true);
     expect(isAutomaticTitle(" House Hang ")).toBe(true);
     expect(isAutomaticTitle("Sam's birthday")).toBe(false);
+    // The door's title before the app was renamed is still replaced when the icon changes.
+    expect(isAutomaticTitle("dropby")).toBe(true);
   });
 
   it("lets an event carry several icons, main one first", () => {

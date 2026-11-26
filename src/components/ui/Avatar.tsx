@@ -24,7 +24,7 @@ export function Avatar({
     height: size,
     fontSize: Math.max(7, Math.round(size * 0.3)),
     backgroundColor: avatarColor(person?.id),
-    boxShadow: ring ? "0 0 0 2px #000" : undefined,
+    boxShadow: ring ? "0 0 0 2px var(--outline)" : undefined,
   };
   return (
     <span
@@ -73,7 +73,7 @@ export function AvatarStack({
             height: size,
             fontSize: Math.max(7, Math.round(size * 0.28)),
             marginLeft: -overlap,
-            boxShadow: "0 0 0 2px #000",
+            boxShadow: "0 0 0 2px var(--outline)",
           }}
         >
           +{extra}

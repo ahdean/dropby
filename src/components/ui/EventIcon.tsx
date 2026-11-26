@@ -2,7 +2,7 @@ import { isDoorIcon, splitIcons } from "@/lib/event-icon";
 import { PixelIcon } from "./PixelIcon";
 
 /**
- * Draws an event's icon(s): dropby's green open door where that is one of
+ * Draws an event's icon(s): wheet's green open door where that is one of
  * them, otherwise the emoji as text. `size` is the height in pixels; `max`
  * limits how many are drawn where space is tight (the main icon comes first).
  */

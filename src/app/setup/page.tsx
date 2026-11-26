@@ -12,7 +12,7 @@ export default function SetupPage() {
       </div>
       <div className="panel space-y-4 p-5">
         <h1 className="text-[13px] text-locked">Almost there</h1>
-        <p>dropby is deployed but is not connected to its database yet.</p>
+        <p>wheet is deployed but is not connected to its database yet.</p>
         <ol className="list-decimal space-y-2 pl-6 text-ink-dim">
           <li>Create a Supabase project and run the database setup (README, step 1).</li>
           <li>
