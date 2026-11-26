@@ -127,11 +127,26 @@ export function splitByDay(startIso: string, endIso: string, zone: string): DayS
   return segments;
 }
 
-/** Trim a segment to the hours the calendar shows; null if nothing is left. */
-export function clipToVisibleHours(segment: DaySegment): DaySegment | null {
-  const startMin = Math.max(segment.startMin, DAY_START_MIN);
-  const endMin = Math.min(segment.endMin, DAY_END_MIN);
+/**
+ * Trim a segment to the hours a view shows (by default the week grid's
+ * 8 AM–11 PM); null if nothing is left.
+ */
+export function clipToVisibleHours(
+  segment: DaySegment,
+  bounds: { min: number; max: number } = { min: DAY_START_MIN, max: DAY_END_MIN },
+): DaySegment | null {
+  const startMin = Math.max(segment.startMin, bounds.min);
+  const endMin = Math.min(segment.endMin, bounds.max);
   return endMin > startMin ? { dayKey: segment.dayKey, startMin, endMin } : null;
+}
+
+/**
+ * Where a UTC instant falls, in minutes after midnight of `dayKey` in `zone`.
+ * Below 0 for the day before, 1440 or more for the day after.
+ */
+export function minutesFromDay(iso: string, dayKey: DayKey, zone: string): number {
+  const local = utcToZoned(iso, zone);
+  return diffDays(dayKey, local.dayKey) * 1440 + local.minutes;
 }
 
 // ---------------------------------------------------------------------------
@@ -151,10 +166,39 @@ export function formatMinutes(minutes: number): string {
   return m === 0 ? `${h12} ${suffix}` : `${h12}:${String(m).padStart(2, "0")} ${suffix}`;
 }
 
+/** "Sat" */
+function weekdayShort(dayKey: DayKey): string {
+  return DateTime.fromISO(dayKey, { zone: "utc" }).toFormat("ccc");
+}
+
+/**
+ * A time range measured from midnight of `dayKey`, as the viewer reads it.
+ * Within that day: "7 – 9:30 PM". When it starts the day before or ends the
+ * day after, the other day is named: "10 PM – Sun 1 AM", "Fri 11 PM – 2 AM".
+ */
+export function formatSpan(dayKey: DayKey, startMin: number, endMin: number): string {
+  if (startMin >= 0 && endMin <= 1440) return formatMinuteRange(startMin, endMin);
+  const startDays = Math.floor(startMin / 1440);
+  // An end exactly at midnight belongs to the day before it ("11:59 PM"), like elsewhere.
+  const endDays = Math.ceil(endMin / 1440) - 1;
+  const part = (days: number, minutes: number) =>
+    `${days === 0 ? "" : `${weekdayShort(addDays(dayKey, days))} `}${formatMinutes(minutes)}`;
+  return `${part(startDays, startMin - startDays * 1440)} – ${part(endDays, endMin - endDays * 1440)}`;
+}
+
 /** "6a", "12p", "9p": hour labels that fit when the whole day is squeezed onto a phone. */
 export function formatHourShort(hour: number): string {
   const h12 = hour % 12 === 0 ? 12 : hour % 12;
   return `${h12}${hour % 24 >= 12 ? "p" : "a"}`;
+}
+
+/** "6a", "6:30a", "11:30p": a time that fits in a small tab. */
+export function formatMinutesShort(minutes: number): string {
+  const wrapped = ((minutes % 1440) + 1440) % 1440;
+  const hour = Math.floor(wrapped / 60);
+  const rest = wrapped % 60;
+  const short = formatHourShort(hour);
+  return rest === 0 ? short : `${short.slice(0, -1)}:${String(rest).padStart(2, "0")}${short.slice(-1)}`;
 }
 
 /** "November 2026" (or "Nov 2026" with style "short"). */

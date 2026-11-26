@@ -9,8 +9,16 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react";
-import { DAY_END_MIN, DEFAULT_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
-import { moveInterval, nearestEdge, rangeFromDrag, resizeInterval, type Interval } from "@/lib/calendar/intervals";
+import { DEFAULT_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
+import {
+  DAY_BOUNDS,
+  moveInterval,
+  nearestEdge,
+  rangeFromDrag,
+  resizeInterval,
+  type Bounds,
+  type Interval,
+} from "@/lib/calendar/intervals";
 import type { CalendarItem } from "@/lib/calendar/model";
 import type { DayKey } from "@/lib/time";
 
@@ -32,6 +40,11 @@ import type { DayKey } from "@/lib/time";
  * make a block that touches another, start further away and drag up to it.
  * A tap in that space opens the block.
  *
+ * A block that runs past the hours shown, or into another day, is drawn cut
+ * off: its hidden end cannot be grabbed (there is nothing to grab), but the
+ * end that shows can, and a tap opens it for editing. If it lies within one
+ * day it can also be dragged as a whole, which brings the hidden part into view.
+ *
  * Elements opt in with data attributes:
  *   data-gesture="empty"                         an empty track
  *   data-gesture="move"   data-item="<key>"      the body of one of my blocks
@@ -42,6 +55,11 @@ export interface DayRange extends Interval {
   dayKey: DayKey;
 }
 
+/**
+ * The outline shown while drawing, moving or resizing. Its times are the real
+ * ones, in minutes after midnight of `dayKey`, so they can reach past the hours
+ * shown (or, for a block running into the next day, past midnight).
+ */
 export interface Ghost extends DayRange {
   mode: "create" | "move" | "resize";
   /** The block being moved or resized. */
@@ -51,7 +69,19 @@ export interface Ghost extends DayRange {
 type Target =
   | { kind: "empty" }
   | { kind: "move"; item: CalendarItem }
-  | { kind: "resize"; item: CalendarItem; edge: "start" | "end" };
+  | { kind: "resize"; item: CalendarItem; edge: "start" | "end" }
+  /** A block that cannot be dragged as a whole (it spans two days): a tap opens it, a drag does nothing. */
+  | { kind: "open"; item: CalendarItem };
+
+/** A block's real times, which may reach past the hours shown. */
+function fullRange(item: CalendarItem): Interval {
+  return { startMin: item.fullStartMin, endMin: item.fullEndMin };
+}
+
+/** Is this end of the block cut off (outside the hours shown, or on another day)? */
+function isCut(item: CalendarItem, edge: "start" | "end"): boolean {
+  return edge === "start" ? item.cutStart : item.cutEnd;
+}
 
 interface Point {
   dayKey: DayKey;
@@ -68,6 +98,8 @@ interface Options {
    * "none": touch needs press-and-hold first (the view scrolls along the time axis).
    */
   touchDrag: "x" | "none";
+  /** The hours the view shows: new blocks are drawn inside them. */
+  bounds: Bounds;
   locate: (clientX: number, clientY: number) => Point | null;
   /** Look up one of the viewer's own blocks by its item key. */
   itemByKey: (key: string) => CalendarItem | undefined;
@@ -122,25 +154,35 @@ export function useBlockGestures(options: Options) {
     const kind = el.dataset.gesture;
     if (kind === "empty") return { kind: "empty" };
     const item = el.dataset.item ? opts.current.itemByKey(el.dataset.item) : undefined;
-    if (!item || !item.whole) return null;
-    if (kind === "resize") return { kind: "resize", item, edge: el.dataset.edge === "start" ? "start" : "end" };
-    if (kind === "move") return { kind: "move", item };
+    if (!item) return null;
+    if (kind === "resize") {
+      const edge = el.dataset.edge === "start" ? "start" : "end";
+      return isCut(item, edge) ? { kind: "open", item } : { kind: "resize", item, edge };
+    }
+    if (kind === "move") return item.whole ? { kind: "move", item } : { kind: "open", item };
     return null;
   }, []);
 
   const computeGhost = useCallback((s: Session, clientX: number, clientY: number): Ghost | null => {
     const here = opts.current.locate(clientX, clientY);
     if (s.target.kind === "empty") {
-      const range = rangeFromDrag(s.startPoint.minute, here?.minute ?? s.startPoint.minute);
+      const range = rangeFromDrag(s.startPoint.minute, here?.minute ?? s.startPoint.minute, opts.current.bounds);
       return { mode: "create", dayKey: s.startPoint.dayKey, ...range };
     }
+    if (s.target.kind === "open") return null;
     const { item } = s.target;
+    // Existing blocks move and stretch by their real times, anywhere in the day.
     if (s.target.kind === "resize") {
-      const range = resizeInterval(item, s.target.edge, here?.minute ?? (s.target.edge === "start" ? item.startMin : item.endMin));
+      const range = resizeInterval(
+        fullRange(item),
+        s.target.edge,
+        here?.minute ?? (s.target.edge === "start" ? item.fullStartMin : item.fullEndMin),
+        DAY_BOUNDS,
+      );
       return { mode: "resize", dayKey: item.dayKey, item, ...range };
     }
     const delta = (here?.minute ?? s.startPoint.minute) - s.startPoint.minute;
-    return { mode: "move", dayKey: here?.dayKey ?? item.dayKey, item, ...moveInterval(item, delta) };
+    return { mode: "move", dayKey: here?.dayKey ?? item.dayKey, item, ...moveInterval(fullRange(item), delta, DAY_BOUNDS) };
   }, []);
 
   const activate = useCallback(
@@ -162,12 +204,13 @@ export function useBlockGestures(options: Options) {
       updateGhost(null);
       if (!s || !commit) return;
 
-      if (s.active && g) {
-        if (g.mode === "create") {
+      if (s.active) {
+        if (g?.mode === "create") {
           opts.current.onCreate({ dayKey: g.dayKey, startMin: g.startMin, endMin: g.endMin }, "drag");
-        } else if (g.item) {
-          const unchanged = g.dayKey === g.item.dayKey && g.startMin === g.item.startMin && g.endMin === g.item.endMin;
-          if (!unchanged) opts.current.onChange(g.item, { dayKey: g.dayKey, startMin: g.startMin, endMin: g.endMin });
+        } else if (g?.item) {
+          const { item } = g;
+          const unchanged = g.dayKey === item.dayKey && g.startMin === item.fullStartMin && g.endMin === item.fullEndMin;
+          if (!unchanged) opts.current.onChange(item, { dayKey: g.dayKey, startMin: g.startMin, endMin: g.endMin });
         }
         return;
       }
@@ -176,7 +219,7 @@ export function useBlockGestures(options: Options) {
       if (s.target.kind === "empty") {
         const startMin = Math.min(
           Math.floor(s.startPoint.minute / SNAP_MINUTES) * SNAP_MINUTES,
-          DAY_END_MIN - DEFAULT_BLOCK_MINUTES,
+          opts.current.bounds.max - DEFAULT_BLOCK_MINUTES,
         );
         opts.current.onCreate({ dayKey: s.startPoint.dayKey, startMin, endMin: startMin + DEFAULT_BLOCK_MINUTES }, "tap");
       } else {
@@ -195,12 +238,9 @@ export function useBlockGestures(options: Options) {
       if (target.kind === "empty") {
         // Right beside one of my blocks? Then this is about that block's edge.
         const reach = (touch ? EDGE_GRAB_PX.touch : EDGE_GRAB_PX.mouse) / Math.max(startPoint.pxPerMinute, 0.001);
-        const near = nearestEdge(
-          opts.current.itemsOn(startPoint.dayKey).filter((item) => item.whole),
-          startPoint.minute,
-          reach,
-        );
-        if (near) target = { kind: "resize", item: near.block, edge: near.edge };
+        const near = nearestEdge(opts.current.itemsOn(startPoint.dayKey), startPoint.minute, reach);
+        // (A cut-off end is not really there, so the space beside it is just empty space.)
+        if (near && !isCut(near.block, near.edge)) target = { kind: "resize", item: near.block, edge: near.edge };
         else if (!opts.current.canCreateOn(startPoint.dayKey)) return null;
       }
       const s: Session = { target, startX: clientX, startY: clientY, startPoint, active: false, touch };

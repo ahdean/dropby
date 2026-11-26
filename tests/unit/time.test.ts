@@ -16,12 +16,15 @@ import {
   formatMinuteRange,
   formatMonth,
   formatMinutes,
+  formatMinutesShort,
   formatRange,
+  formatSpan,
   formatTimeRange,
   safeZone,
   splitByDay,
   startOfWeek,
   timeAgo,
+  minutesFromDay,
   todayKey,
   utcToZoned,
   weekdayOf,
@@ -118,6 +121,15 @@ describe("splitting a range into calendar days", () => {
     expect(clipToVisibleHours({ dayKey: "d", startMin: 0, endMin: 150 })).toBeNull();
     expect(clipToVisibleHours({ dayKey: "d", startMin: 1320, endMin: 1440 })).toEqual({ dayKey: "d", startMin: 1320, endMin: 1380 });
     expect(clipToVisibleHours({ dayKey: "d", startMin: 1380, endMin: 1440 })).toBeNull(); // after 11 PM: not shown
+    // The day view passes the whole day: nothing is trimmed.
+    expect(clipToVisibleHours({ dayKey: "d", startMin: 0, endMin: 150 }, { min: 0, max: 1440 })).toEqual({ dayKey: "d", startMin: 0, endMin: 150 });
+  });
+
+  it("measures an instant from a given day's midnight, past either end of that day", () => {
+    const at = (day: string, minutes: number) => zonedToUtc(day, minutes, NY);
+    expect(minutesFromDay(at("2026-11-20", 19 * 60), "2026-11-20", NY)).toBe(19 * 60);
+    expect(minutesFromDay(at("2026-11-21", 60), "2026-11-20", NY)).toBe(1440 + 60); // 1 AM the next day
+    expect(minutesFromDay(at("2026-11-19", 22 * 60), "2026-11-20", NY)).toBe(-120); // 10 PM the day before
   });
 });
 
@@ -171,6 +183,22 @@ describe("formatting", () => {
     expect(formatMinuteRange(19 * 60, 21 * 60 + 30)).toBe("7 – 9:30 PM");
     expect(formatMinuteRange(11 * 60, 13 * 60)).toBe("11 AM – 1 PM");
     expect(formatMinuteRange(22 * 60, 1440)).toBe("10 – 11:59 PM");
+  });
+
+  it("names the other day when a range starts the day before or ends the day after", () => {
+    const FRI = "2026-11-20";
+    expect(formatSpan(FRI, 19 * 60, 21 * 60 + 30)).toBe("7 – 9:30 PM");
+    expect(formatSpan(FRI, 22 * 60, 1440 + 60)).toBe("10 PM – Sat 1 AM");
+    expect(formatSpan(FRI, -60, 2 * 60)).toBe("Thu 11 PM – 2 AM");
+    expect(formatSpan(FRI, 22 * 60, 1440)).toBe("10 – 11:59 PM");
+  });
+
+  it("writes short times for the small tabs", () => {
+    expect(formatMinutesShort(6 * 60)).toBe("6a");
+    expect(formatMinutesShort(6 * 60 + 30)).toBe("6:30a");
+    expect(formatMinutesShort(23 * 60 + 30)).toBe("11:30p");
+    expect(formatMinutesShort(0)).toBe("12a");
+    expect(formatMinutesShort(-60)).toBe("11p");
   });
 
   it("formats a UTC range in the viewer's zone", () => {

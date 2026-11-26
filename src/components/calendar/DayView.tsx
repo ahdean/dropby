@@ -2,25 +2,31 @@
 
 import { useCallback, useEffect, useMemo, useRef, type CSSProperties } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { assignLanes } from "@/lib/calendar/intervals";
+import { DAY_BOUNDS, assignLanes, type Interval } from "@/lib/calendar/intervals";
 import type { CalendarItem, DayModel, FriendFreeCluster } from "@/lib/calendar/model";
-import { DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
-import { formatDayKey, formatMinuteRange, formatMinutes, type DayKey } from "@/lib/time";
+import { DAY_START_MIN } from "@/lib/constants";
+import { formatDayKey, formatMinutes, formatSpan, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 import { FriendEventBeam, GhostBeam, MyBeam } from "./Beams";
-import { DAY, fractionOf, minutesAt, percent } from "./geometry";
+import { DAY, clampToBounds, fractionOf, minutesAt, percent } from "./geometry";
 import { useBlockGestures, type DayRange } from "./useBlockGestures";
 
-const HOURS = Array.from({ length: VISIBLE_HOURS }, (_, i) => DAY_START_HOUR + i);
+/** The day view shows all 24 hours, midnight to midnight. */
+const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
 /** Top/height of a time span down the track, as CSS percentages. */
 function vspan(startMin: number, endMin: number) {
-  return { top: percent(fractionOf(startMin)), height: percent(fractionOf(endMin) - fractionOf(startMin)) };
+  return {
+    top: percent(fractionOf(startMin, DAY_BOUNDS)),
+    height: percent(fractionOf(endMin, DAY_BOUNDS) - fractionOf(startMin, DAY_BOUNDS)),
+  };
 }
 
 /**
  * One day, hours running top to bottom: my blocks on the left, friends on the
- * right. Roomier than a row of the week grid, which suits phones.
+ * right. Roomier than a row of the week grid, which suits phones, and it shows
+ * the whole day, so blocks earlier or later than the week grid's hours can be
+ * seen and dragged here too. It opens on the morning (or on now, today).
  */
 export function DayView({
   day,
@@ -59,7 +65,7 @@ export function DayView({
     (_clientX: number, clientY: number) => {
       const rect = track.current?.getBoundingClientRect();
       if (!rect) return null;
-      return { dayKey: day.dayKey, minute: minutesAt(clientY - rect.top, rect.height), pxPerMinute: rect.height / VISIBLE_MINUTES };
+      return { dayKey: day.dayKey, minute: minutesAt(clientY - rect.top, rect.height, DAY_BOUNDS), pxPerMinute: rect.height / 1440 };
     },
     [day.dayKey],
   );
@@ -68,6 +74,7 @@ export function DayView({
     containerRef: scroller,
     // Time runs down the screen here, the same way the page scrolls, so touch needs press-and-hold.
     touchDrag: "none",
+    bounds: DAY_BOUNDS,
     locate,
     itemByKey: (key) => myItems.get(key),
     itemsOn: () => day.mine,
@@ -77,12 +84,14 @@ export function DayView({
     onOpen: onOpenItem,
   });
 
-  // Start with "now" (or the morning) in view.
+  // Start with "now" in view today; on other days the morning, or the first
+  // thing that day if it is earlier than that.
   useEffect(() => {
     const root = scroller.current;
     if (!root) return;
-    const target = isToday ? Math.max(DAY_START_MIN, nowMin - 90) : 8 * 60;
-    root.scrollTop = fractionOf(target) * VISIBLE_HOURS * DAY.hourHeight;
+    const earliest = Math.min(...[...day.mine, ...friends.placed].map((item: Interval) => item.startMin));
+    const target = isToday ? Math.max(0, nowMin - 90) : Math.max(0, Math.min(DAY_START_MIN, earliest - 30));
+    root.scrollTop = fractionOf(target, DAY_BOUNDS) * 24 * DAY.hourHeight;
     // Only when the day changes, not every minute.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [day.dayKey]);
@@ -97,6 +106,8 @@ export function DayView({
       <div
         ref={scroller}
         onPointerDown={onPointerDown}
+        // All 24 hours here (the week grid sets --hours to the hours it shows), for the hour lines.
+        style={{ ["--hours" as string]: 24 }}
         className="relative min-h-0 flex-1 overflow-auto overscroll-contain bg-void/90 [-webkit-touch-callout:none]"
         aria-label={`${formatDayKey(day.dayKey, "long")}: hours down the page`}
       >
@@ -107,14 +118,14 @@ export function DayView({
           <div className="flex-1 border-l-2 border-black px-2 py-2">Friends</div>
         </div>
 
-        <div className={`flex ${isPast ? "opacity-70" : ""}`} style={{ height: VISIBLE_HOURS * DAY.hourHeight }}>
+        <div className={`flex ${isPast ? "opacity-70" : ""}`} style={{ height: 24 * DAY.hourHeight }}>
           {/* hour labels */}
           <div className="relative shrink-0 border-r-2 border-black bg-panel" style={{ width: DAY.timeColumn }} aria-hidden="true">
             {HOURS.map((hour) => (
               <span
                 key={hour}
                 className="absolute right-1 font-display text-[8px] text-ink-dim"
-                style={{ top: `calc(${percent(fractionOf(hour * 60))} + 4px)` }}
+                style={{ top: `calc(${percent(fractionOf(hour * 60, DAY_BOUNDS))} + 4px)` }}
               >
                 {formatMinutes(hour * 60)}
               </span>
@@ -139,11 +150,15 @@ export function DayView({
                 style={{ ...vspan(item.startMin, item.endMin), left: item.block.type === "join" ? 30 : 8, right: 8 }}
               />
             ))}
-            {ghost && <GhostBeam ghost={ghost} vertical style={{ ...vspan(ghost.startMin, ghost.endMin), left: 8, right: 8 }} />}
-            {isToday && nowMin >= DAY_START_MIN && (
+            {ghost && (() => {
+              // A block running into the next day keeps its real end; draw the part on this day.
+              const shown = clampToBounds(ghost, DAY_BOUNDS);
+              return <GhostBeam ghost={ghost} vertical style={{ ...vspan(shown.startMin, shown.endMin), left: 8, right: 8 }} />;
+            })()}
+            {isToday && (
               <div
                 className="pointer-events-none absolute inset-x-0 z-[7] h-[2px] bg-locked"
-                style={{ top: percent(fractionOf(nowMin)), boxShadow: "0 0 6px var(--color-locked)" }}
+                style={{ top: percent(fractionOf(nowMin, DAY_BOUNDS)), boxShadow: "0 0 6px var(--color-locked)" }}
                 role="img"
                 aria-label={`Now: ${formatMinutes(nowMin)}`}
               />
@@ -166,7 +181,7 @@ export function DayView({
                   />
                 );
               }
-              const label = `${person?.name ?? "A friend"} is free ${formatMinuteRange(item.startMin, item.endMin)}`;
+              const label = `${person?.name ?? "A friend"} is free ${formatSpan(item.dayKey, item.fullStartMin, item.fullEndMin)}`;
               return (
                 <button
                   key={item.key}

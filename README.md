@@ -281,7 +281,7 @@ One database function, `private.can_view_block`, decides whether a person may re
 - Everything is stored in UTC and shown in the viewer's own time zone. The globe button on the calendar (or the profile page) lets someone pick a different zone; the choice is remembered on that device.
 - A weekly repeat is one row. Each occurrence is computed in the time zone the block was created in, so "Tuesdays at 6 PM" stays at 6 PM when the clocks change.
 - The week view fits the whole day across the screen (no sideways scrolling) and scrolls endlessly up and down, about a year back and two years ahead. Dragging across a day, or tapping it, adds Free time on the spot.
-- The calendar shows 8 AM to 11 PM (set in `src/lib/constants.ts`). A block that starts earlier or ends later still exists and can be edited by tapping it; the part outside those hours is not drawn. A friend's block in another time zone that falls outside those hours for you is simply not shown.
+- The week view shows 8 AM to 11 PM (set in `src/lib/constants.ts`), so an hour stays wide enough to tap on a phone. Anything earlier or later, yours or a friend's (for example after you change time zone), gets a small tab at that end of the day's row showing its time; tapping the tab opens it, or lists them if there are several. A block that is only partly inside those hours is drawn with an arrow on the cut-off end and still opens and drags normally. The day view shows all 24 hours. The block editor accepts any time of day, including blocks that end the next day (up to 24 hours long).
 
 ### Sign-in
 

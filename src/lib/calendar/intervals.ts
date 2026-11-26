@@ -19,7 +19,10 @@ export interface Bounds {
   max: number;
 }
 
+/** The hours the week grid shows (8 AM–11 PM). */
 export const VISIBLE_BOUNDS: Bounds = { min: DAY_START_MIN, max: DAY_END_MIN };
+/** The whole day, midnight to midnight: the day view, and anything that is about data rather than drawing. */
+export const DAY_BOUNDS: Bounds = { min: 0, max: 1440 };
 
 export function overlaps(a: Interval, b: Interval): boolean {
   return a.startMin < b.endMin && b.startMin < a.endMin;

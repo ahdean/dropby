@@ -4,7 +4,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import type { CalendarItem, FriendFreeCluster } from "@/lib/calendar/model";
-import { formatDayKey, formatMinuteRange } from "@/lib/time";
+import { formatDayKey, formatMinuteRange, formatSpan } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 
 /**
@@ -52,7 +52,7 @@ export function FriendsDialog({
                     <div className="text-ink">{person?.name ?? "A friend"}</div>
                     {items.map((item) => (
                       <div key={item.key} className="text-free">
-                        {formatMinuteRange(item.startMin, item.endMin)}
+                        {formatSpan(item.dayKey, item.fullStartMin, item.fullEndMin)}
                         {item.block.title && <span className="text-ink-dim"> · {item.block.title}</span>}
                         {item.block.repeat_weekly && <span className="text-ink-faint"> · weekly</span>}
                       </div>

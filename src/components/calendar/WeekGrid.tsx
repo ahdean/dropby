@@ -1,12 +1,13 @@
 "use client";
 
 import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { DAY_END_HOUR, DAY_START_HOUR, DAY_START_MIN, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
-import type { CalendarItem, DayModel, FriendFreeCluster } from "@/lib/calendar/model";
+import { DAY_END_HOUR, DAY_START_HOUR, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
+import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
+import type { CalendarItem, DayModel, FriendFreeCluster, OffscreenEntry } from "@/lib/calendar/model";
 import { addDays, formatDayKey, formatHourShort, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
-import { FriendEventBeam, FriendStack, GhostBeam, MyBeam } from "./Beams";
-import { GRID, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
+import { FriendEventBeam, FriendStack, GhostBeam, MyBeam, OffscreenTab } from "./Beams";
+import { GRID, clampToBounds, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
 
 const WEEKDAY_LETTER = ["", "M", "T", "W", "T", "F", "S", "S"];
@@ -27,6 +28,7 @@ interface RowProps {
   registerTrack: (dayKey: DayKey, element: HTMLElement | null) => void;
   onOpenItem: (item: CalendarItem) => void;
   onOpenCluster: (cluster: FriendFreeCluster) => void;
+  onOpenOffscreen: (dayKey: DayKey, side: "before" | "after", entries: OffscreenEntry[]) => void;
 }
 
 /** Left/width of a time span along the track, as CSS percentages. */
@@ -46,6 +48,7 @@ const DayRow = memo(function DayRow({
   registerTrack,
   onOpenItem,
   onOpenCluster,
+  onOpenOffscreen,
 }: RowProps) {
   const height = rowHeight(day.laneCount);
   const main = laneCenter(day.laneCount, 0);
@@ -125,23 +128,46 @@ const DayRow = memo(function DayRow({
           />
         ))}
 
-        {/* friends' faces, centred where the most of them are free */}
-        {day.friendFree.map((cluster) => (
-          <FriendStack
-            key={cluster.key}
-            cluster={cluster}
-            people={cluster.userIds.map((id) => profiles.get(id))}
-            onOpen={onOpenCluster}
-            style={{
-              left: percent(fractionOf((cluster.peak.startMin + cluster.peak.endMin) / 2)),
-              top: main,
-              transform: "translate(-50%, -50%)",
-            }}
+        {/* friends' faces, centred where the most of them are free (or as near as the hours shown allow) */}
+        {day.friendFree.map((cluster) => {
+          const middle = (cluster.peak.startMin + cluster.peak.endMin) / 2;
+          return (
+            <FriendStack
+              key={cluster.key}
+              cluster={cluster}
+              people={cluster.userIds.map((id) => profiles.get(id))}
+              onOpen={onOpenCluster}
+              style={{
+                left: percent(fractionOf(Math.min(cluster.endMin, Math.max(cluster.startMin, middle)))),
+                top: main,
+                transform: "translate(-50%, -50%)",
+              }}
+            />
+          );
+        })}
+
+        {/* anything earlier or later than the hours shown: a tab at that end of the row */}
+        {day.before.length > 0 && (
+          <OffscreenTab
+            side="before"
+            entries={day.before}
+            profiles={profiles}
+            onOpen={() => onOpenOffscreen(day.dayKey, "before", day.before)}
+            style={{ left: 2, top: 0 }}
           />
-        ))}
+        )}
+        {day.after.length > 0 && (
+          <OffscreenTab
+            side="after"
+            entries={day.after}
+            profiles={profiles}
+            onOpen={() => onOpenOffscreen(day.dayKey, "after", day.after)}
+            style={{ right: 2, top: 0 }}
+          />
+        )}
 
         {/* now marker */}
-        {nowMin !== null && nowMin >= DAY_START_MIN && (
+        {nowMin !== null && nowMin >= VISIBLE_BOUNDS.min && nowMin <= VISIBLE_BOUNDS.max && (
           <div
             className="pointer-events-none absolute inset-y-0 z-[7] w-[2px] bg-locked"
             style={{ left: percent(fractionOf(nowMin)), boxShadow: "0 0 6px var(--color-locked)" }}
@@ -150,9 +176,11 @@ const DayRow = memo(function DayRow({
           />
         )}
 
-        {ghost && (
-          <GhostBeam ghost={ghost} style={{ ...span(ghost.startMin, ghost.endMin), top: main - GRID.beam / 2, height: GRID.beam }} />
-        )}
+        {ghost && (() => {
+          // The ghost has the real times, which may reach past the hours shown: draw the part inside them.
+          const shown = clampToBounds(ghost);
+          return <GhostBeam ghost={ghost} style={{ ...span(shown.startMin, shown.endMin), top: main - GRID.beam / 2, height: GRID.beam }} />;
+        })()}
       </div>
     </div>
   );
@@ -186,6 +214,7 @@ export interface WeekGridProps {
   onChange: (item: CalendarItem, next: DayRange) => void;
   onOpenItem: (item: CalendarItem) => void;
   onOpenCluster: (cluster: FriendFreeCluster) => void;
+  onOpenOffscreen: (dayKey: DayKey, side: "before" | "after", entries: OffscreenEntry[]) => void;
 }
 
 /**
@@ -194,6 +223,9 @@ export interface WeekGridProps {
  * The whole day always fits the width, so the list only ever scrolls up and
  * down, and it does so endlessly: reaching either end loads more weeks. That
  * also frees sideways drags to mean "draw a block", on phones too.
+ *
+ * Only 8 AM–11 PM is drawn, so an hour stays wide enough to aim at on a
+ * phone. Anything earlier or later gets a small tab at that end of its row.
  */
 export function WeekGrid({
   days,
@@ -211,6 +243,7 @@ export function WeekGrid({
   onChange,
   onOpenItem,
   onOpenCluster,
+  onOpenOffscreen,
 }: WeekGridProps) {
   const scroller = useRef<HTMLDivElement>(null);
   const topSentinel = useRef<HTMLDivElement>(null);
@@ -249,6 +282,7 @@ export function WeekGrid({
   const { ghost, onPointerDown } = useBlockGestures({
     containerRef: scroller,
     touchDrag: "x",
+    bounds: VISIBLE_BOUNDS,
     locate,
     itemByKey: (key) => myItems.get(key),
     itemsOn: (dayKey) => mineByDay.get(dayKey) ?? [],
@@ -412,6 +446,7 @@ export function WeekGrid({
                 registerTrack={registerTrack}
                 onOpenItem={onOpenItem}
                 onOpenCluster={onOpenCluster}
+                onOpenOffscreen={onOpenOffscreen}
               />
             </div>
           );

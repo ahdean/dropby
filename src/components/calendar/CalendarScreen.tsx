@@ -5,7 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMessaging } from "@/components/messages/Messaging";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
-import { buildDayModels, findSameTypeConflict, type CalendarItem, type FriendFreeCluster } from "@/lib/calendar/model";
+import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
+import {
+  buildDayModels,
+  findSameTypeConflict,
+  type CalendarItem,
+  type FriendFreeCluster,
+  type OffscreenEntry,
+} from "@/lib/calendar/model";
 import {
   INITIAL_WEEKS_AFTER,
   INITIAL_WEEKS_BEFORE,
@@ -26,6 +33,7 @@ import {
   diffDays,
   formatDayKey,
   formatMinuteRange,
+  formatSpan,
   formatMonth,
   startOfWeek,
   todayKey,
@@ -40,6 +48,7 @@ import { DayView } from "./DayView";
 import { EventPeek } from "./EventPeek";
 import { FriendsDialog } from "./FriendsDialog";
 import { InviteDialog } from "./InviteDialog";
+import { OffscreenDialog, type OffscreenList } from "./OffscreenDialog";
 import { Toolbar, type CalendarView } from "./Toolbar";
 import { WeekGrid } from "./WeekGrid";
 import type { DayRange } from "./useBlockGestures";
@@ -163,8 +172,9 @@ export function CalendarScreen() {
   const { connectionIds } = useConnections();
   const { groups } = useGroups();
 
+  // The week grid draws 8 AM–11 PM (anything else gets a tab at the end of its row); the day view draws the whole day.
   const gridDays = useMemo(
-    () => buildDayModels(blocks, userId, zone, firstDay, dayCount),
+    () => buildDayModels(blocks, userId, zone, firstDay, dayCount, VISIBLE_BOUNDS),
     [blocks, userId, zone, firstDay, dayCount],
   );
   const singleDay = useMemo(
@@ -197,6 +207,7 @@ export function CalendarScreen() {
   const [cluster, setCluster] = useState<FriendFreeCluster | null>(null);
   const [peek, setPeek] = useState<{ blockId: string; occurrence: Occurrence } | null>(null);
   const [invite, setInvite] = useState<{ blockId: string; occurrence: number } | null>(null);
+  const [offscreen, setOffscreen] = useState<OffscreenList | null>(null);
   const inviteBlock = invite ? (blocks.find((b) => b.id === invite.blockId) ?? null) : null;
   // Read from the live list, so the card reflects an answer the moment it is given.
   const peekBlock = peek ? (blocks.find((b) => b.id === peek.blockId) ?? null) : null;
@@ -211,7 +222,7 @@ export function CalendarScreen() {
       const sameDayMine = buildDayModels(blocks, userId, zone, range.dayKey, 1)[0].mine;
       const conflict = findSameTypeConflict({ ...range, type: "free" }, sameDayMine);
       if (conflict) {
-        toast(`You already have Free time then (${formatMinuteRange(conflict.startMin, conflict.endMin)}). Stretch that block instead.`, "error");
+        toast(`You already have Free time then (${formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin)}). Stretch that block instead.`, "error");
         return;
       }
       try {
@@ -255,13 +266,31 @@ export function CalendarScreen() {
     [router],
   );
 
+  /** Something outside the week grid's hours: open it as if it had been tapped on the calendar. */
+  const openEntry = useCallback(
+    (entry: OffscreenEntry) => {
+      if (entry.kind === "friends") setCluster(entry.cluster);
+      else openItem(entry.item);
+    },
+    [openItem],
+  );
+
+  /** The tab at the end of a week row: one thing opens straight away, several are listed. */
+  const openOffscreen = useCallback(
+    (dayKey: DayKey, side: "before" | "after", entries: OffscreenEntry[]) => {
+      if (entries.length === 1) openEntry(entries[0]);
+      else setOffscreen({ dayKey, side, entries });
+    },
+    [openEntry],
+  );
+
   /** A block was dragged or resized to a new time. */
   const changeItem = useCallback(
     async (item: CalendarItem, next: DayRange) => {
       const sameDayMine = buildDayModels(blocks, userId, zone, next.dayKey, 1)[0].mine;
       const conflict = findSameTypeConflict({ ...next, type: item.block.type }, sameDayMine, item.block.id);
       if (conflict) {
-        toast(`That would overlap your other ${item.block.type === "free" ? "Free" : "Join me"} block (${formatMinuteRange(conflict.startMin, conflict.endMin)}).`, "error");
+        toast(`That would overlap your other ${item.block.type === "free" ? "Free" : "Join me"} block (${formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin)}).`, "error");
         return;
       }
       const startIso = zonedToUtc(next.dayKey, next.startMin, zone);
@@ -270,7 +299,7 @@ export function CalendarScreen() {
         if (item.block.repeat_weekly) {
           const scope = await choose({
             title: "This repeats weekly",
-            body: `Move to ${formatDayKey(next.dayKey)}, ${formatMinuteRange(next.startMin, next.endMin)}?`,
+            body: `Move to ${formatDayKey(next.dayKey)}, ${formatSpan(next.dayKey, next.startMin, next.endMin)}?`,
             choices: [
               { value: "one", label: "Just this one", variant: "stone" },
               { value: "all", label: "Every week", variant: "free" },
@@ -375,6 +404,7 @@ export function CalendarScreen() {
             onChange={changeItem}
             onOpenItem={openItem}
             onOpenCluster={setCluster}
+            onOpenOffscreen={openOffscreen}
           />
         ) : (
           <DayView
@@ -428,6 +458,20 @@ export function CalendarScreen() {
         onMessageHost={(block, occurrence) => {
           setPeek(null);
           messaging.openThread(block.owner_id, { blockId: block.id, occurrence: occurrence.index });
+        }}
+      />
+      <OffscreenDialog
+        list={offscreen}
+        profiles={profiles}
+        onClose={() => setOffscreen(null)}
+        onOpenEntry={(entry) => {
+          setOffscreen(null);
+          openEntry(entry);
+        }}
+        onShowDay={(dayKey) => {
+          setOffscreen(null);
+          setSelectedDay(dayKey);
+          changeView("day");
         }}
       />
       <InviteDialog

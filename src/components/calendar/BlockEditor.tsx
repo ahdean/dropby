@@ -8,14 +8,14 @@ import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
-import { DAY_END_MIN, DAY_START_MIN, MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
+import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
 import { PlacesDialog } from "@/components/places/PlacesManager";
 import { draftFromBlock, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
 import { useSavedPlaces } from "@/lib/data/saved-places";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
-import { formatDayKey, formatMinuteRange, formatMinutes, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
+import { addDays, formatDayKey, formatMinutes, formatSpan, minutesFromDay, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
 import type { BlockDraft, BlockType, CalendarBlock, Group, Profile } from "@/lib/types";
 import { AudiencePicker, type AudienceValue } from "./AudiencePicker";
 import type { DayRange } from "./useBlockGestures";
@@ -24,10 +24,15 @@ export type EditorState =
   | { mode: "create"; range: DayRange; preset?: { type?: BlockType; emoji?: string; title?: string; audience?: AudienceValue } }
   | { mode: "edit"; block: CalendarBlock; occurrence: Occurrence };
 
+/** The longest a block may be (the database allows up to 24 hours). */
+const MAX_BLOCK_MINUTES = 24 * 60;
+
 interface Form {
   type: BlockType;
   dayKey: DayKey;
+  /** Minutes after midnight of `dayKey`, any time of day. */
   startMin: number;
+  /** Minutes after midnight of `dayKey`: above 1440 when the block ends the next day. */
   endMin: number;
   repeat: boolean;
   title: string;
@@ -58,13 +63,12 @@ function initialForm(state: EditorState, zone: string): Form {
   }
   const { block, occurrence } = state;
   const start = utcToZoned(occurrence.startIso, zone);
-  const end = utcToZoned(occurrence.endIso, zone);
   return {
     type: block.type,
     dayKey: start.dayKey,
     startMin: start.minutes,
-    // The form edits one day; a block running past midnight is shown to the end of the day.
-    endMin: end.dayKey === start.dayKey ? end.minutes : DAY_END_MIN,
+    // Counted from the start day's midnight, so a block that runs past midnight keeps its real end.
+    endMin: minutesFromDay(occurrence.endIso, start.dayKey, zone),
     repeat: block.repeat_weekly,
     title: block.title ?? "",
     emoji: block.emoji ?? DOOR_ICON,
@@ -78,6 +82,12 @@ function initialForm(state: EditorState, zone: string): Form {
 /** The same place, give or take capitals and spaces? */
 function sameText(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase();
+}
+
+/** How an end time reads in the list: "1 AM (next day)" once it is past midnight. */
+function endLabel(minutes: number): string {
+  if (minutes === 1440) return "12 AM (midnight)";
+  return minutes > 1440 ? `${formatMinutes(minutes - 1440)} (next day)` : formatMinutes(minutes);
 }
 
 /** Half-hour choices between two times, plus the current value if it is off the grid. */
@@ -141,12 +151,10 @@ function EditorDialog({
   const editing = state.mode === "edit" ? state : null;
   const isJoin = form.type === "join";
 
-  const startOptions = useMemo(
-    () => timeOptions(DAY_START_MIN, DAY_END_MIN - MIN_BLOCK_MINUTES, form.startMin),
-    [form.startMin],
-  );
+  // Any time of day, not only the hours the week grid draws; the end may be on the next day.
+  const startOptions = useMemo(() => timeOptions(0, 1440 - SNAP_MINUTES, form.startMin), [form.startMin]);
   const endOptions = useMemo(
-    () => timeOptions(form.startMin + MIN_BLOCK_MINUTES, DAY_END_MIN, form.endMin),
+    () => timeOptions(form.startMin + MIN_BLOCK_MINUTES, form.startMin + MAX_BLOCK_MINUTES, form.endMin),
     [form.startMin, form.endMin],
   );
 
@@ -174,21 +182,28 @@ function EditorDialog({
 
   const changeStart = (startMin: number) =>
     setForm((f) => {
-      const length = Math.max(MIN_BLOCK_MINUTES, f.endMin - f.startMin);
-      return { ...f, startMin, endMin: Math.min(DAY_END_MIN, startMin + length) };
+      // Keep the length; that may now carry it past midnight, which is fine.
+      const length = Math.min(MAX_BLOCK_MINUTES, Math.max(MIN_BLOCK_MINUTES, f.endMin - f.startMin));
+      return { ...f, startMin, endMin: startMin + length };
     });
 
   const validate = (f: Form): string | null => {
     if (f.endMin <= f.startMin) return "The end time must be after the start time.";
+    if (f.endMin - f.startMin > MAX_BLOCK_MINUTES) return "A block can be at most 24 hours long.";
     if (f.type === "join" && f.emoji.trim() === "") return "Pick an icon for your event: it's what friends see on their calendar.";
-    const mine = expandBlocks(blocks.filter((b) => b.owner_id === userId), userId, zone, f.dayKey, 1);
-    const conflict = findSameTypeConflict(
-      { dayKey: f.dayKey, type: f.type, startMin: f.startMin, endMin: f.endMin },
-      mine,
-      editing?.block.id,
-    );
+    // This day, and the next one for a block that runs past midnight.
+    const mine = expandBlocks(blocks.filter((b) => b.owner_id === userId), userId, zone, f.dayKey, 2);
+    const conflict =
+      findSameTypeConflict({ dayKey: f.dayKey, type: f.type, startMin: f.startMin, endMin: f.endMin }, mine, editing?.block.id) ??
+      (f.endMin > 1440
+        ? findSameTypeConflict(
+            { dayKey: addDays(f.dayKey, 1), type: f.type, startMin: 0, endMin: f.endMin - 1440 },
+            mine,
+            editing?.block.id,
+          )
+        : undefined);
     if (conflict) {
-      return `That overlaps your other ${f.type === "free" ? "Free" : "Join me"} block (${formatMinuteRange(conflict.startMin, conflict.endMin)}). Move one of them, or stretch the existing one instead.`;
+      return `That overlaps your other ${f.type === "free" ? "Free" : "Join me"} block (${formatDayKey(conflict.dayKey)}, ${formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin)}). Move one of them, or stretch the existing one instead.`;
     }
     return null;
   };
@@ -362,7 +377,7 @@ function EditorDialog({
               <label htmlFor={`${ids}-end`} className="label">To</label>
               <select id={`${ids}-end`} className="field" value={form.endMin} onChange={(e) => set("endMin", Number(e.target.value))}>
                 {endOptions.map((m) => (
-                  <option key={m} value={m}>{formatMinutes(m)}</option>
+                  <option key={m} value={m}>{endLabel(m)}</option>
                 ))}
               </select>
             </div>
@@ -377,7 +392,8 @@ function EditorDialog({
             ]}
           />
           <p className="text-[17px] text-ink-faint">
-            {form.repeat ? `Every ${formatDayKey(form.dayKey, "long").split(",")[0]} at this time.` : formatDayKey(form.dayKey, "long")}
+            {form.repeat ? `Every ${formatDayKey(form.dayKey, "long").split(",")[0]} at this time` : formatDayKey(form.dayKey, "long")}
+            {form.endMin > 1440 ? `, ending ${formatDayKey(addDays(form.dayKey, 1), "long").split(",")[0]} at ${formatMinutes(form.endMin - 1440)}.` : "."}
           </p>
         </fieldset>
 
