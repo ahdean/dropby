@@ -2,6 +2,7 @@
 
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
+import { MaraScene } from "@/components/mara/MaraScene";
 
 function Swatch({ kind }: { kind: "free" | "join" | "locked" }) {
   const beam = kind === "free" ? "" : kind === "join" ? "beam-join" : "beam-locked";
@@ -16,6 +17,10 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <Dialog open={open} onClose={onClose} title="How wheet works" footer={<Button variant="free" onClick={onClose}>Got it</Button>}>
       <div className="space-y-4">
+        {/* The Mara design greets you here. */}
+        <div className="only-mara">
+          <MaraScene />
+        </div>
         <ul className="space-y-3">
           <li className="flex items-center gap-3">
             <Swatch kind="free" />

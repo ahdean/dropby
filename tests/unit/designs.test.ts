@@ -1,0 +1,61 @@
+/**
+ * The designs (themes) and the Mara design's pixel art.
+ */
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import * as art from "@/components/mara/sprites";
+import { DEFAULT_THEME, THEMES, THEME_BOOT_SCRIPT, themeInfo } from "@/lib/themes";
+
+describe("designs", () => {
+  it("keep Retro night as the default, and offer Light and Mara", () => {
+    expect(DEFAULT_THEME).toBe("retro");
+    expect(THEMES.map((t) => t.id)).toEqual(["retro", "light", "mara"]);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
+  });
+
+  it("fall back to the default for a design that no longer exists", () => {
+    expect(themeInfo("neon").id).toBe("retro");
+  });
+
+  it("point at icon files that exist", () => {
+    for (const theme of THEMES) {
+      if (theme.favicon) expect(existsSync(join(process.cwd(), "public", theme.favicon)), theme.favicon).toBe(true);
+    }
+  });
+
+  it("know every design in the script that applies it before the page draws", () => {
+    for (const theme of THEMES) expect(THEME_BOOT_SCRIPT).toContain(`"${theme.id}"`);
+  });
+});
+
+describe("the Mara design's pixel art", () => {
+  const sprites = Object.entries(art).filter((entry): entry is [string, art.Sprite] => {
+    const value = entry[1] as unknown;
+    return typeof value === "object" && value !== null && "rows" in value;
+  });
+
+  it("only uses colours from its palettes", () => {
+    for (const [name, sprite] of sprites) {
+      const palette = name.startsWith("GRASS") || name === "FLOWER" ? art.GRASS_PALETTE : art.PALETTE;
+      const unknown = [...new Set(sprite.rows.join(""))].filter((ch) => ch !== "." && !(ch in palette));
+      expect(unknown, name).toEqual([]);
+    }
+  });
+
+  it("has the face's frames the same size, differing only where they should", () => {
+    const differingRows = (a: art.Sprite, b: art.Sprite) => a.rows.flatMap((row, i) => (row === b.rows[i] ? [] : [i]));
+    expect([art.MARA_FACE.width, art.MARA_FACE.height]).toEqual([24, 24]);
+    expect(differingRows(art.MARA_FACE, art.MARA_FACE_OPEN)).toEqual([21, 22]); // the mouth
+    expect(differingRows(art.MARA_FACE, art.MARA_FACE_BLINK)).toEqual([11, 12, 13, 14]); // the eyes
+    expect(art.MARA_BODY.width).toBe(art.MARA_FACE.width);
+    expect([art.ALPACA_BLINK.height, art.ALPACA_CHEW.height]).toEqual([art.ALPACA.height, art.ALPACA.height]);
+  });
+
+  it("is drawn as runs of pixels that cover exactly the coloured ones", () => {
+    const runs = art.spriteRuns(art.MARA_FACE);
+    const covered = runs.reduce((sum, run) => sum + run.w, 0);
+    const coloured = art.MARA_FACE.rows.join("").replace(/\./g, "").length;
+    expect(covered).toBe(coloured);
+  });
+});

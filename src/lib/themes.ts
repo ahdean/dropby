@@ -21,6 +21,8 @@ export interface ThemeInfo {
   themeColor: string;
   /** Three colours for the little preview in the picker: background, surface, text. */
   swatch: [string, string, string];
+  /** A browser-tab icon of its own, if the design has one (the others use the usual door). */
+  favicon?: string;
 }
 
 export const THEMES: readonly ThemeInfo[] = [
@@ -39,6 +41,15 @@ export const THEMES: readonly ThemeInfo[] = [
     colorScheme: "light",
     themeColor: "#e4e7ee",
     swatch: ["#e4e7ee", "#ffffff", "#141824"],
+  },
+  {
+    id: "mara",
+    name: "Mara",
+    description: "A grassy meadow, wooden buttons, and a mara (with an alpaca friend) who says wheet.",
+    colorScheme: "light",
+    themeColor: "#79b04a",
+    swatch: ["#79b04a", "#fcf5e4", "#2b1d10"],
+    favicon: "/icons/mara-32.png",
   },
 ];
 
@@ -72,6 +83,11 @@ export function applyTheme(id: string): void {
   document.documentElement.dataset.theme = theme.id;
   document.documentElement.style.colorScheme = theme.colorScheme;
   document.querySelectorAll('meta[name="theme-color"]').forEach((meta) => meta.setAttribute("content", theme.themeColor));
+  // The browser-tab icon: the design's own, or back to the usual one.
+  document.querySelectorAll<HTMLLinkElement>('link[rel="icon"]').forEach((link) => {
+    if (!link.dataset.usual) link.dataset.usual = link.getAttribute("href") ?? "";
+    link.setAttribute("href", theme.favicon ?? link.dataset.usual);
+  });
 }
 
 export function setTheme(id: string): void {

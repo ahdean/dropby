@@ -196,6 +196,168 @@
   opacity: 0.5;
 }
 
+/* -----------------------------------------------------------------------------
+   Design: Mara
+   -----------------------------------------------------------------------------
+   Named after the mara, a small long-legged rodent from Patagonia. A grassy
+   meadow behind everything, parchment panels and wooden buttons, in warm
+   browns. The logo becomes a pixel mara's face and the help button a mara
+   in profile (see .only-mara below and src/components/mara).
+   -------------------------------------------------------------------------- */
+:root[data-theme="mara"] {
+  color-scheme: light;
+
+  --color-void: #ebdcb9;
+  --color-panel: #fcf5e4;
+  --color-panel-2: #f5e9cd;
+  --color-panel-3: #ecdab3;
+  --color-line: #c7a879;
+  --color-edge-hi: #fffaf0;
+  --color-edge-lo: #9a7a4c;
+  --color-black: #b79a6c;
+
+  --color-ink: #2b1d10;
+  --color-ink-dim: #573f27;
+  --color-ink-faint: #67502f;
+
+  /* wooden buttons */
+  --color-stone: #c99560;
+  --color-stone-hi: #ebc591;
+  --color-stone-lo: #7b4f27;
+  --color-stone-ink: #22150a;
+
+  --color-free: #1d5fa3;
+  --color-free-hi: #d7eaff;
+  --color-free-lo: #164a80;
+  --color-join: #285f1b;
+  --color-join-hi: #ddf3cc;
+  --color-join-lo: #1f5115;
+  --color-locked: #7d4e00;
+  --color-locked-hi: #ffedbd;
+  --color-locked-lo: #684100;
+  --color-danger: #a82a24;
+
+  --outline: #3d2a16;
+  --well: #fffbf2;
+  --well-edge: #9a7a4c;
+  --plate: rgb(255 251 242 / 0.92);
+  --beam-base: #fffbf2;
+  /* the calendar sits in a wooden frame */
+  --mesh: #a06e3c;
+  --mesh-shade: rgb(70 40 10 / 0.28);
+  --mesh-hi: #d8a669;
+  --mesh-lo: #5e3b19;
+  --grid-line: rgb(150 115 70 / 0.45);
+  --grid-line-faint: rgb(150 115 70 / 0.2);
+  --weekend: rgb(150 115 70 / 0.1);
+  --backdrop: rgb(40 28 10 / 0.45);
+  --backdrop-lines: rgb(0 0 0 / 0.06);
+  --fill-free: #7cc3ff;
+  --fill-join: #93d662;
+  --fill-locked: #ffcd45;
+  --fill-danger: #ff8a7a;
+  /* a meadow: a 16-pixel tile of grass blades, drawn at double size */
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%2379b04a'/%3E%3Crect x='2' y='0' width='1' height='1' fill='%235f9636'/%3E%3Crect x='10' y='0' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='2' y='1' width='1' height='1' fill='%235f9636'/%3E%3Crect x='7' y='1' width='1' height='1' fill='%235f9636'/%3E%3Crect x='10' y='1' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='1' y='2' width='2' height='1' fill='%235f9636'/%3E%3Crect x='7' y='2' width='1' height='1' fill='%235f9636'/%3E%3Crect x='15' y='2' width='1' height='1' fill='%235f9636'/%3E%3Crect x='6' y='3' width='2' height='1' fill='%235f9636'/%3E%3Crect x='15' y='3' width='1' height='1' fill='%235f9636'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='14' y='4' width='2' height='1' fill='%235f9636'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%235f9636'/%3E%3Crect x='2' y='6' width='2' height='1' fill='%238fc65a'/%3E%3Crect x='9' y='6' width='1' height='1' fill='%235f9636'/%3E%3Crect x='8' y='7' width='2' height='1' fill='%235f9636'/%3E%3Crect x='13' y='7' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='1' y='8' width='1' height='1' fill='%235f9636'/%3E%3Crect x='13' y='8' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='1' y='9' width='1' height='1' fill='%235f9636'/%3E%3Crect x='7' y='9' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='12' y='9' width='2' height='1' fill='%238fc65a'/%3E%3Crect x='0' y='10' width='2' height='1' fill='%235f9636'/%3E%3Crect x='7' y='10' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='6' y='11' width='2' height='1' fill='%238fc65a'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%235f9636'/%3E%3Crect x='12' y='12' width='1' height='1' fill='%235f9636'/%3E%3Crect x='3' y='13' width='1' height='1' fill='%235f9636'/%3E%3Crect x='11' y='13' width='2' height='1' fill='%235f9636'/%3E%3Crect x='3' y='14' width='1' height='1' fill='%235f9636'/%3E%3Crect x='6' y='14' width='1' height='1' fill='%238fc65a'/%3E%3Crect x='2' y='15' width='2' height='1' fill='%235f9636'/%3E%3Crect x='6' y='15' width='1' height='1' fill='%238fc65a'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 32px;
+}
+:root[data-theme="mara"] body {
+  background-color: #79b04a;
+  image-rendering: pixelated;
+}
+:root[data-theme="mara"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="mara"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="mara"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="mara"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="mara"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="mara"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+/* Pieces that belong to one design only. */
+:root:not([data-theme="mara"]) .only-mara {
+  display: none !important;
+}
+:root[data-theme="mara"] .except-mara {
+  display: none !important;
+}
+
+/* The mara scene (src/components/mara/MaraScene.tsx). One 7-second loop:
+   the alpaca blinks at 1s, the mara opens its mouth at 1.8s, "wheet!" pops
+   up at 2.1s and stays until 5s, the alpaca chews, the mara blinks at 5.8s. */
+.mara-scene g[class^="ms-"],
+.mara-scene g[class*=" ms-"] {
+  animation-duration: 7s;
+  animation-iteration-count: infinite;
+  animation-timing-function: steps(1, end);
+}
+.mara-scene .ms-face { animation-name: ms-face; }
+.mara-scene .ms-face-open { opacity: 0; animation-name: ms-face-open; }
+.mara-scene .ms-face-blink { opacity: 0; animation-name: ms-face-blink; }
+.mara-scene .ms-alpaca { animation-name: ms-alpaca; }
+.mara-scene .ms-alpaca-blink { opacity: 0; animation-name: ms-alpaca-blink; }
+.mara-scene .ms-alpaca-chew { opacity: 0; animation-name: ms-alpaca-chew; }
+.mara-scene .ms-bubble {
+  opacity: 0;
+  animation-name: ms-bubble;
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+}
+.mara-scene .ms-sway {
+  animation-name: ms-sway;
+  animation-duration: 1.4s;
+}
+.mara-scene .ms-sway-late {
+  animation-delay: -0.7s;
+}
+
+@keyframes ms-face { 0% { opacity: 1; } 25.7% { opacity: 0; } 45.7% { opacity: 1; } 83% { opacity: 0; } 86% { opacity: 1; } }
+@keyframes ms-face-open { 0% { opacity: 0; } 25.7% { opacity: 1; } 45.7% { opacity: 0; } }
+@keyframes ms-face-blink { 0% { opacity: 0; } 83% { opacity: 1; } 86% { opacity: 0; } }
+@keyframes ms-alpaca {
+  0% { opacity: 1; } 14% { opacity: 0; } 16.5% { opacity: 1; } 51% { opacity: 0; } 53% { opacity: 1; }
+  55% { opacity: 0; } 57% { opacity: 1; } 63% { opacity: 0; } 65.5% { opacity: 1; }
+}
+@keyframes ms-alpaca-blink { 0% { opacity: 0; } 14% { opacity: 1; } 16.5% { opacity: 0; } 63% { opacity: 1; } 65.5% { opacity: 0; } }
+@keyframes ms-alpaca-chew { 0% { opacity: 0; } 51% { opacity: 1; } 53% { opacity: 0; } 55% { opacity: 1; } 57% { opacity: 0; } }
+@keyframes ms-bubble {
+  0% { opacity: 0; transform: scale(0.5); }
+  30% { opacity: 1; transform: scale(0.75); }
+  31.5% { opacity: 1; transform: scale(1); }
+  71.4% { opacity: 0; transform: scale(1); }
+}
+@keyframes ms-sway { 0% { transform: translateX(0); } 50% { transform: translateX(1px); } }
+
+/* Reduce motion: a still picture, mid-"wheet". */
+@media (prefers-reduced-motion: reduce) {
+  .mara-scene g[class^="ms-"],
+  .mara-scene g[class*=" ms-"] {
+    animation: none !important;
+  }
+  .mara-scene .ms-face,
+  .mara-scene .ms-face-blink,
+  .mara-scene .ms-alpaca-blink,
+  .mara-scene .ms-alpaca-chew {
+    opacity: 0;
+  }
+  .mara-scene .ms-face-open,
+  .mara-scene .ms-alpaca,
+  .mara-scene .ms-bubble {
+    opacity: 1;
+  }
+}
+
 /* Sizes that differ between phones and wider screens. */
 :root {
   --header-h: 58px; /* the site header, including its border */

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
-import { IconButton } from "@/components/ui/Button";
+import { MARA_MINI } from "@/components/mara/sprites";
+import { PixelArt } from "@/components/mara/PixelArt";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { useConversations } from "@/lib/data/messages";
 import { useMe } from "@/lib/data/profiles";
@@ -23,7 +24,17 @@ export function Header() {
           <Logo />
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3" aria-label="Main">
-          <IconButton icon="help" label="How wheet works" onClick={() => setHelpOpen(true)} />
+          <button
+            type="button"
+            onClick={() => setHelpOpen(true)}
+            className="btn tile tile-dark !min-h-[40px] !w-10 !p-0"
+            aria-label="How wheet works"
+            title="How wheet works"
+          >
+            <PixelIcon name="help" size={16} className="except-mara" />
+            {/* In the Mara design, a mara in profile instead of the question mark. */}
+            <PixelArt art={MARA_MINI} size={26} className="only-mara" />
+          </button>
           <Link href="/connections" className="btn tile tile-dark !min-h-[40px] !w-10 !p-0" aria-label="Connections" title="Connections">
             <PixelIcon name="users" size={16} />
           </Link>

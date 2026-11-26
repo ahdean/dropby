@@ -262,6 +262,7 @@ No setup needed: the database tests start a real Postgres in memory (PGlite), ap
 | `tests/db/places.test.ts` | Saved places: private to their owner |
 | `tests/db/pictures.test.ts` | Event pictures (own folder only, in the invite preview) and hidden places |
 | `tests/unit/audience.test.ts` | The "Shared with" list: everyone, groups and people ticking on and off |
+| `tests/unit/designs.test.ts` | The list of designs, and the Mara pixel art (sizes, colours, animation frames) |
 | `tests/unit/time.test.ts` | UTC ↔ local time, daylight saving, splitting by day, formatting |
 | `tests/unit/recurrence.test.ts` | Weekly repeats across daylight-saving changes and time zones |
 | `tests/unit/intervals.test.ts` | Block overlap, snapping, dragging, resizing, stacking |
@@ -312,7 +313,8 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 - **Saved places.** Keep a private list of nicknamed places ("Home" → the full address) on the profile page or from the event editor ("Manage"). When hosting, tap one to fill in "Where"; guests see the address, never your nickname. The editor also offers locations typed on your earlier events ("Used before").
 - **Used before.** The places from your earlier events are listed under "Used before" in the places manager: **+** saves one under a nickname, **✗** stops it being suggested (the events themselves keep their address; Undo brings it back).
 - **Event pictures.** A hosted event can have a picture (editor → "Add a picture"). It is shrunk on the phone before upload and shown on the event page, in a friend's quick look, on the invite preview and in the link bubble when an invite is texted. The file sits in the `event-pictures` storage bucket under the host's own folder; like profile pictures, anyone holding its address can load it, and the address is only handed out with the event itself.
-- **Designs.** Profile → **Design** switches the look (for now "Retro night", the default, and "Light"). The choice is remembered on each device.
+- **Designs.** Profile → **Design** switches the look: "Retro night" (the default), "Light" and "Mara". The choice is remembered on each device.
+- **The Mara design.** Named after the mara, a small long-legged rodent from Patagonia: a grassy meadow behind everything, parchment panels and wooden buttons. The logo becomes a pixel mara's face (also the browser-tab icon), the help button a mara in profile, and the help window (and the Design card, when Mara is picked) opens with a little scene: a mara sitting in the grass next to an alpaca opens its mouth and says "wheet!" while the alpaca blinks and chews. Tap the scene to play it again; with "reduce motion" on it is a still picture. The app icon on a phone's home screen stays the door, since an installed icon can't change with the design.
 - **Several icons.** An event can carry up to four icons; the first is the main one, which suggests the title and is the one drawn where space is tight.
 - **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
 - **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
@@ -360,6 +362,7 @@ src/components/
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome
   ui/                      buttons, dialogs, avatars, pixel icons
+  mara/                    the Mara design's pixel art and the mara-and-alpaca scene
 
 src/app/                 Pages (thin: they mostly render one component)
   (app)/                   signed-in pages: calendar, e/[id], connections, profile
@@ -381,6 +384,7 @@ public/sw.js             service worker (installable app); public/offline.html i
 - **Hours shown, snap interval, how far ahead the calendar goes, invite lifetime:** `src/lib/constants.ts`.
 - **Colours and the retro look:** the tokens at the top of `src/app/globals.css`. Blue/green/gold are defined once and used everywhere.
 - **A new design:** add it to the list in `src/lib/themes.ts` and give it a `:root[data-theme="…"]` block of colours in `src/app/globals.css` (copy the "Light" block). The Profile page lists it automatically.
+- **The mara and alpaca pixel art:** `src/components/mara/sprites.ts` (each picture is rows of letters, one per pixel). The scene's timing is in `src/app/globals.css` (search for `ms-`). After changing the mara's face, `npx tsx scripts/make-mara-icons.ts` redraws the browser-tab icon.
 - **Event icons** (the favourites row and the longer list in the editor): `src/lib/event-icon.ts`. The default is wheet's own green open door.
 - **Interface icons:** each is a 12×12 bitmap in `src/components/ui/PixelIcon.tsx`. App icons and the favicon: `node scripts/make-icons.mjs`.
 - **A database rule:** add a **new** file in `supabase/migrations` (never edit one that has already been applied to the live database), add a test in `tests/db`, then apply it (SQL Editor, or `npm run db:push`).
