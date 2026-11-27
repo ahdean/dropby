@@ -7,7 +7,7 @@ import type { CalendarItem, DayModel, FriendFreeCluster, OffscreenEntry } from "
 import { addDays, formatDayKey, formatHourShort, formatMinuteRange, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 import { FriendEventBeam, FriendStack, GhostBeam, MyBeam, OffscreenTab } from "./Beams";
-import { GRID, clampToBounds, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
+import { GRID, MINE_CENTER, clampToBounds, fractionOf, friendsLaneCenter, minutesAt, percent, rowHeight } from "./geometry";
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
 import { CalendarMaras } from "@/components/mara/CalendarMaras";
 import type { WalkSpot } from "@/components/mara/MaraWalk";
@@ -57,7 +57,9 @@ const DayRow = memo(function DayRow({
   onOpenOffscreen,
 }: RowProps) {
   const height = rowHeight(day.laneCount);
-  const main = laneCenter(day.laneCount, 0);
+  // Your own lane on top; friends' lanes under it.
+  const main = MINE_CENTER;
+  const friends = friendsLaneCenter(0);
   const weekday = weekdayOf(day.dayKey);
   const dayNumber = Number(day.dayKey.slice(8));
   const isWeekend = weekday >= 6;
@@ -102,7 +104,7 @@ const DayRow = memo(function DayRow({
             <div
               key={`${cluster.key}:${step.startMin}`}
               className="wire pointer-events-none z-[1]"
-              style={{ ...span(step.startMin, step.endMin), top: main - 2, opacity: Math.min(1, 0.45 + 0.25 * step.count) }}
+              style={{ ...span(step.startMin, step.endMin), top: friends - 2, opacity: Math.min(1, 0.45 + 0.25 * step.count) }}
               aria-hidden="true"
             />
           )),
@@ -128,7 +130,7 @@ const DayRow = memo(function DayRow({
             onOpen={onOpenItem}
             style={{
               ...span(item.startMin, item.endMin),
-              top: laneCenter(day.laneCount, item.lane) - GRID.friendBeam / 2,
+              top: friendsLaneCenter(item.lane) - GRID.friendBeam / 2,
               height: GRID.friendBeam,
             }}
           />
@@ -143,9 +145,11 @@ const DayRow = memo(function DayRow({
               cluster={cluster}
               people={cluster.userIds.map((id) => profiles.get(id))}
               onOpen={onOpenCluster}
+              size={GRID.avatar}
               style={{
-                left: percent(fractionOf(Math.min(cluster.endMin, Math.max(cluster.startMin, middle)))),
-                top: main,
+                // Kept inside the row, so faces at either end don't spill over the day label or off the edge.
+                left: `clamp(${GRID.avatar}px, ${percent(fractionOf(Math.min(cluster.endMin, Math.max(cluster.startMin, middle))))}, calc(100% - ${GRID.avatar}px))`,
+                top: friends,
                 transform: "translate(-50%, -50%)",
               }}
             />
@@ -315,9 +319,8 @@ export function WeekGrid({
       const rect = track.getBoundingClientRect();
       // The whole row on screen, with room above it for the speech bubble.
       if (rect.width === 0 || rect.top < view.top + GRID.header + 40 || rect.bottom > view.bottom - 4) continue;
-      const taken = [...day.mine, ...day.friendEvents, ...day.friendFree.flatMap((cluster) => cluster.steps)]
-        .map((thing) => [thing.startMin, thing.endMin] as const)
-        .sort((a, b) => a[0] - b[0]);
+      // Only your own lane counts: friends being free underneath makes it a better suggestion, not a worse one.
+      const taken = day.mine.map((thing) => [thing.startMin, thing.endMin] as const).sort((a, b) => a[0] - b[0]);
       let from = VISIBLE_BOUNDS.min;
       if (day.dayKey === today) from = Math.max(from, Math.ceil((nowMin + 15) / 60) * 60);
       const stretches: [number, number][] = [];
@@ -330,7 +333,7 @@ export function WeekGrid({
         const width = ((b - a) / VISIBLE_MINUTES) * rect.width;
         if (b - a < EMPTY_STRETCH_MINUTES || width < 110) continue;
         const start = Math.min(Math.max(Math.round(((a + b) / 2 - SUGGESTED_MINUTES / 2) / 60) * 60, Math.ceil(a / 30) * 30), b - SUGGESTED_MINUTES);
-        const main = laneCenter(day.laneCount, 0);
+        const main = MINE_CENTER;
         options.push({
           left: rect.left - view.left - root.clientLeft + root.scrollLeft + fractionOf(a) * rect.width,
           top: rect.top - view.top - root.clientTop + root.scrollTop,

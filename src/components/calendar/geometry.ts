@@ -13,23 +13,35 @@ import { VISIBLE_BOUNDS, type Bounds, type Interval } from "@/lib/calendar/inter
 export const GRID = {
   /** Height of the sticky hour header. */
   header: 30,
-  /** Height of one lane inside a row. */
-  lane: 34,
-  /** Space above and below the lanes of a row. */
-  rowPadding: 13,
-  /** Thickness of the viewer's own beams and of friends' event beams. */
+  /** Space above your own lane (room for the small "earlier"/"later" tabs) and below the friends' lanes. */
+  rowPaddingTop: 8,
+  rowPaddingBottom: 4,
+  /**
+   * Each day row has your own lane on top (your blocks, as thick beams) and
+   * one or more friends' lanes under it (their free time as a thin line with
+   * their faces, their events as slim outlined beams), so your time never
+   * sits on top of theirs.
+   */
+  mineLane: 32,
+  friendsLane: 24,
+  /** Thickness of your own beams, and of friends' event beams. */
   beam: 26,
-  friendBeam: 22,
-  avatar: 26,
+  friendBeam: 18,
+  /** Size of friends' faces over their free time. */
+  avatar: 20,
 } as const;
 
-export function rowHeight(laneCount: number): number {
-  return GRID.rowPadding * 2 + GRID.lane * Math.max(1, laneCount);
+/** Height of a day row with `friendLanes` friends' lanes (at least one). */
+export function rowHeight(friendLanes: number): number {
+  return GRID.rowPaddingTop + GRID.rowPaddingBottom + GRID.mineLane + GRID.friendsLane * Math.max(1, friendLanes);
 }
 
-/** Distance from the top of a row to the centre line of lane `lane` (lane 0 is the bottom one). */
-export function laneCenter(laneCount: number, lane: number): number {
-  return rowHeight(laneCount) - GRID.rowPadding - GRID.lane / 2 - lane * GRID.lane;
+/** Distance from the top of a row to the centre line of your own lane. */
+export const MINE_CENTER = GRID.rowPaddingTop + GRID.mineLane / 2;
+
+/** Distance from the top of a row to the centre line of friends' lane `lane` (0 is the one just under yours). */
+export function friendsLaneCenter(lane: number): number {
+  return GRID.rowPaddingTop + GRID.mineLane + GRID.friendsLane * lane + GRID.friendsLane / 2;
 }
 
 /** Single-day view (hours down). */

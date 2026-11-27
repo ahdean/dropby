@@ -169,13 +169,13 @@ describe("friends' free time", () => {
 });
 
 describe("friends' hosted events", () => {
-  it("sit in the main lane when nothing else is there", () => {
+  it("sit in the first friends' lane when nothing else is there", () => {
     const model = day([block("mika", "2026-11-20", 19, 22, { type: "join" })], "2026-11-20");
     expect(model.friendEvents).toMatchObject([{ lane: 0, status: "join", mine: false }]);
     expect(model.laneCount).toBe(1);
   });
 
-  it("move up a lane instead of covering my block or another event", () => {
+  it("never share a lane with my own blocks (mine have their own), but stack below each other", () => {
     const model = day(
       [
         block(ME, "2026-11-20", 18, 21),
@@ -185,13 +185,13 @@ describe("friends' hosted events", () => {
       "2026-11-20",
     );
     expect(model.friendEvents.map((e) => [e.block.owner_id, e.lane])).toEqual([
-      ["mika", 1],
-      ["jo", 2],
+      ["mika", 0],
+      ["jo", 1],
     ]);
-    expect(model.laneCount).toBe(3);
+    expect(model.laneCount).toBe(2);
   });
 
-  it("move up a lane instead of covering a stack of free friends", () => {
+  it("move down a lane instead of covering friends' free time", () => {
     const model = day(
       [block("sam", "2026-11-20", 18, 21), block("mika", "2026-11-20", 19, 22, { type: "join" })],
       "2026-11-20",

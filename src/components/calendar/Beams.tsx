@@ -43,12 +43,23 @@ export const QuickActionsContext = createContext<QuickActions | null>(null);
  * as tall as the buttons keeps them open while the pointer travels down and
  * across to them, so a slanting path does not lose them on the way.
  */
-function HoverActions({ place, bridge = true, children }: { place: string; bridge?: boolean; children: ReactNode }) {
+function HoverActions({
+  place,
+  bridge = true,
+  compact = false,
+  children,
+}: {
+  place: string;
+  bridge?: boolean;
+  /** Small enough to sit inside a beam (your own blocks), so it covers nothing around it. */
+  compact?: boolean;
+  children: ReactNode;
+}) {
   return (
     <>
       {bridge && <span className="hover-bridge" data-gesture="bridge" aria-hidden="true" />}
       <span
-        className={`hover-actions absolute z-[1] gap-1 border-2 border-black bg-panel p-[3px] ${place}`}
+        className={`hover-actions absolute z-[1] gap-1 border-2 border-black bg-panel ${compact ? "hover-actions-compact p-0" : "p-[3px]"} ${place}`}
         // Keys pressed here are for these buttons, not for the block underneath.
         onKeyDown={(event) => event.stopPropagation()}
       >
@@ -211,7 +222,8 @@ export function MyBeam({
       } ${item.block.type === "join" ? "z-[3]" : "z-[2]"}`}
     >
       {actions && (
-        <HoverActions place={actionsPlace(item, vertical)} bridge={!vertical}>
+        // Inside the beam, at its far end: your lane has friends' lanes right under it, which a drop-down would cover.
+        <HoverActions place={vertical ? "right-1 top-1" : "right-[calc(var(--cap)+2px)] top-1/2 -translate-y-1/2"} bridge={false} compact={!vertical}>
           <ActionButton icon="chat" label="Chat" onClick={(button) => actions.message(item, blockOf(button))} />
         </HoverActions>
       )}
@@ -264,10 +276,10 @@ export function FriendEventBeam({
           vertical ? "flex-col items-start py-1" : ""
         }`}
       >
-        <EventIcon value={item.block.emoji} size={17} max={1} />
-        <Avatar person={host} size={16} className="shrink-0" />
+        <EventIcon value={item.block.emoji} size={vertical ? 17 : 14} max={1} />
+        <Avatar person={host} size={vertical ? 16 : 14} className="shrink-0" />
         {item.status === "locked" && <PixelIcon name="lock" size={10} className="shrink-0 text-locked" />}
-        {item.block.title && <span className="truncate text-[16px] leading-none text-ink">{item.block.title}</span>}
+        {item.block.title && <span className={`truncate leading-none text-ink ${vertical ? "text-[16px]" : "text-[15px]"}`}>{item.block.title}</span>}
       </button>
       {actions && (
         <HoverActions place={actionsPlace(item, vertical)} bridge={!vertical}>
@@ -289,11 +301,14 @@ export function FriendStack({
   cluster,
   people,
   style,
+  size = 26,
   onOpen,
 }: {
   cluster: FriendFreeCluster;
   people: (Profile | undefined)[];
   style: CSSProperties;
+  /** Size of each face. */
+  size?: number;
   onOpen: (cluster: FriendFreeCluster) => void;
 }) {
   const names = people.map((p) => p?.name ?? "A friend");
@@ -310,7 +325,7 @@ export function FriendStack({
         title={label}
         className="flex items-center justify-center rounded-full hover:brightness-110"
       >
-        <AvatarStack people={people} size={26} max={3} />
+        <AvatarStack people={people} size={size} max={3} />
       </button>
       {actions && (
         <HoverActions place="left-1/2 top-full -translate-x-1/2 mt-[3px]">
@@ -367,7 +382,7 @@ export function OffscreenTab({
       aria-label={label}
       title={label}
       style={style}
-      className={`absolute z-[8] flex h-[16px] items-center gap-[3px] border-2 border-current bg-panel px-[3px] font-display text-[8px] leading-none hover:bg-panel-3 ${STATUS_TEXT[entryStatus(first)]}`}
+      className={`absolute z-[8] flex h-[14px] items-center gap-[3px] border-2 border-current bg-panel px-[3px] font-display text-[8px] leading-none hover:bg-panel-3 ${STATUS_TEXT[entryStatus(first)]}`}
     >
       {side === "before" && <PixelIcon name="left" size={8} />}
       <span>{formatMinutesShort(start)}</span>

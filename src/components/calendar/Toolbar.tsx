@@ -113,6 +113,12 @@ export function Toolbar({
           <LegendItem beam="" label="Free" />
           <LegendItem beam="beam-join" label="Join me" />
           <LegendItem beam="beam-locked" label="Locked in" />
+          <li className="flex items-center gap-2">
+            <span className="relative inline-block h-4 w-8 shrink-0" aria-hidden="true">
+              <span className="wire inset-x-0 top-[6px]" />
+            </span>
+            <span className="whitespace-nowrap text-[18px] text-ink-dim">Friends</span>
+          </li>
         </ul>
       </div>
 

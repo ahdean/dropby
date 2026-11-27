@@ -17,6 +17,15 @@ export function Header() {
   const { unreadTotal } = useConversations();
   const [helpOpen, setHelpOpen] = useState(false);
 
+  // Someone who has just joined (they've only now given their name on the
+  // Welcome screen) gets the "How wheet works" window straight away.
+  const nameState = !me ? "loading" : me.name.trim() ? "named" : "unnamed";
+  const [lastNameState, setLastNameState] = useState(nameState);
+  if (nameState !== lastNameState) {
+    setLastNameState(nameState);
+    if (lastNameState === "unnamed" && nameState === "named") setHelpOpen(true);
+  }
+
   return (
     <header className="app-header sticky top-0 z-40 border-b-2 border-black bg-panel/95 pt-[env(safe-area-inset-top)] backdrop-blur-[2px]">
       <div className="mx-auto flex h-14 max-w-[1500px] items-center justify-between gap-3 px-3 sm:px-5">

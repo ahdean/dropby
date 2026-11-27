@@ -83,7 +83,10 @@ export interface DayModel {
   mine: CalendarItem[];
   friendEvents: (CalendarItem & { lane: number })[];
   friendFree: FriendFreeCluster[];
-  /** Number of stacked lanes this row needs (1 unless friends' events collide). */
+  /**
+   * Number of friends' lanes this row needs, under your own lane (1 unless
+   * friends' events collide with each other or with friends' free time).
+   */
   laneCount: number;
   /** What lies entirely before the first hour shown, and after the last, earliest first. */
   before: OffscreenEntry[];
@@ -227,11 +230,12 @@ export function buildDayModels(
     const friendFree = clusterOverlapping(dayItems.filter((i) => !i.mine && i.block.type === "free")).map((cluster) =>
       buildCluster(dayKey, cluster),
     );
-    // Friends' events share the main lane only where it is empty; otherwise
-    // they stack above it so nothing is hidden.
+    // Your blocks have a lane of their own. Friends' events go in the first
+    // friends' lane where it is clear of their free time (and of each other);
+    // otherwise they stack below it, so nothing is hidden.
     const { placed, laneCount } = assignLanes(
       dayItems.filter((i) => !i.mine && i.block.type === "join"),
-      [[...mine, ...friendFree]],
+      [friendFree],
     );
     return {
       dayKey,

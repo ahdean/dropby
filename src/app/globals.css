@@ -992,6 +992,11 @@ dialog::backdrop {
     transition-delay: 0s;
   }
 }
+/* Inside a beam (your own blocks): a single small chat button. */
+.hover-actions-compact > .btn {
+  min-height: 18px !important;
+  width: 22px !important;
+}
 .dragging .hover-actions,
 .dragging .hover-bridge {
   display: none !important;
