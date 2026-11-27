@@ -1,54 +1,38 @@
 /**
- * wheet's main icon: the pixel mara's face on a grass tile ("#1 Classic" in
- * docs/mara-icon-examples.png). The same picture is drawn in the header
- * (MainIcon.tsx) and saved as the browser-tab and home-screen icons
- * (scripts/make-icons.ts), so they always match.
+ * wheet's main icon: a line drawing of the pixel mara's face, charcoal on
+ * off-white ("2 · Line drawing" in docs/main-icon-options.png). Flat and
+ * neutral, so it sits quietly on every design. The same picture is drawn in
+ * the header (MainIcon.tsx) and saved as the browser-tab and home-screen
+ * icons (scripts/make-icons.ts), so they always match.
  */
-import { GRASS_TILE, MARA_FACE, PALETTE } from "./sprites";
+import { MARA_FACE } from "./sprites";
 
-const GRASS = "#79b04a";
-const BLADE_DARK = "#6a9e3f";
-const BLADE_LIGHT = "#8fc35c";
-const EDGE_LIGHT = "#a6d775";
-const EDGE_DARK = "#4f7f2c";
+export const ICON_INK = "#2e2b27"; // warm charcoal
+export const ICON_PAPER = "#f3efe6"; // off-white
 
 /**
- * The icon as a grid of colours, `grid` pixels square. `bevel` draws the
- * raised-tile edge (left off for icons that phones crop to a rounded shape).
+ * The icon as a grid of colours, `grid` pixels square. A bigger grid leaves
+ * more space round the face (for home-screen icons, which phones crop to
+ * their own rounded shape).
  */
-export function mainIconPixels(grid = 32, bevel = true): string[][] {
-  const pixels = Array.from({ length: grid }, () => Array.from({ length: grid }, () => GRASS));
-  // grass blades across the lower half
-  for (let y = grid / 2; y < grid; y++) {
-    for (let x = 0; x < grid; x++) {
-      const ch = GRASS_TILE.rows[(y - grid / 2) % 16][x % 16];
-      if (ch === "d") pixels[y][x] = BLADE_DARK;
-      if (ch === "l") pixels[y][x] = BLADE_LIGHT;
-    }
-  }
-  // the face, centred (a pixel low, so the ears have room)
+export function mainIconPixels(grid = 32): string[][] {
+  const pixels = Array.from({ length: grid }, () => Array.from({ length: grid }, () => ICON_PAPER));
+  // the face, centred (a pixel low, so the ears have room): its outline and
+  // the darkest fur along it (so the line runs unbroken), the eyes and the nose
   const ox = Math.floor((grid - MARA_FACE.width) / 2);
   const oy = Math.floor((grid - MARA_FACE.height) / 2) + 1;
   MARA_FACE.rows.forEach((row, y) =>
     [...row].forEach((ch, x) => {
-      if (ch !== ".") pixels[oy + y][ox + x] = PALETTE[ch];
+      if (ch === "k" || ch === "d" || ch === "e" || ch === "n") pixels[oy + y][ox + x] = ICON_INK;
     }),
   );
-  if (bevel) {
-    for (let i = 0; i < grid; i++) {
-      pixels[0][i] = EDGE_LIGHT;
-      pixels[i][0] = EDGE_LIGHT;
-      pixels[grid - 1][i] = EDGE_DARK;
-      pixels[i][grid - 1] = EDGE_DARK;
-    }
-  }
   return pixels;
 }
 
 /** Each horizontal run of one colour, for drawing as SVG rectangles. */
-export function mainIconRuns(grid = 32, bevel = true): { x: number; y: number; w: number; fill: string }[] {
+export function mainIconRuns(grid = 32): { x: number; y: number; w: number; fill: string }[] {
   const out: { x: number; y: number; w: number; fill: string }[] = [];
-  mainIconPixels(grid, bevel).forEach((row, y) => {
+  mainIconPixels(grid).forEach((row, y) => {
     let x = 0;
     while (x < row.length) {
       let end = x + 1;
@@ -61,8 +45,8 @@ export function mainIconRuns(grid = 32, bevel = true): { x: number; y: number; w
 }
 
 /** The icon as a standalone SVG document (for the icon files). */
-export function mainIconSvg(grid = 32, bevel = true): string {
-  const rects = mainIconRuns(grid, bevel)
+export function mainIconSvg(grid = 32): string {
+  const rects = mainIconRuns(grid)
     .map((r) => `<rect x="${r.x}" y="${r.y}" width="${r.w}" height="1" fill="${r.fill}"/>`)
     .join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${grid} ${grid}" shape-rendering="crispEdges">${rects}</svg>`;

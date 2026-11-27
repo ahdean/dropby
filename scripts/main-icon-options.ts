@@ -8,7 +8,6 @@
 // @ts-expect-error Playwright is not a project dependency; run with a global install (NODE_PATH=$(npm root -g)).
 import { chromium } from "playwright";
 import { ICON_OPTIONS, optionSvg } from "../src/components/mara/icon-options";
-import { mainIconSvg } from "../src/components/mara/icon";
 
 /** Header colours (panel and text) of a spread of designs, dark and light. */
 const HEADERS: [string, string, string][] = [
@@ -24,8 +23,7 @@ const HEADERS: [string, string, string][] = [
   ["Beach", "#fffdf6", "#1d2a33"],
 ];
 
-const current = { name: "Now · Classic", note: "Today's icon, for comparison", svg: mainIconSvg(32, true) };
-const all = [current, ...ICON_OPTIONS.map((o) => ({ name: o.name, note: o.note, svg: optionSvg(o) }))];
+const all = ICON_OPTIONS.map((o) => ({ name: o.name, note: o.note, svg: optionSvg(o) }));
 
 const style = `body{margin:0;padding:24px;background:#3a3a3a;color:#f0eee2;font:15px/1.35 ui-monospace,monospace}
   h1{font-size:20px;margin:0 0 4px} p.sub{margin:0 0 18px;color:#cfcfcf}
@@ -40,7 +38,7 @@ function sheetBig(): string {
     )
     .join("");
   return `<!doctype html><html><head><style>${style} main{display:grid;grid-template-columns:repeat(4,170px);gap:24px 28px}</style></head><body>
-    <h1>Main icon options: flat and neutral</h1><p class="sub">Big, then at header size (36 px) and browser-tab size (16 px). Today's icon first, for comparison.</p><main>${cards}</main></body></html>`;
+    <h1>Main icon options: flat and neutral</h1><p class="sub">Big, then at header size (36 px) and browser-tab size (16 px). Number 2 became the main icon.</p><main>${cards}</main></body></html>`;
 }
 
 function sheetOnDesigns(): string {

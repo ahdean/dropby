@@ -1,6 +1,6 @@
 import { MainIcon } from "@/components/mara/MainIcon";
 
-/** The wheet mark: the pixel mara's face on a grass tile, plus the name. The same in every design. */
+/** The wheet mark: a line drawing of the pixel mara's face, plus the name. The same in every design. */
 export function Logo({ size = "md" }: { size?: "md" | "lg" }) {
   const large = size === "lg";
   return (
