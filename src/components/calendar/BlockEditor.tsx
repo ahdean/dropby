@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
-import { lookUpMapsPlace } from "@/app/(app)/maps-actions";
+import { LocationField } from "@/components/places/LocationField";
 import { MaraNudge } from "@/components/mara/MaraNudge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -9,7 +9,7 @@ import { EmojiPicker } from "@/components/ui/EmojiPicker";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { Segmented, Switch } from "@/components/ui/Switch";
-import { findMapsLink, isShortMapsLink, joinLocation, locationLabel, mapsUrlFor, placeNameFromMapsUrl, splitLocation, tidyMapsUrl } from "@/lib/maps";
+import { joinLocation, locationLabel, splitLocation } from "@/lib/maps";
 import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
 import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
@@ -170,32 +170,19 @@ function EditorDialog({
 
   const set = <K extends keyof Form>(key: K, value: Form[K]) => setForm((f) => ({ ...f, [key]: value }));
 
-  // "Where": the words show in the box; a Google Maps link, if one was pasted, is kept with them (lib/maps.ts).
-  const where = splitLocation(form.location);
-  const [lookingUp, setLookingUp] = useState(false);
-  const changeWhere = (text: string) => {
-    const pasted = findMapsLink(text);
-    if (!pasted) {
-      set("location", joinLocation(text, where.link));
-      return;
-    }
-    // A link was pasted: it pins the exact place. The words around it stay;
-    // with none, the place's name is read from the link.
-    const link = tidyMapsUrl(pasted);
-    const name = splitLocation(text).label || where.label || placeNameFromMapsUrl(pasted) || "";
-    set("location", joinLocation(name, link));
-    if (name || !isShortMapsLink(link)) return;
-    setLookingUp(true);
-    lookUpMapsPlace(link)
-      .then(({ name: found }) => {
-        if (!found) return;
-        setForm((f) => {
-          const now = splitLocation(f.location);
-          return now.link === link && now.label === "" ? { ...f, location: joinLocation(found, link) } : f;
-        });
-      })
-      .catch(() => {})
-      .finally(() => setLookingUp(false));
+  /**
+   * A saved place: its address (and map pin, if it has one) goes into "Where".
+   * A place saved as only a map pin has no words to show, so its name does.
+   */
+  const choosePlace = (place: { name: string; address: string }) => {
+    const { label, link } = splitLocation(place.address);
+    set("location", label ? place.address : joinLocation(place.name, link));
+  };
+  /** Is this saved place the one in "Where" (same words, or the same pin)? */
+  const isChosen = (place: { address: string }) => {
+    const chosen = splitLocation(form.location);
+    const saved = splitLocation(place.address);
+    return sameText(form.location, place.address) || (saved.link !== null && saved.link === chosen.link);
   };
 
   const editing = state.mode === "edit" ? state : null;
@@ -488,47 +475,7 @@ function EditorDialog({
             </div>
             <div>
               <label htmlFor={`${ids}-location`} className="label">Where</label>
-              <div className="flex items-stretch gap-2">
-                <input
-                  id={`${ids}-location`}
-                  className="field min-w-0 flex-1"
-                  value={where.label}
-                  placeholder="My place, 12 Elm St, or paste a Google Maps link"
-                  list={`${ids}-places`}
-                  autoComplete="off"
-                  onChange={(e) => changeWhere(e.target.value)}
-                />
-                {/* Opens Google Maps (the app, on a phone that has it) at the pinned place, or searching for what is typed. */}
-                <a
-                  href={mapsUrlFor(form.location)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn tile tile-dark shrink-0 !px-3"
-                  title={where.link ? "Open the pinned place in Google Maps" : where.label ? "Look this up in Google Maps" : "Find a place in Google Maps"}
-                >
-                  <PixelIcon name="pin" size={13} />
-                  Maps
-                </a>
-              </div>
-              {where.link ? (
-                <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[17px] text-ink-dim" role="status">
-                  <PixelIcon name="pin" size={11} className="text-join" />
-                  <span>
-                    {lookingUp
-                      ? "Pinned on Google Maps. Looking up its name…"
-                      : where.label
-                        ? "Pinned on Google Maps: guests go straight to it."
-                        : "Pinned on Google Maps. Type a name above so friends can see where it is."}
-                  </span>
-                  <button type="button" className="btn-ghost" onClick={() => set("location", joinLocation(where.label, null))}>
-                    Remove pin
-                  </button>
-                </div>
-              ) : (
-                <p className="mt-1 text-[16px] text-ink-faint">
-                  To pin the exact spot: in Google Maps, tap the place, then Share, Copy link, and paste it here.
-                </p>
-              )}
+              <LocationField id={`${ids}-location`} value={form.location} onChange={(location) => set("location", location)} list={`${ids}-places`} />
               {/* Typing also suggests from the same list. */}
               <datalist id={`${ids}-places`}>
                 {places.map((place) => (
@@ -540,14 +487,14 @@ function EditorDialog({
                 <div className="label !mb-1">Saved places</div>
                 <ul className="flex flex-wrap items-center gap-2">
                   {savedPlaces.map((place) => {
-                    const chosen = sameText(form.location, place.address);
+                    const chosen = isChosen(place);
                     return (
                       <li key={place.id} className="max-w-full">
                         <button
                           type="button"
-                          onClick={() => set("location", place.address)}
+                          onClick={() => choosePlace(place)}
                           aria-pressed={chosen}
-                          title={place.address}
+                          title={locationLabel(place.address) || place.name}
                           className={`btn btn-sm tile max-w-full ${chosen ? "tile-join" : "tile-dark"}`}
                         >
                           <PixelIcon name="pin" size={11} className="shrink-0" />
@@ -556,7 +503,7 @@ function EditorDialog({
                       </li>
                     );
                   })}
-                  {form.location.trim() !== "" && !savedPlaces.some((place) => sameText(form.location, place.address)) && (
+                  {form.location.trim() !== "" && !savedPlaces.some(isChosen) && (
                     <li>
                       <button type="button" className="btn btn-sm tile tile-dark" onClick={() => setPlacesOpen("save")}>
                         <PixelIcon name="plus" size={11} />

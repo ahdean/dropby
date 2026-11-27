@@ -51,11 +51,16 @@ export function Dialog({
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={() => {
+      // A window opened from inside this one (saved places, from the event
+      // editor) passes its own close and Esc events up through this one:
+      // only this window's own events count here.
+      onClose={(event) => {
+        if (event.target !== ref.current) return;
         if (closingQuietly.current) closingQuietly.current = false;
         else onClose();
       }}
       onCancel={(event) => {
+        if (event.target !== ref.current) return;
         // Esc: let the owner decide (it may want to confirm discarding changes).
         event.preventDefault();
         onClose();

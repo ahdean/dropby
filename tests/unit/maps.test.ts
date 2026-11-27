@@ -6,10 +6,13 @@ import {
   MAX_LOCATION,
   findMapsLink,
   isShortMapsLink,
+  linkForDisplay,
   joinLocation,
   locationLabel,
   mapsUrlFor,
   placeNameFromMapsUrl,
+  readPastedLocation,
+  shortPlaceName,
   splitLocation,
   tidyMapsUrl,
 } from "@/lib/maps";
@@ -59,6 +62,27 @@ describe("Google Maps links", () => {
     const long = joinLocation("x".repeat(300), SHORT);
     expect(long.length).toBeLessThanOrEqual(MAX_LOCATION);
     expect(splitLocation(long).link).toBe(SHORT);
+  });
+
+  it("reads what the Maps app copies: name and address on their own lines, then the link", () => {
+    expect(readPastedLocation(`Joe's Pizza\n7 Carmine St, New York, NY 10014\n${SHORT}`)).toEqual({
+      words: "Joe's Pizza, 7 Carmine St, New York, NY 10014",
+      link: SHORT,
+    });
+    expect(readPastedLocation(SHORT)).toEqual({ words: "", link: SHORT });
+    expect(readPastedLocation(`Back room at Joe's ${SHORT}`)).toEqual({ words: "Back room at Joe's", link: SHORT });
+    expect(readPastedLocation("just words")).toEqual({ words: "just words", link: null });
+    expect(readPastedLocation(LONG).link).toBe("https://www.google.com/maps/place/Joe's+Pizza/@40.7305991,-74.0026897,17z");
+  });
+
+  it("shortens Google's full place names to the name and street", () => {
+    expect(shortPlaceName("Joe's Pizza, 7 Carmine St, New York, NY 10014, USA")).toBe("Joe's Pizza, 7 Carmine St");
+    expect(shortPlaceName("Prospect Park")).toBe("Prospect Park");
+  });
+
+  it("shows a pin's link briefly", () => {
+    expect(linkForDisplay(SHORT)).toBe("maps.app.goo.gl/AbC123xyz");
+    expect(linkForDisplay(tidyMapsUrl(LONG))).toBe("google.com/maps/place/Joe's Pizza");
   });
 
   it('sends "Open in Maps" to the pinned place, or a search for the words', () => {

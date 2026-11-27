@@ -119,6 +119,48 @@ export function locationLabel(text: string | null | undefined): string {
   return label || (link ? "Pinned place" : "");
 }
 
+/**
+ * A place's name as Google writes it, shortened to fit a calendar: the name
+ * and street, without the city, postcode and country that follow
+ * ("Joe's Pizza, 7 Carmine St, New York, NY 10014, USA" → "Joe's Pizza, 7 Carmine St").
+ */
+export function shortPlaceName(text: string): string {
+  const parts = text
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return parts.slice(0, 2).join(", ");
+}
+
+/**
+ * What was pasted, split into the words and the map link. Sharing a place from
+ * the Google Maps app often copies its name and address on separate lines
+ * with the link after them; the lines become ", " ("Joe's Pizza, 7 Carmine St, …").
+ */
+export function readPastedLocation(text: string): { words: string; link: string | null } {
+  const link = findMapsLink(text);
+  const words = (link ? text.replace(link, " ") : text)
+    .split(/\r?\n/)
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join(", ")
+    .replace(/\s*·\s*$/, "")
+    .replace(/,\s*,/g, ",")
+    .replace(/^[,\s]+|[,\s]+$/g, "");
+  return { words, link: link ? tidyMapsUrl(link) : null };
+}
+
+/** A pin's link, short enough to show: "maps.app.goo.gl/AbC123", "google.com/maps/place/Joe's Pizza". */
+export function linkForDisplay(link: string): string {
+  try {
+    const url = new URL(link);
+    const text = `${url.hostname.replace(/^www\./, "")}${decodePart(url.pathname)}`.replace(/\/@.*$/, "").replace(/\/$/, "");
+    return text.length > 42 ? `${text.slice(0, 41)}…` : text;
+  } catch {
+    return link.slice(0, 42);
+  }
+}
+
 /** Where "Open in Maps" goes: the pinned place, or a Google Maps search for the words. */
 export function mapsUrlFor(text: string | null | undefined): string {
   const { label, link } = splitLocation(text);

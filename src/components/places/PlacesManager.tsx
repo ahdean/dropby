@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { LocationField } from "./LocationField";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
-import { findMapsLink, locationLabel } from "@/lib/maps";
+import { findMapsLink, locationLabel, splitLocation } from "@/lib/maps";
 import { useMyPlaces } from "@/lib/data/blocks";
 import { useHiddenPlaceActions, useSavedPlaceActions, useSavedPlaces } from "@/lib/data/saved-places";
 import { placeKey } from "@/lib/places";
@@ -74,14 +75,11 @@ function PlaceForm({
         <label htmlFor={`place-address-${key}`} className="sr-only">
           Address or description
         </label>
-        <input
+        <LocationField
           id={`place-address-${key}`}
-          className="field"
           value={address}
-          maxLength={200}
-          placeholder="Address, e.g. 12 Elm St, Apt 4"
-          onChange={(e) => setAddress(e.target.value)}
-          required
+          onChange={setAddress}
+          placeholder="Address (12 Elm St), or paste a Google Maps link"
         />
       </div>
       <div className="flex gap-2">
@@ -184,8 +182,8 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-ink">{place.name}</span>
                   <span className="block truncate text-[17px] text-ink-dim">
-                    {locationLabel(place.address)}
-                    {findMapsLink(place.address) && <span className="text-join"> · pinned on Maps</span>}
+                    {splitLocation(place.address).label}
+                    {findMapsLink(place.address) && <span className="text-join">{splitLocation(place.address).label ? " · " : ""}map pin</span>}
                   </span>
                 </span>
                 <IconButton icon="edit" label={`Edit ${place.name}`} onClick={() => setEditing(place.id)} className="!min-h-[38px] !w-10" size={13} />
@@ -209,8 +207,8 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                   <PixelIcon name="clock" size={13} />
                 </span>
                 <span className="min-w-0 flex-1 truncate text-ink-dim">
-                  {locationLabel(place)}
-                  {findMapsLink(place) && <span className="text-join"> · pinned on Maps</span>}
+                  {splitLocation(place).label}
+                  {findMapsLink(place) && <span className="text-join">{splitLocation(place).label ? " · " : ""}map pin</span>}
                 </span>
                 <IconButton
                   icon="plus"
