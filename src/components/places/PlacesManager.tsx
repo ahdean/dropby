@@ -5,6 +5,7 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
+import { findMapsLink, locationLabel } from "@/lib/maps";
 import { useMyPlaces } from "@/lib/data/blocks";
 import { useHiddenPlaceActions, useSavedPlaceActions, useSavedPlaces } from "@/lib/data/saved-places";
 import { placeKey } from "@/lib/places";
@@ -182,7 +183,10 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-ink">{place.name}</span>
-                  <span className="block truncate text-[17px] text-ink-dim">{place.address}</span>
+                  <span className="block truncate text-[17px] text-ink-dim">
+                    {locationLabel(place.address)}
+                    {findMapsLink(place.address) && <span className="text-join"> · pinned on Maps</span>}
+                  </span>
                 </span>
                 <IconButton icon="edit" label={`Edit ${place.name}`} onClick={() => setEditing(place.id)} className="!min-h-[38px] !w-10" size={13} />
                 <IconButton icon="trash" label={`Delete ${place.name}`} onClick={() => remove(place)} className="!min-h-[38px] !w-10" size={13} />
@@ -204,15 +208,18 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                 <span className="shrink-0 text-ink-faint">
                   <PixelIcon name="clock" size={13} />
                 </span>
-                <span className="min-w-0 flex-1 truncate text-ink-dim">{place}</span>
+                <span className="min-w-0 flex-1 truncate text-ink-dim">
+                  {locationLabel(place)}
+                  {findMapsLink(place) && <span className="text-join"> · pinned on Maps</span>}
+                </span>
                 <IconButton
                   icon="plus"
-                  label={`Save "${place}" under a name`}
+                  label={`Save "${locationLabel(place)}" under a name`}
                   onClick={() => setSuggestion({ address: place, focus: true })}
                   className="!min-h-[38px] !w-10"
                   size={13}
                 />
-                <IconButton icon="x" label={`Stop suggesting "${place}"`} onClick={() => hide(place)} className="!min-h-[38px] !w-10" size={13} />
+                <IconButton icon="x" label={`Stop suggesting "${locationLabel(place)}"`} onClick={() => hide(place)} className="!min-h-[38px] !w-10" size={13} />
               </li>
             ))}
           </ul>

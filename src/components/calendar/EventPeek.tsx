@@ -14,6 +14,7 @@ import { useBlock, useBlockActions } from "@/lib/data/blocks";
 import { useProfiles } from "@/lib/data/profiles";
 import { useSession } from "@/lib/data/session";
 import { nextOccurrence, occurrenceAt, occurrenceExists, type Occurrence } from "@/lib/recurrence";
+import { locationLabel, mapsUrlFor } from "@/lib/maps";
 import { formatRange } from "@/lib/time";
 import type { CalendarBlock, RsvpStatus } from "@/lib/types";
 
@@ -145,7 +146,7 @@ function Sheet({
   const going = answers.filter((r) => r.status === "in").map((r) => chat.people.get(r.user_id));
   const notGoing = answers.filter((r) => r.status === "out").length;
   const myAnswer = answers.find((r) => r.user_id === userId)?.status ?? null;
-  const mapsUrl = block.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(block.location)}` : null;
+  const mapsUrl = block.location ? mapsUrlFor(block.location) : null;
   const accent = isEvent ? "text-join" : "text-free";
 
   const answer = async (next: RsvpStatus) => {
@@ -189,8 +190,14 @@ function Sheet({
           {isEvent && block.location && (
             <div className="flex items-start gap-3">
               <span className="mt-1 text-join"><PixelIcon name="pin" size={15} title="Where" /></span>
-              <a href={mapsUrl ?? "#"} target="_blank" rel="noopener noreferrer" className="link min-w-0 break-words">
-                {block.location}
+              <a
+                href={mapsUrl ?? "#"}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="link min-w-0 break-words"
+                title="Open in Google Maps"
+              >
+                {locationLabel(block.location)}
               </a>
             </div>
           )}
