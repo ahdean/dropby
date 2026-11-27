@@ -306,6 +306,12 @@ export function CalendarScreen() {
     setEditor({ mode: "edit", block, occurrence, chatTo: to, focusChat: true });
   }, []);
 
+  /** Edit, from the way-friends-see-it view shown after saving. */
+  const editFromPreview = useCallback((block: CalendarBlock, occurrence: Occurrence) => {
+    setSheet(null);
+    setEditor({ mode: "edit", block, occurrence });
+  }, []);
+
   /** Something outside the week grid's hours: open it as if it had been tapped on the calendar. */
   const openEntry = useCallback(
     (entry: OffscreenEntry) => {
@@ -477,9 +483,11 @@ export function CalendarScreen() {
         minDay={minDay}
         maxDay={maxDay}
         onClose={() => setEditor(null)}
-        onSaved={({ blockId, occurrence, invite: wantsInvite }) => {
+        onSaved={({ blockId, occurrence, invite: wantsInvite, type }) => {
           setEditor(null);
           if (wantsInvite) setInvite({ blockId, occurrence });
+          // A saved event: show it the way friends see it (Edit to go back, ✕ to close).
+          else if (type === "join") setSheet({ blockId, occurrence, preview: true });
         }}
       />
       <FriendsDialog
@@ -501,6 +509,7 @@ export function CalendarScreen() {
           if (blockParam) router.replace("/", { scroll: false });
         }}
         onOwnBlock={openOwnFromLink}
+        onEdit={editFromPreview}
       />
       <OffscreenDialog
         list={offscreen}

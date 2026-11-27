@@ -27,6 +27,11 @@ export interface SheetRequest {
   to?: string | null;
   /** Put the cursor in the message box (from a hover "write a message" button). */
   focus?: boolean;
+  /**
+   * Your own block, shown the way friends see it (just after saving it),
+   * with an Edit button. Without this, your own blocks open in the editor.
+   */
+  preview?: boolean;
 }
 
 /**
@@ -34,29 +39,34 @@ export interface SheetRequest {
  * from a notification or a link): what, when, where, who's in, and its chat,
  * with a message box always at the bottom. Your own blocks open straight in
  * the editor instead (which has the chat at its bottom), so a link to one of
- * yours is handed over to `onOwnBlock`.
+ * yours is handed over to `onOwnBlock`; except just after you save an event,
+ * when it shows here the way friends see it (`preview`), with Edit.
  */
 export function BlockSheet({
   request,
   zone,
   onClose,
   onOwnBlock,
+  onEdit,
 }: {
   /** Null closes the window. */
   request: SheetRequest | null;
   zone: string;
   onClose: () => void;
   onOwnBlock: (block: CalendarBlock, occurrence: Occurrence, to: string | null) => void;
+  /** Edit, from the preview of your own block. */
+  onEdit: (block: CalendarBlock, occurrence: Occurrence) => void;
 }) {
   if (!request) return null;
   return (
     <SheetLoader
       // A fresh window (message box, recipient) for each block and week.
-      key={`${request.blockId}:${request.occurrence ?? ""}:${request.to ?? ""}`}
+      key={`${request.blockId}:${request.occurrence ?? ""}:${request.to ?? ""}:${request.preview ? "preview" : ""}`}
       request={request}
       zone={zone}
       onClose={onClose}
       onOwnBlock={onOwnBlock}
+      onEdit={onEdit}
     />
   );
 }
@@ -66,11 +76,13 @@ function SheetLoader({
   zone,
   onClose,
   onOwnBlock,
+  onEdit,
 }: {
   request: SheetRequest;
   zone: string;
   onClose: () => void;
   onOwnBlock: (block: CalendarBlock, occurrence: Occurrence, to: string | null) => void;
+  onEdit: (block: CalendarBlock, occurrence: Occurrence) => void;
 }) {
   const { userId } = useSession();
   const { data: block, isLoading } = useBlock(request.blockId);
@@ -79,7 +91,7 @@ function SheetLoader({
     : request.occurrence !== undefined && occurrenceExists(block, request.occurrence)
       ? occurrenceAt(block, request.occurrence)
       : nextOccurrence(block);
-  const own = Boolean(block && occurrence && block.owner_id === userId);
+  const own = Boolean(block && occurrence && block.owner_id === userId) && !request.preview;
   // A link to one of your own blocks opens it in the editor.
   useEffect(() => {
     if (own && block && occurrence) onOwnBlock(block, occurrence, request.to ?? null);
@@ -110,6 +122,7 @@ function SheetLoader({
       focus={Boolean(request.focus)}
       zone={zone}
       onClose={onClose}
+      onEdit={request.preview && block.owner_id === userId ? () => onEdit(block, occurrence) : undefined}
     />
   );
 }
@@ -121,6 +134,7 @@ function Sheet({
   focus,
   zone,
   onClose,
+  onEdit,
 }: {
   block: CalendarBlock;
   occurrence: Occurrence;
@@ -128,6 +142,8 @@ function Sheet({
   focus: boolean;
   zone: string;
   onClose: () => void;
+  /** Set when showing your own block the way friends see it. */
+  onEdit?: () => void;
 }) {
   const { userId } = useSession();
   const actions = useBlockActions();
@@ -177,6 +193,14 @@ function Sheet({
   return (
     <Dialog open onClose={onClose} title={title} footer={<ChatBox chat={chat} block={block} to={to} onTo={setTo} autoFocus={focus} />}>
       <div className="space-y-4">
+        {onEdit && (
+          <div className="flex items-center gap-3 border-2 border-dashed border-line px-3 py-2">
+            <span className="min-w-0 flex-1 text-[17px] text-ink-dim">Saved. This is how friends see it.</span>
+            <Button variant="dark" size="sm" icon="edit" onClick={onEdit}>
+              Edit
+            </Button>
+          </div>
+        )}
         {isEvent && <EventPicture path={block.picture_path} className="slot aspect-[16/9] max-h-52 w-full" />}
 
         <div className="space-y-2">

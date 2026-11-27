@@ -35,6 +35,7 @@ export function LocationField({
   list,
   required = false,
   autoFocus = false,
+  mapsSteps = false,
 }: {
   id: string;
   value: string;
@@ -44,9 +45,17 @@ export function LocationField({
   list?: string;
   required?: boolean;
   autoFocus?: boolean;
+  /**
+   * Show the three steps for adding a place from Google Maps above the box
+   * (1 find it in Google Maps, 2 Share → Copy link, 3 paste it here), with a
+   * button that reads the copied link, instead of the Maps button beside it.
+   */
+  mapsSteps?: boolean;
 }) {
   const { label, link } = splitLocation(value);
   const [lookingUp, setLookingUp] = useState(false);
+  /** A word about the last "Paste it here" that did not work. */
+  const [note, setNote] = useState<string | null>(null);
   const input = useRef<HTMLInputElement>(null);
   // The latest text, for a name that arrives after a lookup.
   const latest = useRef(value);
@@ -117,8 +126,43 @@ export function LocationField({
 
   const removePin = () => onChange(joinLocation(label, null));
 
+  /** "Paste it here": read what was copied in Google Maps (the browser may ask first). */
+  const pasteFromClipboard = async () => {
+    setNote(null);
+    let text: string;
+    try {
+      text = await navigator.clipboard.readText();
+    } catch {
+      setNote("This browser didn't let wheet read what you copied. Paste it into the box below instead (press and hold, then Paste).");
+      input.current?.focus();
+      return;
+    }
+    const pasted = readPastedLocation(text);
+    if (!pasted.link) {
+      setNote("No Google Maps link was copied. In Google Maps, tap the place, then Share, then Copy link.");
+      return;
+    }
+    pin(pasted.link, /\n/.test(text.trim()) ? shortPlaceName(pasted.words) : pasted.words);
+  };
+
   return (
     <div>
+      {mapsSteps && !link && (
+        <ol className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[16px] text-ink-dim" aria-label="Add a place from Google Maps">
+          <li>
+            <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="btn btn-sm tile tile-dark">
+              <PixelIcon name="pin" size={11} />
+              1. Find it on Google Maps
+            </a>
+          </li>
+          <li>2. Share → Copy link</li>
+          <li>
+            <button type="button" className="btn btn-sm tile tile-join" onClick={() => void pasteFromClipboard()}>
+              3. Paste it here
+            </button>
+          </li>
+        </ol>
+      )}
       <div className="flex items-stretch gap-2">
         <input
           ref={input}
@@ -133,7 +177,7 @@ export function LocationField({
           onPaste={onPaste}
           onChange={(e) => onType(e.target.value)}
         />
-        {!link && (
+        {!link && !mapsSteps && (
           // Opens Google Maps (the app, on a phone that has it): searching for what is typed, or to find a place.
           <a
             href={mapsUrlFor(value)}
@@ -175,13 +219,17 @@ export function LocationField({
       ) : null}
 
       <p className="mt-1 text-[16px] text-ink-faint" role="status">
-        {lookingUp
+        {note && !link ? (
+          <span className="text-locked">{note}</span>
+        ) : lookingUp
           ? "Pinned. Getting the place's name from Google Maps…"
           : needsName
             ? "Pinned. Google didn't say what it's called: type a name above, so friends know where it is."
             : link
               ? "Guests see the name above; tapping it takes them to the pin."
-              : "To pin the exact spot: in Google Maps, tap the place, then Share, Copy link, and paste it here."}
+              : mapsSteps
+                ? "Or type an address."
+                : "To pin the exact spot: in Google Maps, tap the place, then Share, Copy link, and paste it here."}
       </p>
     </div>
   );

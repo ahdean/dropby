@@ -6,7 +6,7 @@ import { Button, IconButton } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
-import { findMapsLink, locationLabel, splitLocation } from "@/lib/maps";
+import { findMapsLink, locationLabel, mapsUrlFor, splitLocation } from "@/lib/maps";
 import { useMyPlaces } from "@/lib/data/blocks";
 import { useHiddenPlaceActions, useSavedPlaceActions, useSavedPlaces } from "@/lib/data/saved-places";
 import { placeKey } from "@/lib/places";
@@ -22,6 +22,7 @@ function PlaceForm({
   onSubmit,
   onCancel,
   focusName = false,
+  mapsSteps = false,
 }: {
   initial?: SavedPlace;
   submitLabel: string;
@@ -29,6 +30,8 @@ function PlaceForm({
   focusName?: boolean;
   onSubmit: (name: string, address: string) => Promise<void>;
   onCancel?: () => void;
+  /** Offer the steps for adding the place from Google Maps (the "Add a place" form). */
+  mapsSteps?: boolean;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
@@ -54,45 +57,89 @@ function PlaceForm({
     }
   };
 
-  return (
-    <form onSubmit={submit} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
-      <div>
-        <label htmlFor={`place-name-${key}`} className="sr-only">
-          Name
-        </label>
-        <input
-          id={`place-name-${key}`}
-          className="field"
-          value={name}
-          maxLength={40}
-          placeholder="Name, e.g. Home"
-          onChange={(e) => setName(e.target.value)}
-          required
-          autoFocus={focusName}
-        />
-      </div>
-      <div>
-        <label htmlFor={`place-address-${key}`} className="sr-only">
-          Address or description
-        </label>
-        <LocationField
-          id={`place-address-${key}`}
-          value={address}
-          onChange={setAddress}
-          placeholder="Address (12 Elm St), or paste a Google Maps link"
-        />
-      </div>
-      <div className="flex gap-2">
-        <Button type="submit" variant="free" icon={initial ? "check" : "plus"} busy={busy} disabled={name.trim() === "" || address.trim() === ""}>
-          {submitLabel}
+  const nameField = (
+    <div className={mapsSteps ? "min-w-0 flex-1" : undefined}>
+      <label htmlFor={`place-name-${key}`} className="sr-only">
+        Name
+      </label>
+      <input
+        id={`place-name-${key}`}
+        className="field"
+        value={name}
+        maxLength={40}
+        placeholder={mapsSteps ? "Name it, e.g. Home" : "Name, e.g. Home"}
+        onChange={(e) => setName(e.target.value)}
+        required
+        autoFocus={focusName}
+      />
+    </div>
+  );
+  const addressField = (
+    <div>
+      <label htmlFor={`place-address-${key}`} className="sr-only">
+        Address or description
+      </label>
+      <LocationField
+        id={`place-address-${key}`}
+        value={address}
+        onChange={(next) => {
+          setAddress(next);
+          // A place picked in Google Maps: its name becomes the place's name too, unless one was typed.
+          const { label, link } = splitLocation(next);
+          if (link && label) setName((typed) => (typed.trim() ? typed : label.split(",")[0].trim().slice(0, 40)));
+        }}
+        mapsSteps={mapsSteps}
+        placeholder="Address (12 Elm St), or paste a Google Maps link"
+      />
+    </div>
+  );
+  const buttons = (
+    <div className="flex shrink-0 gap-2">
+      <Button type="submit" variant="free" icon={initial ? "check" : "plus"} busy={busy} disabled={name.trim() === "" || address.trim() === ""}>
+        {submitLabel}
+      </Button>
+      {onCancel && (
+        <Button variant="dark" onClick={onCancel}>
+          Cancel
         </Button>
-        {onCancel && (
-          <Button variant="dark" onClick={onCancel}>
-            Cancel
-          </Button>
-        )}
-      </div>
+      )}
+    </div>
+  );
+
+  // Adding: the Google Maps steps and the address first (picking a place there fills in its name), then the name.
+  if (mapsSteps) {
+    return (
+      <form onSubmit={submit} className="space-y-2">
+        {addressField}
+        <div className="flex items-start gap-2">
+          {nameField}
+          {buttons}
+        </div>
+      </form>
+    );
+  }
+  return (
+    <form onSubmit={submit} className="grid items-start gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
+      {nameField}
+      {addressField}
+      {buttons}
     </form>
+  );
+}
+
+/** See a place in Google Maps: at its pin if it has one, or searching for its address. */
+function MapsLink({ place, name }: { place: string; name: string }) {
+  return (
+    <a
+      href={mapsUrlFor(place)}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="btn btn-sm tile tile-dark shrink-0"
+      aria-label={`See ${name} in Google Maps`}
+      title="See it in Google Maps"
+    >
+      Maps
+    </a>
   );
 }
 
@@ -186,6 +233,7 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                     {findMapsLink(place.address) && <span className="text-join">{splitLocation(place.address).label ? " · " : ""}map pin</span>}
                   </span>
                 </span>
+                <MapsLink place={place.address} name={place.name} />
                 <IconButton icon="edit" label={`Edit ${place.name}`} onClick={() => setEditing(place.id)} className="!min-h-[38px] !w-10" size={13} />
                 <IconButton icon="trash" label={`Delete ${place.name}`} onClick={() => remove(place)} className="!min-h-[38px] !w-10" size={13} />
               </li>
@@ -210,6 +258,7 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                   {splitLocation(place).label}
                   {findMapsLink(place) && <span className="text-join">{splitLocation(place).label ? " · " : ""}map pin</span>}
                 </span>
+                <MapsLink place={place} name={locationLabel(place)} />
                 <IconButton
                   icon="plus"
                   label={`Save "${locationLabel(place)}" under a name`}
@@ -232,6 +281,7 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
           initial={suggestion ? { id: "new", name: "", address: suggestion.address } : undefined}
           focusName={suggestion?.focus}
           submitLabel="Add"
+          mapsSteps
           onSubmit={async (name, address) => {
             await actions.add(name, address);
             toast(`"${name.trim()}" saved.`, "success");

@@ -131,7 +131,7 @@ interface EditorProps {
   maxDay: DayKey;
   onClose: () => void;
   /** Called after a successful save. `invite` asks the parent to open "Invite by text". */
-  onSaved: (result: { blockId: string; occurrence: number; invite: boolean }) => void;
+  onSaved: (result: { blockId: string; occurrence: number; invite: boolean; type: BlockType }) => void;
 }
 
 /**
@@ -309,7 +309,7 @@ function EditorDialog({
       }
       toast("Saved", "success");
       if (draft.picture_path !== undefined) void removeEventPictureIfUnused(originalPicture);
-      onSaved({ blockId, occurrence, invite });
+      onSaved({ blockId, occurrence, invite, type: form.type });
     } catch (failure) {
       toastError(
         isPicturesNotSetUp(failure)

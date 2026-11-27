@@ -947,12 +947,12 @@ dialog::backdrop {
   display: none;
 }
 @media (hover: hover) and (pointer: fine) {
-  /* The buttons stay a moment (0.3s) after the pointer leaves, so a pointer
+  /* The buttons stay a moment (0.15s) after the pointer leaves, so a pointer
      cutting a corner on its way to them still finds them. */
   .hover-actions {
     display: flex;
     visibility: hidden;
-    transition: visibility 0s linear 0.3s;
+    transition: visibility 0s linear 0.15s;
   }
   .has-hover-actions:hover > .hover-actions,
   .has-hover-actions:focus-within > .hover-actions {
@@ -974,7 +974,7 @@ dialog::backdrop {
      its own), so the buttons sit over the rows below; the lift, too, lasts
      as long as the buttons do. */
   .has-hover-actions {
-    transition: z-index 0s linear 0.3s;
+    transition: z-index 0s linear 0.15s;
   }
   .has-hover-actions:hover,
   .has-hover-actions:focus-within {
@@ -984,7 +984,7 @@ dialog::backdrop {
   [data-day-row] {
     position: relative;
     z-index: 0;
-    transition: z-index 0s linear 0.3s;
+    transition: z-index 0s linear 0.15s;
   }
   [data-day-row]:has(.has-hover-actions:hover),
   [data-day-row]:has(.has-hover-actions:focus-within) {
