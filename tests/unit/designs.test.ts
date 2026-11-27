@@ -1,18 +1,22 @@
 /**
  * The designs (themes) and the Mara design's pixel art.
  */
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as bulldog from "@/components/bulldog/sprites";
+import { LANDSCAPES } from "@/components/designs/LandscapeScene";
+import * as props from "@/components/designs/props";
 import * as art from "@/components/mara/sprites";
 import * as vintage from "@/components/vintage/sprites";
 import { DEFAULT_THEME, THEMES, THEME_BOOT_SCRIPT, themeInfo } from "@/lib/themes";
 
 describe("designs", () => {
-  it("keep Retro night as the default, and offer Light, Mara, Bulldog and Vintage", () => {
+  it("keep Retro night as the default, and offer the others after it", () => {
     expect(DEFAULT_THEME).toBe("retro");
-    expect(THEMES.map((t) => t.id)).toEqual(["retro", "light", "mara", "bulldog", "vintage"]);
+    expect(THEMES.map((t) => t.id)).toEqual([
+      "retro", "light", "mara", "bulldog", "vintage", "sunset", "city", "noir", "flowers", "winter", "fall", "summer", "beach",
+    ]);
     expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });
 
@@ -121,5 +125,25 @@ describe("the Bulldog and Vintage designs' pixel art", () => {
     const differing = mirrored.filter((row, i) => row !== right[i]).length;
     expect(differing).toBeLessThanOrEqual(3); // a pixel or two where the slanted rod steps
     expect([vintage.CUCKOO.width, vintage.CUCKOO.height]).toEqual([vintage.CUCKOO_OPEN.width, vintage.CUCKOO_OPEN.height]);
+  });
+});
+
+describe("the landscape scenes' pixel props", () => {
+  it("only use colours from their palette", () => {
+    for (const [key, value] of Object.entries(props)) {
+      if (typeof value !== "object" || value === null || !("rows" in value)) continue;
+      const unknown = [...new Set((value as art.Sprite).rows.join(""))].filter((ch) => ch !== "." && !(ch in props.PROP_PALETTE));
+      expect(unknown, key).toEqual([]);
+    }
+  });
+
+  it("have a scene for every design without a hand-drawn one, and a style block for every design", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    for (const theme of THEMES) {
+      if (theme.id === "retro") continue; // the default lives in :root itself
+      expect(css, theme.id).toContain(`:root[data-theme="${theme.id}"] {`);
+    }
+    const drawn = new Set(["retro", "light", "mara", "bulldog", "vintage"]);
+    expect(LANDSCAPES.sort()).toEqual(THEMES.map((t) => t.id).filter((id) => !drawn.has(id)).sort());
   });
 });

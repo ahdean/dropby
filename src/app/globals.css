@@ -441,10 +441,593 @@
   opacity: 0.5;
 }
 
+/* -----------------------------------------------------------------------------
+   Design: Sunset
+   -----------------------------------------------------------------------------
+   Evening sky: bands of purple, magenta, coral and gold behind
+   everything, deep plum panels, coral buttons, a rosy frame, and bright
+   beams. Its scene is a sun setting into the sea.
+   -------------------------------------------------------------------------- */
+:root[data-theme="sunset"] {
+  color-scheme: dark;
+  --color-void: #2a1236;
+  --color-panel: #1f0f2b;
+  --color-panel-2: #2a163a;
+  --color-panel-3: #3a1f4f;
+  --color-line: #5a3373;
+  --color-edge-hi: #7d4a9a;
+  --color-edge-lo: #000000;
+  --color-ink: #ffeedd;
+  --color-ink-dim: #f4c9b8;
+  --color-ink-faint: #c99ab0;
+  --color-stone: #f08a4b;
+  --color-stone-hi: #ffc28a;
+  --color-stone-lo: #9a4320;
+  --color-stone-ink: #2a0f08;
+  --color-free: #6cc4ff;
+  --color-free-hi: #e2f4ff;
+  --color-free-lo: #0c64ad;
+  --color-join: #5be38f;
+  --color-join-hi: #e3ffec;
+  --color-join-lo: #0d7d3c;
+  --color-locked: #ffcf4a;
+  --color-locked-hi: #fff5d1;
+  --color-locked-lo: #9b6c00;
+  --color-danger: #ff6b7a;
+  --outline: #0f0617;
+  --well: #170a20;
+  --well-edge: #000;
+  --plate: rgb(23 10 32 / 0.85);
+  --beam-base: #0f0617;
+  --mesh: #b8456b;
+  --mesh-shade: rgb(0 0 0 / 0.4);
+  --mesh-hi: #ff8a6b;
+  --mesh-lo: #4e1734;
+  --grid-line: rgb(125 74 154 / 0.5);
+  --grid-line-faint: rgb(125 74 154 / 0.22);
+  --weekend: rgb(125 74 154 / 0.12);
+  --backdrop: rgb(15 6 23 / 0.7);
+  --backdrop-lines: rgb(0 0 0 / 0.3);
+  --page-pattern: linear-gradient(to bottom, #2a1236 0 16%, #3d1847 16% 30%, #561f55 30% 43%, #772a5c 43% 55%, #9e355e 55% 65%, #c84a5a 65% 74%, #e8684a 74% 82%, #f8934a 82% 89%, #ffb85a 89% 95%, #ffd47a 95% 100%);
+  --page-pattern-size: 100% 100%;
+}
+:root[data-theme="sunset"] body {
+  background-color: #2a1236;
+  image-rendering: pixelated;
+}
+:root[data-theme="sunset"] body * {
+  image-rendering: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: City at night
+   -----------------------------------------------------------------------------
+   A wall of lit windows behind everything, midnight-blue panels,
+   steel buttons and a dark steel frame with a neon edge. Its scene is a
+   skyline with blinking windows, the moon, and a taxi going by.
+   -------------------------------------------------------------------------- */
+:root[data-theme="city"] {
+  color-scheme: dark;
+  --color-void: #0b1026;
+  --color-panel: #0d1330;
+  --color-panel-2: #141c40;
+  --color-panel-3: #1e2856;
+  --color-line: #2f3d73;
+  --color-edge-hi: #4a5c9e;
+  --color-edge-lo: #000000;
+  --color-ink: #eef2ff;
+  --color-ink-dim: #b8c2e6;
+  --color-ink-faint: #8a95c0;
+  --color-stone: #8d98b8;
+  --color-stone-hi: #cdd5ec;
+  --color-stone-lo: #3e4766;
+  --color-stone-ink: #070a16;
+  --color-free: #4fc3ff;
+  --color-free-hi: #e0f4ff;
+  --color-free-lo: #0a5f9e;
+  --color-join: #3fe0a0;
+  --color-join-hi: #dcfff0;
+  --color-join-lo: #0b7a52;
+  --color-locked: #ffd23f;
+  --color-locked-hi: #fff5d1;
+  --color-locked-lo: #9b6c00;
+  --color-danger: #ff5a7a;
+  --outline: #000000;
+  --well: #070b1c;
+  --well-edge: #000;
+  --plate: rgb(7 11 28 / 0.85);
+  --beam-base: #04060f;
+  --mesh: #2a2f4a;
+  --mesh-shade: rgb(0 0 0 / 0.45);
+  --mesh-hi: #ff4fa3;
+  --mesh-lo: #11142a;
+  --grid-line: rgb(47 61 115 / 0.75);
+  --grid-line-faint: rgb(47 61 115 / 0.3);
+  --weekend: rgb(30 40 86 / 0.3);
+  --backdrop: rgb(2 4 12 / 0.72);
+  --backdrop-lines: rgb(0 0 0 / 0.35);
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' shape-rendering='crispEdges'%3E%3Crect width='32' height='32' fill='%230b1026'/%3E%3Crect x='0' y='0' width='9' height='32' fill='%231a2142'/%3E%3Crect x='10' y='0' width='10' height='32' fill='%230b1026'/%3E%3Crect x='11' y='0' width='9' height='32' fill='%23151b38'/%3E%3Crect x='20' y='0' width='1' height='32' fill='%230b1026'/%3E%3Crect x='21' y='0' width='11' height='32' fill='%231d2547'/%3E%3Crect x='1' y='1' width='2' height='2' fill='%237fd6ff'/%3E%3Crect x='4' y='1' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='7' y='1' width='2' height='2' fill='%232a335c'/%3E%3Crect x='1' y='5' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='4' y='5' width='2' height='2' fill='%232a335c'/%3E%3Crect x='7' y='5' width='2' height='2' fill='%237fd6ff'/%3E%3Crect x='1' y='9' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='4' y='9' width='2' height='2' fill='%232a335c'/%3E%3Crect x='7' y='9' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='1' y='13' width='2' height='2' fill='%232a335c'/%3E%3Crect x='4' y='13' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='7' y='13' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='1' y='17' width='2' height='2' fill='%232a335c'/%3E%3Crect x='4' y='17' width='2' height='2' fill='%232a335c'/%3E%3Crect x='7' y='17' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='1' y='21' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='4' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='7' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='1' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='4' y='25' width='2' height='2' fill='%237fd6ff'/%3E%3Crect x='7' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='1' y='29' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='4' y='29' width='2' height='2' fill='%232a335c'/%3E%3Crect x='7' y='29' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='12' y='1' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='15' y='1' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='18' y='1' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='12' y='5' width='2' height='2' fill='%232a335c'/%3E%3Crect x='15' y='5' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='18' y='5' width='2' height='2' fill='%232a335c'/%3E%3Crect x='12' y='9' width='2' height='2' fill='%232a335c'/%3E%3Crect x='15' y='9' width='2' height='2' fill='%237fd6ff'/%3E%3Crect x='18' y='9' width='2' height='2' fill='%232a335c'/%3E%3Crect x='12' y='13' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='15' y='13' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='18' y='13' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='12' y='17' width='2' height='2' fill='%232a335c'/%3E%3Crect x='15' y='17' width='2' height='2' fill='%232a335c'/%3E%3Crect x='18' y='17' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='12' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='15' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='18' y='21' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='12' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='15' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='18' y='25' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='12' y='29' width='2' height='2' fill='%232a335c'/%3E%3Crect x='15' y='29' width='2' height='2' fill='%232a335c'/%3E%3Crect x='18' y='29' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='1' width='2' height='2' fill='%232a335c'/%3E%3Crect x='25' y='1' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='28' y='1' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='5' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='25' y='5' width='2' height='2' fill='%232a335c'/%3E%3Crect x='28' y='5' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='9' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='25' y='9' width='2' height='2' fill='%232a335c'/%3E%3Crect x='28' y='9' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='22' y='13' width='2' height='2' fill='%232a335c'/%3E%3Crect x='25' y='13' width='2' height='2' fill='%232a335c'/%3E%3Crect x='28' y='13' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='17' width='2' height='2' fill='%232a335c'/%3E%3Crect x='25' y='17' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='28' y='17' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='25' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='28' y='21' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='25' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='28' y='25' width='2' height='2' fill='%232a335c'/%3E%3Crect x='22' y='29' width='2' height='2' fill='%232a335c'/%3E%3Crect x='25' y='29' width='2' height='2' fill='%23ffd76a'/%3E%3Crect x='28' y='29' width='2' height='2' fill='%232a335c'/%3E%3C/svg%3E");
+  --page-pattern-size: 64px 64px;
+}
+:root[data-theme="city"] body {
+  background-color: #0b1026;
+  image-rendering: pixelated;
+}
+:root[data-theme="city"] body * {
+  image-rendering: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Noir
+   -----------------------------------------------------------------------------
+   Black and white, like an old detective film: venetian-blind
+   shadows and rain behind everything, grey panels and buttons, and the
+   beams in quiet steel tones; the one splash of colour is red, for delete.
+   Its scene is a rainy street under a lamp, with the odd flash of lightning.
+   -------------------------------------------------------------------------- */
+:root[data-theme="noir"] {
+  color-scheme: dark;
+  --color-void: #0c0c0c;
+  --color-panel: #141414;
+  --color-panel-2: #1c1c1c;
+  --color-panel-3: #2a2a2a;
+  --color-line: #3d3d3d;
+  --color-edge-hi: #5c5c5c;
+  --color-edge-lo: #000000;
+  --color-ink: #f2f2f2;
+  --color-ink-dim: #c4c4c4;
+  --color-ink-faint: #949494;
+  --color-stone: #b8b8b8;
+  --color-stone-hi: #ececec;
+  --color-stone-lo: #555555;
+  --color-stone-ink: #0a0a0a;
+  --color-free: #9cc3dc;
+  --color-free-hi: #eef5fa;
+  --color-free-lo: #4a6a80;
+  --color-join: #a8c9a0;
+  --color-join-hi: #eef6ec;
+  --color-join-lo: #4d6b47;
+  --color-locked: #e6d29a;
+  --color-locked-hi: #fbf6e6;
+  --color-locked-lo: #8a7a45;
+  --color-danger: #e04848;
+  --outline: #000000;
+  --well: #080808;
+  --well-edge: #000;
+  --plate: rgb(8 8 8 / 0.88);
+  --beam-base: #000000;
+  --mesh: #3a3a3a;
+  --mesh-shade: rgb(0 0 0 / 0.5);
+  --mesh-hi: #8a8a8a;
+  --mesh-lo: #111111;
+  --grid-line: rgb(70 70 70 / 0.7);
+  --grid-line-faint: rgb(70 70 70 / 0.3);
+  --weekend: rgb(255 255 255 / 0.03);
+  --backdrop: rgb(0 0 0 / 0.75);
+  --backdrop-lines: rgb(0 0 0 / 0.4);
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect x='2' y='1' width='1' height='1' fill='%233a3a3a'/%3E%3Crect x='1' y='2' width='1' height='1' fill='%232e2e2e'/%3E%3Crect x='0' y='3' width='1' height='1' fill='%23262626'/%3E%3Crect x='9' y='5' width='1' height='1' fill='%233a3a3a'/%3E%3Crect x='8' y='6' width='1' height='1' fill='%232e2e2e'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%23262626'/%3E%3Crect x='13' y='11' width='1' height='1' fill='%233a3a3a'/%3E%3Crect x='12' y='12' width='1' height='1' fill='%232e2e2e'/%3E%3Crect x='11' y='13' width='1' height='1' fill='%23262626'/%3E%3Crect x='5' y='12' width='1' height='1' fill='%233a3a3a'/%3E%3Crect x='4' y='13' width='1' height='1' fill='%232e2e2e'/%3E%3Crect x='3' y='14' width='1' height='1' fill='%23262626'/%3E%3C/svg%3E"), repeating-linear-gradient(to bottom, #0c0c0c 0 12px, #191919 12px 15px);
+  --page-pattern-size: 32px 32px, 100% 100%;
+}
+:root[data-theme="noir"] body {
+  background-color: #0c0c0c;
+  image-rendering: pixelated;
+}
+:root[data-theme="noir"] body * {
+  image-rendering: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Flowers
+   -----------------------------------------------------------------------------
+   A meadow of little pixel flowers behind everything, petal-white
+   panels, pink buttons and a green trellis frame. Its scene is a flower
+   field with butterflies.
+   -------------------------------------------------------------------------- */
+:root[data-theme="flowers"] {
+  color-scheme: light;
+  --color-void: #dff0d8;
+  --color-panel: #fffaf7;
+  --color-panel-2: #fdeef0;
+  --color-panel-3: #f8dde3;
+  --color-line: #e0b4c0;
+  --color-edge-hi: #ffffff;
+  --color-edge-lo: #b98a99;
+  --color-black: #d4a7b4;
+  --color-ink: #3a1f2b;
+  --color-ink-dim: #6b3d50;
+  --color-ink-faint: #87586b;
+  --color-stone: #f2a3bd;
+  --color-stone-hi: #ffd6e3;
+  --color-stone-lo: #b05a7a;
+  --color-stone-ink: #2e0f1c;
+  --color-free: #2061a8;
+  --color-free-hi: #dcebfb;
+  --color-free-lo: #184c85;
+  --color-join: #2f6b2a;
+  --color-join-hi: #dff1d9;
+  --color-join-lo: #245422;
+  --color-locked: #855400;
+  --color-locked-hi: #fbefc9;
+  --color-locked-lo: #664000;
+  --color-danger: #b3263f;
+  --outline: #4a2a37;
+  --well: #fffdfb;
+  --well-edge: #b98a99;
+  --plate: rgb(255 253 251 / 0.92);
+  --beam-base: #fffdfb;
+  --mesh: #6aa84f;
+  --mesh-shade: rgb(30 60 20 / 0.28);
+  --mesh-hi: #9ed37f;
+  --mesh-lo: #35682a;
+  --grid-line: rgb(185 138 153 / 0.4);
+  --grid-line-faint: rgb(185 138 153 / 0.18);
+  --weekend: rgb(185 138 153 / 0.08);
+  --backdrop: rgb(58 31 43 / 0.42);
+  --backdrop-lines: rgb(0 0 0 / 0.05);
+  --fill-free: #8cc6f5;
+  --fill-join: #9ad683;
+  --fill-locked: #ffd166;
+  --fill-danger: #f08a9a;
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23dff0d8'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23f28bb0'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23f28bb0'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23f28bb0'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23f28bb0'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23ffd84d'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%238fb6f2'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%238fb6f2'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%238fb6f2'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%238fb6f2'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%23fff3a0'/%3E%3Crect x='13' y='1' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='12' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='14' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%23f2c14e'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23a9d295'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23a9d295'/%3E%3Crect x='1' y='12' width='1' height='1' fill='%23a9d295'/%3E%3Crect x='2' y='13' width='1' height='1' fill='%23a9d295'/%3E%3Crect x='9' y='14' width='1' height='1' fill='%23a9d295'/%3E%3Crect x='14' y='13' width='1' height='1' fill='%23a9d295'/%3E%3Crect x='7' y='12' width='1' height='1' fill='%23f28bb0'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 32px;
+}
+:root[data-theme="flowers"] body {
+  background-color: #dff0d8;
+  image-rendering: pixelated;
+}
+:root[data-theme="flowers"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="flowers"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="flowers"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="flowers"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="flowers"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="flowers"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Winter
+   -----------------------------------------------------------------------------
+   Snowflakes on a pale blue sky behind everything, snow-white
+   panels, icy blue buttons and a frosted silver frame. Its scene is a
+   snowy hillside with pines, a snowman and falling snow.
+   -------------------------------------------------------------------------- */
+:root[data-theme="winter"] {
+  color-scheme: light;
+  --color-void: #d6e6f4;
+  --color-panel: #fbfdff;
+  --color-panel-2: #eef5fb;
+  --color-panel-3: #dfeaf5;
+  --color-line: #a9c1d9;
+  --color-edge-hi: #ffffff;
+  --color-edge-lo: #7f9bb8;
+  --color-black: #9fb6cd;
+  --color-ink: #13253a;
+  --color-ink-dim: #34506e;
+  --color-ink-faint: #4e6987;
+  --color-stone: #a8d0ee;
+  --color-stone-hi: #e2f2fd;
+  --color-stone-lo: #4f86b3;
+  --color-stone-ink: #0b1a2a;
+  --color-free: #0b63b5;
+  --color-free-hi: #d6ebff;
+  --color-free-lo: #084b8a;
+  --color-join: #1f6a46;
+  --color-join-hi: #d5f2e4;
+  --color-join-lo: #175236;
+  --color-locked: #7f5400;
+  --color-locked-hi: #fbefc9;
+  --color-locked-lo: #634100;
+  --color-danger: #b8283c;
+  --outline: #2a3f56;
+  --well: #ffffff;
+  --well-edge: #7f9bb8;
+  --plate: rgb(255 255 255 / 0.92);
+  --beam-base: #ffffff;
+  --mesh: #b8c8d8;
+  --mesh-shade: rgb(40 60 90 / 0.22);
+  --mesh-hi: #f2f7fc;
+  --mesh-lo: #6f849a;
+  --grid-line: rgb(110 140 175 / 0.45);
+  --grid-line-faint: rgb(110 140 175 / 0.2);
+  --weekend: rgb(110 140 175 / 0.08);
+  --backdrop: rgb(19 37 58 / 0.42);
+  --backdrop-lines: rgb(0 0 0 / 0.05);
+  --fill-free: #7cc0f5;
+  --fill-join: #7fd3a6;
+  --fill-locked: #ffd166;
+  --fill-danger: #f2899a;
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23d6e6f4'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='2' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='6' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23f1f7fd'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23f1f7fd'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23f1f7fd'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23f1f7fd'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%23ffffff'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%23f4f9fe'/%3E%3Crect x='8' y='13' width='1' height='1' fill='%23f4f9fe'/%3E%3Crect x='1' y='12' width='1' height='1' fill='%23f4f9fe'/%3E%3Crect x='14' y='15' width='1' height='1' fill='%23f4f9fe'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 32px;
+}
+:root[data-theme="winter"] body {
+  background-color: #d6e6f4;
+  image-rendering: pixelated;
+}
+:root[data-theme="winter"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="winter"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="winter"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="winter"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="winter"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="winter"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Fall
+   -----------------------------------------------------------------------------
+   Falling leaves on pumpkin tan behind everything, cream panels,
+   pumpkin-orange buttons and a dark wood frame. Its scene is an autumn
+   wood with leaves drifting down and a pumpkin.
+   -------------------------------------------------------------------------- */
+:root[data-theme="fall"] {
+  color-scheme: light;
+  --color-void: #ecd3b0; /* the calendar's background; the page behind keeps the pattern */
+  --color-panel: #fff6e8;
+  --color-panel-2: #fbead0;
+  --color-panel-3: #f3d9b2;
+  --color-line: #d1a66f;
+  --color-edge-hi: #fffbf3;
+  --color-edge-lo: #9c6b35;
+  --color-black: #bf9461;
+  --color-ink: #2e1a0a;
+  --color-ink-dim: #5a3818;
+  --color-ink-faint: #74502a;
+  --color-stone: #e07a2f;
+  --color-stone-hi: #f8b06d;
+  --color-stone-lo: #8f4310;
+  --color-stone-ink: #241003;
+  --color-free: #1f5a99;
+  --color-free-hi: #dbe8f6;
+  --color-free-lo: #17467a;
+  --color-join: #3f6a1f;
+  --color-join-hi: #e3efd2;
+  --color-join-lo: #2f5216;
+  --color-locked: #7d4f00;
+  --color-locked-hi: #fbedc4;
+  --color-locked-lo: #5f3c00;
+  --color-danger: #a52a1c;
+  --outline: #3d240f;
+  --well: #fffbf3;
+  --well-edge: #9c6b35;
+  --plate: rgb(255 251 243 / 0.92);
+  --beam-base: #fffbf3;
+  --mesh: #6b3f1d;
+  --mesh-shade: rgb(50 25 5 / 0.3);
+  --mesh-hi: #a0683a;
+  --mesh-lo: #34200e;
+  --grid-line: rgb(156 107 53 / 0.42);
+  --grid-line-faint: rgb(156 107 53 / 0.18);
+  --weekend: rgb(156 107 53 / 0.08);
+  --backdrop: rgb(46 26 10 / 0.45);
+  --backdrop-lines: rgb(0 0 0 / 0.05);
+  --fill-free: #86b9e8;
+  --fill-join: #a9cf6b;
+  --fill-locked: #ffc845;
+  --fill-danger: #f08a6b;
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23d6955a'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='3' y='2' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='4' y='2' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='2' y='3' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='4' y='3' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='5' y='3' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='6' y='3' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23b8432a'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%236e3a1a'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='10' y='11' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%23e8a33a'/%3E%3Crect x='11' y='12' width='1' height='1' fill='%236e3a1a'/%3E%3Crect x='13' y='2' width='1' height='1' fill='%238a4f22'/%3E%3Crect x='14' y='2' width='1' height='1' fill='%238a4f22'/%3E%3Crect x='13' y='3' width='1' height='1' fill='%238a4f22'/%3E%3Crect x='14' y='3' width='1' height='1' fill='%238a4f22'/%3E%3Crect x='1' y='12' width='1' height='1' fill='%23c96a2e'/%3E%3Crect x='2' y='12' width='1' height='1' fill='%23c96a2e'/%3E%3Crect x='2' y='13' width='1' height='1' fill='%23c96a2e'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 32px;
+}
+:root[data-theme="fall"] body {
+  background-color: #d6955a;
+  image-rendering: pixelated;
+}
+:root[data-theme="fall"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="fall"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="fall"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="fall"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="fall"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="fall"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Summer
+   -----------------------------------------------------------------------------
+   Little suns on sunny yellow behind everything, bright white
+   panels, watermelon-coral buttons and a pool-tile teal frame. Its scene is
+   a sunny meadow with a sunflower, drifting clouds and a bee.
+   -------------------------------------------------------------------------- */
+:root[data-theme="summer"] {
+  color-scheme: light;
+  --color-void: #fff0b3; /* the calendar's background; the page behind keeps the pattern */
+  --color-panel: #fffdf5;
+  --color-panel-2: #fff6dc;
+  --color-panel-3: #ffeab8;
+  --color-line: #f2c35a;
+  --color-edge-hi: #ffffff;
+  --color-edge-lo: #c9952a;
+  --color-black: #e0b14a;
+  --color-ink: #2b2008;
+  --color-ink-dim: #5a4410;
+  --color-ink-faint: #725a1c;
+  --color-stone: #ff7a6b;
+  --color-stone-hi: #ffb3a8;
+  --color-stone-lo: #b23b2e;
+  --color-stone-ink: #2a0905;
+  --color-free: #0b64b8;
+  --color-free-hi: #d6ebff;
+  --color-free-lo: #084b8a;
+  --color-join: #23753a;
+  --color-join-hi: #d7f3df;
+  --color-join-lo: #1a5a2c;
+  --color-locked: #7d5200;
+  --color-locked-hi: #fbefc4;
+  --color-locked-lo: #5f3e00;
+  --color-danger: #b3261e;
+  --outline: #4a3410;
+  --well: #ffffff;
+  --well-edge: #c9952a;
+  --plate: rgb(255 255 255 / 0.92);
+  --beam-base: #ffffff;
+  --mesh: #2bb5b0;
+  --mesh-shade: rgb(10 60 60 / 0.25);
+  --mesh-hi: #7fe3dd;
+  --mesh-lo: #136b68;
+  --grid-line: rgb(201 149 42 / 0.4);
+  --grid-line-faint: rgb(201 149 42 / 0.18);
+  --weekend: rgb(201 149 42 / 0.08);
+  --backdrop: rgb(43 32 8 / 0.42);
+  --backdrop-lines: rgb(0 0 0 / 0.05);
+  --fill-free: #6cc6ff;
+  --fill-join: #79dc7a;
+  --fill-locked: #ffd23f;
+  --fill-danger: #ff8a7a;
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23ffe27a'/%3E%3Crect x='3' y='3' width='3' height='3' fill='%23ff9f2e'/%3E%3Crect x='4' y='1' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='1' y='4' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='6' y='2' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='2' y='6' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23ffbf3b'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%23ff9f2e'/%3E%3Crect x='12' y='11' width='1' height='1' fill='%23ff9f2e'/%3E%3Crect x='11' y='12' width='1' height='1' fill='%23ff9f2e'/%3E%3Crect x='12' y='12' width='1' height='1' fill='%23ff9f2e'/%3E%3Crect x='13' y='6' width='1' height='1' fill='%23ffd25a'/%3E%3Crect x='9' y='14' width='1' height='1' fill='%23ffd25a'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 32px;
+}
+:root[data-theme="summer"] body {
+  background-color: #ffe27a;
+  image-rendering: pixelated;
+}
+:root[data-theme="summer"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="summer"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="summer"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="summer"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="summer"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="summer"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Beach
+   -----------------------------------------------------------------------------
+   Warm sand with shells and starfish behind everything, sun-bleached
+   panels, sea-blue buttons and a driftwood frame. Its scene is the sea
+   rolling in, a beach umbrella, a gull and a crab.
+   -------------------------------------------------------------------------- */
+:root[data-theme="beach"] {
+  color-scheme: light;
+  --color-void: #f2dfb0;
+  --color-panel: #fffdf6;
+  --color-panel-2: #fbf3dc;
+  --color-panel-3: #f2e4bd;
+  --color-line: #d8bf86;
+  --color-edge-hi: #ffffff;
+  --color-edge-lo: #a88a4f;
+  --color-black: #cdb27a;
+  --color-ink: #1d2a33;
+  --color-ink-dim: #3d5160;
+  --color-ink-faint: #586b78;
+  --color-stone: #4fb8d9;
+  --color-stone-hi: #a8e4f5;
+  --color-stone-lo: #1f6f8a;
+  --color-stone-ink: #06202a;
+  --color-free: #0b5fa8;
+  --color-free-hi: #d8e9f8;
+  --color-free-lo: #084883;
+  --color-join: #1f6b4a;
+  --color-join-hi: #d6efe4;
+  --color-join-lo: #175237;
+  --color-locked: #7a5100;
+  --color-locked-hi: #fbedc4;
+  --color-locked-lo: #5c3d00;
+  --color-danger: #b02a2a;
+  --outline: #2d3b44;
+  --well: #fffefa;
+  --well-edge: #a88a4f;
+  --plate: rgb(255 254 250 / 0.92);
+  --beam-base: #fffefa;
+  --mesh: #a8916e;
+  --mesh-shade: rgb(60 45 20 / 0.25);
+  --mesh-hi: #d9c6a3;
+  --mesh-lo: #5f4f37;
+  --grid-line: rgb(168 138 79 / 0.42);
+  --grid-line-faint: rgb(168 138 79 / 0.18);
+  --weekend: rgb(168 138 79 / 0.08);
+  --backdrop: rgb(29 42 51 / 0.42);
+  --backdrop-lines: rgb(0 0 0 / 0.05);
+  --fill-free: #7cc7f2;
+  --fill-join: #84d4a8;
+  --fill-locked: #ffd166;
+  --fill-danger: #f08a7a;
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' shape-rendering='crispEdges'%3E%3Crect width='16' height='16' fill='%23f2dfb0'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='7' y='3' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='13' y='6' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='5' y='9' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='9' y='13' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='14' y='14' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='2' y='14' width='1' height='1' fill='%23e0c68c'/%3E%3Crect x='3' y='4' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='5' y='4' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='3' y='5' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='4' y='5' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='4' y='6' width='1' height='1' fill='%23f3c4b0'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23e7a58f'/%3E%3Crect x='11' y='9' width='1' height='1' fill='%23ee8a5a'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%23ee8a5a'/%3E%3Crect x='11' y='10' width='1' height='1' fill='%23ee8a5a'/%3E%3Crect x='12' y='10' width='1' height='1' fill='%23ee8a5a'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%23ee8a5a'/%3E%3Crect x='10' y='12' width='1' height='1' fill='%23ee8a5a'/%3E%3Crect x='12' y='12' width='1' height='1' fill='%23ee8a5a'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 32px;
+}
+:root[data-theme="beach"] body {
+  background-color: #f2dfb0;
+  image-rendering: pixelated;
+}
+:root[data-theme="beach"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="beach"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="beach"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="beach"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="beach"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="beach"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
 /* Pieces that belong to one design only (.only-<design>), or to every design but one (.except-<design>). */
 :root:not([data-theme="mara"]) .only-mara,
 :root:not([data-theme="bulldog"]) .only-bulldog,
-:root:not([data-theme="vintage"]) .only-vintage {
+:root:not([data-theme="vintage"]) .only-vintage,
+:root:not([data-theme="sunset"]) .only-sunset,
+:root:not([data-theme="city"]) .only-city,
+:root:not([data-theme="noir"]) .only-noir,
+:root:not([data-theme="flowers"]) .only-flowers,
+:root:not([data-theme="winter"]) .only-winter,
+:root:not([data-theme="fall"]) .only-fall,
+:root:not([data-theme="summer"]) .only-summer,
+:root:not([data-theme="beach"]) .only-beach {
   display: none !important;
 }
 :root[data-theme="mara"] .except-mara,
@@ -839,6 +1422,68 @@
   .vintage-scene .vc-bubble { opacity: 1; }
   .vintage-scene .vc-bird { transform: translateX(2px); }
   .vintage-scene .vc-beak-shut { opacity: 0; }
+}
+
+/* The design landscapes (src/components/designs/LandscapeScene.tsx): Sunset,
+   City at night, Noir, Flowers, Winter, Fall, Summer and Beach. Every moving
+   piece carries its own timing in CSS variables (--dur, --delay, and where it
+   goes), so these few rules drive all eight. Pieces move in whole pixels. */
+.landscape-scene .ls-fall {
+  transform: translate(var(--x0), var(--y0));
+  animation: ls-fall var(--dur) steps(40, end) var(--delay) infinite;
+}
+.landscape-scene .ls-fall-fast {
+  animation-timing-function: steps(16, end);
+}
+@keyframes ls-fall {
+  from { transform: translate(var(--x0), -6px); }
+  to { transform: translate(var(--x1), 78px); }
+}
+.landscape-scene .ls-across {
+  transform: translateX(var(--from));
+  animation: ls-across var(--dur) steps(70, end) var(--delay) infinite;
+}
+@keyframes ls-across {
+  from { transform: translateX(var(--from)); }
+  to { transform: translateX(var(--to)); }
+}
+.landscape-scene .ls-bob { animation: ls-bob 0.8s steps(1, end) infinite; }
+@keyframes ls-bob { 0% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+.landscape-scene .ls-twinkle { animation: ls-twinkle 2.4s steps(1, end) var(--delay) infinite; }
+@keyframes ls-twinkle { 0% { opacity: 1; } 60% { opacity: 0.25; } 80% { opacity: 1; } }
+.landscape-scene .ls-blink { animation: ls-blink 9s steps(1, end) var(--delay) infinite; }
+@keyframes ls-blink { 0% { opacity: 1; } 45% { opacity: 0.15; } 70% { opacity: 1; } }
+.landscape-scene .ls-shimmer { animation: ls-shimmer 1.6s steps(1, end) var(--delay) infinite; }
+@keyframes ls-shimmer { 0% { opacity: 1; } 50% { opacity: 0.35; } }
+.landscape-scene .ls-sway { animation: ls-sway 2s steps(1, end) var(--delay) infinite; }
+@keyframes ls-sway { 0% { transform: translateX(0); } 50% { transform: translateX(1px); } }
+.landscape-scene .ls-flap-a { animation: ls-flap 0.4s steps(1, end) infinite; }
+.landscape-scene .ls-flap-b { opacity: 0; animation: ls-flap 0.4s steps(1, end) -0.2s infinite; }
+@keyframes ls-flap { 0% { opacity: 1; } 50% { opacity: 0; } }
+.landscape-scene .ls-rays-a { animation: ls-flap 1.6s steps(1, end) infinite; }
+.landscape-scene .ls-rays-b { opacity: 0; animation: ls-flap 1.6s steps(1, end) -0.8s infinite; }
+.landscape-scene .ls-wave { animation: ls-wave 2.4s steps(1, end) infinite; }
+.landscape-scene .ls-wave-late { animation-delay: -1.2s; }
+@keyframes ls-wave { 0% { transform: translateX(0); } 25% { transform: translateX(2px); } 50% { transform: translateX(4px); } 75% { transform: translateX(2px); } }
+/* the sun sets into the sea, and (the scene being a loop) rises again */
+.landscape-scene .ls-sink { animation: ls-sink 16s steps(12, end) infinite alternate; }
+@keyframes ls-sink { from { transform: translateY(-6px); } to { transform: translateY(6px); } }
+.landscape-scene .ls-scuttle { animation: ls-scuttle 6s steps(1, end) infinite; }
+@keyframes ls-scuttle {
+  0% { transform: translateX(0); } 10% { transform: translateX(2px); } 20% { transform: translateX(4px); } 30% { transform: translateX(6px); }
+  40% { transform: translateX(8px); } 55% { transform: translateX(6px); } 65% { transform: translateX(4px); } 75% { transform: translateX(2px); } 85% { transform: translateX(0); }
+}
+/* lightning: two quick flashes every eight seconds */
+.landscape-scene .ls-flash { opacity: 0; animation: ls-flash 8s steps(1, end) infinite; }
+@keyframes ls-flash { 0% { opacity: 0; } 70% { opacity: 0.55; } 71.5% { opacity: 0; } 73% { opacity: 0.35; } 74% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .landscape-scene * {
+    animation: none !important;
+  }
+  .landscape-scene .ls-flap-b,
+  .landscape-scene .ls-rays-b,
+  .landscape-scene .ls-flash { opacity: 0; }
+  .landscape-scene .ls-across { transform: translateX(calc((var(--from) + var(--to)) / 2)); }
 }
 
 /* Sizes that differ between phones and wider screens. */
