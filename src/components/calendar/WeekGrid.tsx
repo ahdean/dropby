@@ -6,7 +6,7 @@ import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
 import type { CalendarItem, DayModel, FriendFreeCluster, OffscreenEntry } from "@/lib/calendar/model";
 import { addDays, formatDayKey, formatHourShort, formatMinuteRange, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
-import { FriendEventBeam, FriendStack, GhostBeam, MyBeam, OffscreenTab } from "./Beams";
+import { FriendEventBeam, FriendFreeTime, GhostBeam, MyBeam, OffscreenTab } from "./Beams";
 import { GRID, MINE_CENTER, clampToBounds, fractionOf, friendsLaneCenter, minutesAt, percent, rowHeight } from "./geometry";
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
 import { CalendarMaras } from "@/components/mara/CalendarMaras";
@@ -136,25 +136,18 @@ const DayRow = memo(function DayRow({
           />
         ))}
 
-        {/* friends' faces, centred where the most of them are free (or as near as the hours shown allow) */}
-        {day.friendFree.map((cluster) => {
-          const middle = (cluster.peak.startMin + cluster.peak.endMin) / 2;
-          return (
-            <FriendStack
-              key={cluster.key}
-              cluster={cluster}
-              people={cluster.userIds.map((id) => profiles.get(id))}
-              onOpen={onOpenCluster}
-              size={GRID.avatar}
-              style={{
-                // Kept inside the row, so faces at either end don't spill over the day label or off the edge.
-                left: `clamp(${GRID.avatar}px, ${percent(fractionOf(Math.min(cluster.endMin, Math.max(cluster.startMin, middle))))}, calc(100% - ${GRID.avatar}px))`,
-                top: friends,
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          );
-        })}
+        {/* friends' free time: their faces, centred where the most of them are free (or as near as the hours
+            shown allow), over a stretch that offers a chat button wherever it is pointed at */}
+        {day.friendFree.map((cluster) => (
+          <FriendFreeTime
+            key={cluster.key}
+            cluster={cluster}
+            people={cluster.userIds.map((id) => profiles.get(id))}
+            onOpen={onOpenCluster}
+            size={GRID.avatar}
+            style={{ ...span(cluster.startMin, cluster.endMin), top: friends - GRID.friendsLane / 2, height: GRID.friendsLane }}
+          />
+        ))}
 
         {/* anything earlier or later than the hours shown: a tab at that end of the row */}
         {day.before.length > 0 && (

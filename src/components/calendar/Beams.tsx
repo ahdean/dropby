@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { EventIcon } from "@/components/ui/EventIcon";
 import { PixelIcon } from "@/components/ui/PixelIcon";
@@ -294,8 +294,14 @@ export function FriendEventBeam({
   );
 }
 
-/** The stack of friends' faces over the time they are free (with a chat button on hover). */
-export function FriendStack({
+/**
+ * Friends' free time on the week calendar: the stretch of the friends' lane
+ * they are free in, with their faces where most of them overlap. Tapping the
+ * faces opens the details. On a computer, pointing anywhere along the stretch
+ * drops a chat button under the pointer: it chats with the friend free at
+ * that spot (or, where several are, shows the list to choose from).
+ */
+export function FriendFreeTime({
   cluster,
   people,
   style,
@@ -304,6 +310,7 @@ export function FriendStack({
 }: {
   cluster: FriendFreeCluster;
   people: (Profile | undefined)[];
+  /** Position and size of the whole stretch, within the row. */
   style: CSSProperties;
   /** Size of each face. */
   size?: number;
@@ -314,24 +321,57 @@ export function FriendStack({
   const to = Math.max(...cluster.items.map((i) => i.fullEndMin));
   const label = `${names.join(", ")} ${names.length === 1 ? "is" : "are"} free ${formatDayKey(cluster.dayKey)}, ${formatSpan(cluster.dayKey, from, to)}. Open for details.`;
   const actions = useContext(QuickActionsContext);
+  const zone = useRef<HTMLDivElement>(null);
+  /** Where along the stretch the pointer last was (0 = its start, 1 = its end). */
+  const pointer = useRef<number | null>(null);
+
+  // The faces sit where most friends overlap, kept inside the stretch (and so inside the row).
+  const length = Math.max(1, cluster.endMin - cluster.startMin);
+  const middle = (cluster.peak.startMin + cluster.peak.endMin) / 2;
+  const facesAt = (Math.min(cluster.endMin, Math.max(cluster.startMin, middle)) - cluster.startMin) / length;
+  const facesLeft = `clamp(${size}px, ${(facesAt * 100).toFixed(3)}%, calc(100% - ${size}px))`;
+
+  /** The chat button follows the pointer along the stretch; it stays put once the pointer heads down to it. */
+  const follow = (event: MouseEvent<HTMLDivElement>) => {
+    const element = zone.current;
+    if (!element || (event.target as HTMLElement).closest(".hover-actions, .hover-bridge")) return;
+    const rect = element.getBoundingClientRect();
+    const x = Math.min(Math.max(event.clientX - rect.left, 0), rect.width);
+    pointer.current = rect.width > 0 ? x / rect.width : null;
+    const kept = rect.width > 48 ? Math.min(Math.max(x, 22), rect.width - 22) : rect.width / 2;
+    element.style.setProperty("--chat-x", `${kept}px`);
+  };
+
+  const chat = (button: HTMLElement) => {
+    if (!actions) return;
+    const at = pointer.current === null ? null : cluster.startMin + pointer.current * length;
+    const here = at === null ? [] : cluster.items.filter((item) => item.startMin <= at && at < item.endMin);
+    const friends = new Set(here.map((item) => item.block.owner_id));
+    if (friends.size === 1) actions.message(here[0], blockOf(button));
+    else actions.messageCluster(cluster, blockOf(button));
+  };
+
   return (
-    <div style={style} className="has-hover-actions absolute z-[5]">
+    <div
+      ref={zone}
+      style={{ ...style, ["--chat-x" as string]: facesLeft }}
+      className="has-hover-actions absolute z-[5]"
+      onMouseEnter={follow}
+      onMouseMove={follow}
+    >
       <button
         type="button"
         onClick={() => onOpen(cluster)}
         aria-label={label}
         title={label}
-        className="flex items-center justify-center rounded-full hover:brightness-110"
+        className="absolute top-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full hover:brightness-110"
+        style={{ left: facesLeft }}
       >
         <AvatarStack people={people} size={size} max={3} />
       </button>
       {actions && (
-        <HoverActions place="left-1/2 top-full -translate-x-1/2 mt-[3px]">
-          <ActionButton
-            icon="chat"
-            label={names.length === 1 ? `Chat with ${names[0]} about this` : "Chat"}
-            onClick={(button) => actions.messageCluster(cluster, blockOf(button))}
-          />
+        <HoverActions place="left-[var(--chat-x)] top-full -translate-x-1/2 mt-[3px]">
+          <ActionButton icon="chat" label={names.length === 1 ? `Chat with ${names[0]} about this` : "Chat"} onClick={chat} />
         </HoverActions>
       )}
     </div>
