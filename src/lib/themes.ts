@@ -2,7 +2,7 @@
  * Designs ("themes") the app can be shown in.
  *
  * A design is a set of colours and surfaces: the layout, the meaning of the
- * colours (blue Free, green Join me, gold Locked in) and the beam patterns
+ * colours (blue Free, green Join me, gold Confirmed) and the beam patterns
  * stay the same in every one. The choice is remembered on each device.
  *
  * Adding a design later:

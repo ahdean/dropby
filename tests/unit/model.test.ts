@@ -3,7 +3,7 @@
  * the stacks of friends' avatars over the time they are free.
  */
 import { describe, expect, it } from "vitest";
-import { buildDayModels, expandBlocks, findSameTypeConflict, statusOf } from "@/lib/calendar/model";
+import { buildDayModels, describeConflict, expandBlocks, findConflict, statusOf } from "@/lib/calendar/model";
 import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
 import { DAY_END_MIN, DAY_START_MIN } from "@/lib/constants";
 import { zonedToUtc } from "@/lib/time";
@@ -86,6 +86,32 @@ describe("my own blocks", () => {
     expect(model.mine.map((i) => i.block.type)).toEqual(["free", "join"]);
   });
 
+  it("can't have Free time added over one of my events, but can host an event inside Free time", () => {
+    const dinner = block(ME, "2026-11-21", 19, 21, { type: "join", title: "Dinner" });
+    const mine = wholeDay([dinner], "2026-11-21").mine;
+    const clash = findConflict({ dayKey: "2026-11-21", type: "free", startMin: 18 * 60, endMin: 20 * 60 }, mine);
+    expect(clash?.block.id).toBe(dinner.id);
+    expect(describeConflict("free", clash!)).toBe("You're hosting Dinner then (7 – 9 PM). Free time can't overlap your events.");
+    // Right up to it is fine.
+    expect(findConflict({ dayKey: "2026-11-21", type: "free", startMin: 17 * 60, endMin: 19 * 60 }, mine)).toBeUndefined();
+    // An event during Free time is still fine; two events at once are not.
+    const evening = wholeDay([block(ME, "2026-11-21", 17, 23)], "2026-11-21").mine;
+    expect(findConflict({ dayKey: "2026-11-21", type: "join", startMin: 19 * 60, endMin: 21 * 60 }, evening)).toBeUndefined();
+    expect(findConflict({ dayKey: "2026-11-21", type: "join", startMin: 20 * 60, endMin: 22 * 60 }, mine)?.block.id).toBe(dinner.id);
+  });
+
+  it("let Free time that already held one of my events be stretched, but not moved onto another", () => {
+    const free = block(ME, "2026-11-21", 17, 23);
+    const dinner = block(ME, "2026-11-21", 19, 21, { type: "join" });
+    const brunch = block(ME, "2026-11-21", 11, 13, { type: "join" });
+    const mine = wholeDay([free, dinner, brunch], "2026-11-21").mine;
+    const before = { dayKey: "2026-11-21", startMin: 17 * 60, endMin: 23 * 60 };
+    // Stretched earlier, still around dinner: fine.
+    expect(findConflict({ dayKey: "2026-11-21", type: "free", startMin: 16 * 60, endMin: 23 * 60 }, mine, free.id, before)).toBeUndefined();
+    // Stretched over brunch too: not allowed.
+    expect(findConflict({ dayKey: "2026-11-21", type: "free", startMin: 12 * 60, endMin: 23 * 60 }, mine, free.id, before)?.block.id).toBe(brunch.id);
+  });
+
   it("repeat every week", () => {
     const weekly = block(ME, "2026-11-17", 18, 20, { repeat_weekly: true });
     const twoWeeks = buildDayModels([weekly], ME, NY, MONDAY, 14);
@@ -95,7 +121,7 @@ describe("my own blocks", () => {
   });
 });
 
-describe("gold 'locked in' state", () => {
+describe("gold 'confirmed' state", () => {
   it("my event turns gold once a guest is in", () => {
     const event = block(ME, "2026-11-20", 19, 22, { type: "join" });
     expect(statusOf(event, 0, ME)).toEqual({ status: "join", inCount: 0 });
@@ -299,7 +325,7 @@ describe("times outside the hours the week grid shows", () => {
   it("still count when checking for overlaps", () => {
     const early = block(ME, "2026-11-18", 6, 7);
     const mine = wholeDay([early], "2026-11-18").mine;
-    expect(findSameTypeConflict({ dayKey: "2026-11-18", type: "free", startMin: 6.5 * 60, endMin: 8 * 60 }, mine)?.block.id).toBe(early.id);
+    expect(findConflict({ dayKey: "2026-11-18", type: "free", startMin: 6.5 * 60, endMin: 8 * 60 }, mine)?.block.id).toBe(early.id);
   });
 });
 
@@ -354,19 +380,23 @@ describe("overlap between my own blocks", () => {
   );
 
   it("flags a second block of the same type at an overlapping time", () => {
-    const conflict = findSameTypeConflict({ dayKey: "2026-11-20", type: "free", startMin: 20 * 60, endMin: 22 * 60 }, mine());
+    const conflict = findConflict({ dayKey: "2026-11-20", type: "free", startMin: 20 * 60, endMin: 22 * 60 }, mine());
     expect(conflict?.block.id).toBe("free-evening");
   });
 
+  it("flags Free time over one of my events", () => {
+    expect(findConflict({ dayKey: "2026-11-20", type: "free", startMin: 8 * 60, endMin: 9 * 60 + 30 }, mine())?.block.id).toBe("event");
+  });
+
   it("allows a hosted event inside free time, and blocks that only touch", () => {
-    expect(findSameTypeConflict({ dayKey: "2026-11-20", type: "join", startMin: 19 * 60, endMin: 20 * 60 }, mine())).toBeUndefined();
-    expect(findSameTypeConflict({ dayKey: "2026-11-20", type: "free", startMin: 21 * 60, endMin: 22 * 60 }, mine())).toBeUndefined();
+    expect(findConflict({ dayKey: "2026-11-20", type: "join", startMin: 19 * 60, endMin: 20 * 60 }, mine())).toBeUndefined();
+    expect(findConflict({ dayKey: "2026-11-20", type: "free", startMin: 21 * 60, endMin: 22 * 60 }, mine())).toBeUndefined();
   });
 
   it("does not count other days, or the block being edited itself", () => {
-    expect(findSameTypeConflict({ dayKey: "2026-11-21", type: "free", startMin: 18 * 60, endMin: 21 * 60 }, mine())).toBeUndefined();
+    expect(findConflict({ dayKey: "2026-11-21", type: "free", startMin: 18 * 60, endMin: 21 * 60 }, mine())).toBeUndefined();
     expect(
-      findSameTypeConflict({ dayKey: "2026-11-20", type: "free", startMin: 18 * 60 + 30, endMin: 21 * 60 + 30 }, mine(), "free-evening"),
+      findConflict({ dayKey: "2026-11-20", type: "free", startMin: 18 * 60 + 30, endMin: 21 * 60 + 30 }, mine(), "free-evening"),
     ).toBeUndefined();
   });
 });

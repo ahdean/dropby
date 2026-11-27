@@ -7,7 +7,8 @@ import { PixelIcon } from "@/components/ui/PixelIcon";
 import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
 import {
   buildDayModels,
-  findSameTypeConflict,
+  describeConflict,
+  findConflict,
   type CalendarItem,
   type FriendFreeCluster,
   type OffscreenEntry,
@@ -237,9 +238,9 @@ export function CalendarScreen() {
   const quickCreate = useCallback(
     async (range: DayRange) => {
       const sameDayMine = buildDayModels(blocks, userId, zone, range.dayKey, 1)[0].mine;
-      const conflict = findSameTypeConflict({ ...range, type: "free" }, sameDayMine);
+      const conflict = findConflict({ ...range, type: "free" }, sameDayMine);
       if (conflict) {
-        toast(`You already have Free time then (${formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin)}). Stretch that block instead.`, "error");
+        toast(describeConflict("free", conflict), "error");
         return;
       }
       try {
@@ -287,7 +288,7 @@ export function CalendarScreen() {
         actions
           .setRsvp(item.block, item.occurrence.index, next)
           .then(() => {
-            if (next === "in") toast("You're in! It's locked in.", "success");
+            if (next === "in") toast("You're in! It's confirmed.", "success");
           })
           .catch((error) => toastError(error, "Could not save your answer."));
       },
@@ -334,9 +335,13 @@ export function CalendarScreen() {
   const changeItem = useCallback(
     async (item: CalendarItem, next: DayRange) => {
       const sameDayMine = buildDayModels(blocks, userId, zone, next.dayKey, 1)[0].mine;
-      const conflict = findSameTypeConflict({ ...next, type: item.block.type }, sameDayMine, item.block.id);
+      const conflict = findConflict({ ...next, type: item.block.type }, sameDayMine, item.block.id, {
+        dayKey: item.dayKey,
+        startMin: item.startMin,
+        endMin: item.endMin,
+      });
       if (conflict) {
-        toast(`That would overlap your other ${item.block.type === "free" ? "Free" : "Join me"} block (${formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin)}).`, "error");
+        toast(describeConflict(item.block.type, conflict), "error");
         return;
       }
       const startIso = zonedToUtc(next.dayKey, next.startMin, zone);

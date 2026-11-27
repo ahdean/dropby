@@ -40,7 +40,7 @@ function render(n: NotificationRow, zone: string): Rendered {
     }
     case "rsvp":
       return n.data.status === "in"
-        ? { icon: "lock", tone: "text-locked", text: `${who} is in for ${what || "your event"}`, detail: when, href: event }
+        ? { icon: "check", tone: "text-locked", text: `${who} is in for ${what || "your event"}`, detail: when, href: event }
         : { icon: "x", tone: "text-ink-dim", text: `${who} can't make ${what || "your event"}`, detail: when, href: event };
     case "chat": {
       return {

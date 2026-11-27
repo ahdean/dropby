@@ -9,7 +9,7 @@
    Meaning of colour (never changes anywhere in the app):
      blue  = Free       "I'm available"      solid beam
      green = Join me    "I'm hosting"        dashed beam + emoji
-     gold  = Locked in  "someone is joining" double beam + lock
+     gold  = Confirmed  "someone is joining" double beam
 
    Each state also has its own beam pattern, so the difference does not rely
    on colour alone. Text colours all meet WCAG AA (4.5:1) on their background.

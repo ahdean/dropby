@@ -112,7 +112,7 @@ export function Toolbar({
         <ul className="ml-auto hidden items-center gap-x-4 lg:flex" aria-label="What the colours mean">
           <LegendItem beam="" label="Free" />
           <LegendItem beam="beam-join" label="Join me" />
-          <LegendItem beam="beam-locked" label="Locked in" />
+          <LegendItem beam="beam-locked" label="Confirmed" />
           <li className="flex items-center gap-2">
             <span className="relative inline-block h-4 w-8 shrink-0" aria-hidden="true">
               <span className="wire inset-x-0 top-[6px]" />

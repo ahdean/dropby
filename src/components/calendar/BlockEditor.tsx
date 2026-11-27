@@ -10,7 +10,7 @@ import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { joinLocation, locationLabel, splitLocation } from "@/lib/maps";
-import { expandBlocks, findSameTypeConflict } from "@/lib/calendar/model";
+import { describeConflict, expandBlocks, findConflict } from "@/lib/calendar/model";
 import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
 import { PlacesDialog } from "@/components/places/PlacesManager";
@@ -19,7 +19,7 @@ import { removeEventPictureIfUnused, useEventPictureUpload } from "@/lib/data/ev
 import { useSavedPlaces } from "@/lib/data/saved-places";
 import { useSession } from "@/lib/data/session";
 import { shiftSeries, type Occurrence } from "@/lib/recurrence";
-import { addDays, formatDayKey, formatMinutes, formatSpan, minutesFromDay, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
+import { addDays, formatDayKey, formatMinutes, minutesFromDay, utcToZoned, zonedToUtc, type DayKey } from "@/lib/time";
 import type { BlockDraft, BlockType, CalendarBlock, Group, Profile } from "@/lib/types";
 import { EVERYONE } from "@/lib/audience";
 import { AudiencePicker, type AudienceValue } from "./AudiencePicker";
@@ -224,23 +224,37 @@ function EditorDialog({
       return { ...f, startMin, endMin: startMin + length };
     });
 
+  /** Where a block was, on its first day and the next one (for a block running past midnight). */
+  const wasAt = (startIso: string, endIso: string) => {
+    const start = utcToZoned(startIso, zone);
+    const end = utcToZoned(endIso, zone);
+    const endMin = start.dayKey === end.dayKey ? end.minutes : end.minutes + 1440;
+    return [
+      { dayKey: start.dayKey, startMin: start.minutes, endMin: Math.min(endMin, 1440) },
+      { dayKey: addDays(start.dayKey, 1), startMin: 0, endMin: Math.max(0, endMin - 1440) },
+    ] as const;
+  };
+
   const validate = (f: Form): string | null => {
     if (f.endMin <= f.startMin) return "The end time must be after the start time.";
     if (f.endMin - f.startMin > MAX_BLOCK_MINUTES) return "A block can be at most 24 hours long.";
     if (f.type === "join" && f.emoji.trim() === "") return "Pick an icon for your event: it's what friends see on their calendar.";
     // This day, and the next one for a block that runs past midnight.
     const mine = expandBlocks(blocks.filter((b) => b.owner_id === userId), userId, zone, f.dayKey, 2);
+    // Where it was before this edit (Free time that already covered one of your events may keep doing so).
+    const was = editing && editing.block.type === f.type ? wasAt(editing.occurrence.startIso, editing.occurrence.endIso) : undefined;
     const conflict =
-      findSameTypeConflict({ dayKey: f.dayKey, type: f.type, startMin: f.startMin, endMin: f.endMin }, mine, editing?.block.id) ??
+      findConflict({ dayKey: f.dayKey, type: f.type, startMin: f.startMin, endMin: f.endMin }, mine, editing?.block.id, was?.[0]) ??
       (f.endMin > 1440
-        ? findSameTypeConflict(
+        ? findConflict(
             { dayKey: addDays(f.dayKey, 1), type: f.type, startMin: 0, endMin: f.endMin - 1440 },
             mine,
             editing?.block.id,
+            was?.[1],
           )
         : undefined);
     if (conflict) {
-      return `That overlaps your other ${f.type === "free" ? "Free" : "Join me"} block (${formatDayKey(conflict.dayKey)}, ${formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin)}). Move one of them, or stretch the existing one instead.`;
+      return `${formatDayKey(conflict.dayKey)}: ${describeConflict(f.type, conflict)}`;
     }
     return null;
   };

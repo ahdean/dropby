@@ -6,7 +6,7 @@ A social availability calendar. Friends show when they're **free** and when they
 
 - **Blue = Free.** "I'm available." Friends see your face on a thin line under their own blocks over that time, and can chat about it.
 - **Green = Join me.** "I'm hosting." Has an emoji, a page like a party invite, RSVPs and a chat.
-- **Gold = Locked in.** Someone said they're in. It's happening.
+- **Gold = Confirmed.** Someone said they're in. It's happening.
 
 Built with Next.js (App Router), TypeScript, Tailwind, and Supabase (database, sign-in, file storage, live updates). Hosted on Vercel.
 
@@ -268,7 +268,7 @@ No setup needed: the database tests start a real Postgres in memory (PGlite), ap
 | `tests/unit/time.test.ts` | UTC ↔ local time, daylight saving, splitting by day, formatting |
 | `tests/unit/recurrence.test.ts` | Weekly repeats across daylight-saving changes and time zones |
 | `tests/unit/intervals.test.ts` | Block overlap, snapping, dragging, resizing, stacking |
-| `tests/unit/model.test.ts` | Turning rows into what the calendar draws; the gold "locked in" rule |
+| `tests/unit/model.test.ts` | Turning rows into what the calendar draws; the gold "confirmed" rule |
 | `tests/unit/helpers.test.ts` | Phone numbers, invite text, default avatars |
 
 When you change a rule in `supabase/migrations`, add or update a test in `tests/db` in the same change.
@@ -327,6 +327,7 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 - **Mara icons for events.** The twenty pixel maras (different angles, styles and moods; see `docs/mara-icon-examples.png` and `docs/mara-icon-examples-2.png`) are at the top of **More icons** when picking an event's icons. They are stored as short codes (`:m1:` to `:m20:`), drawn as pictures, and written as 🐾 in text messages and tab titles. Three maras fit in one event (the icon field holds 16 characters). The pictures are defined in `src/components/mara/icon-set.ts`; `scripts/mara-icon-examples.ts` redraws the two sheets.
 - **Maras on the calendar.** Now and then (about once a minute, in every design) a mara visits the week calendar. Usually a curious one pops its head up from behind a block, looks around, wonders "?", and ducks back down. Sometimes (at most every few minutes), when a day on screen has three or more empty hours, one walks along that stretch, stops, and suggests a block there: a dashed outline shows where, and its speech bubble says "Free 1 – 3 PM? Tap to add it". Tapping the bubble adds that Free block (with Undo); pointing at the bubble keeps the mara waiting. They wait while a block is dragged, a window or chat box is open, or the page is in the background, and never appear with "reduce motion" on (`src/components/mara/CalendarMaras.tsx`, `MaraPeek.tsx`, `MaraWalk.tsx`).
 - **The invite mara.** A few seconds after the block editor opens, a mara pops up from behind the **Save & invite** button, says "Psst! Invite friends" and nods at it while the button flashes, then ducks back down (once each time the editor opens; `src/components/mara/MaraNudge.tsx`).
+- **No Free time over your own events.** Adding, dragging or editing Free time so it covers one of your events is refused, with a message saying which event ("You're hosting Dinner then (7 – 9 PM). Free time can't overlap your events."). Hosting an event inside your Free time is still fine, and Free time that already holds one of your events can still be stretched or shortened; it just can't be moved onto another. As before, two Free blocks or two events can't overlap each other either.
 - **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
 - **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
 

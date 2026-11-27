@@ -110,7 +110,7 @@ function actionsPlace(item: CalendarItem, vertical: boolean): string {
 export const STATUS_LABEL: Record<BlockStatus, string> = {
   free: "Free",
   join: "Join me",
-  locked: "Locked in",
+  locked: "Confirmed",
 };
 
 export const STATUS_BEAM: Record<BlockStatus, string> = {
@@ -174,7 +174,6 @@ function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }
       }`}
     >
       <span className="plate">
-        {status === "locked" && <PixelIcon name="lock" size={11} className="shrink-0 text-locked" />}
         <EventIcon value={block.emoji} size={17} max={2} />
         {text && <span className="truncate">{text}</span>}
         {status === "locked" && inCount > 0 && <span className="shrink-0 text-locked">+{inCount}</span>}
@@ -278,7 +277,6 @@ export function FriendEventBeam({
       >
         <EventIcon value={item.block.emoji} size={vertical ? 17 : 14} max={1} />
         <Avatar person={host} size={vertical ? 16 : 14} className="shrink-0" />
-        {item.status === "locked" && <PixelIcon name="lock" size={10} className="shrink-0 text-locked" />}
         {item.block.title && <span className={`truncate leading-none text-ink ${vertical ? "text-[16px]" : "text-[15px]"}`}>{item.block.title}</span>}
       </button>
       {actions && (

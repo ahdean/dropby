@@ -170,7 +170,7 @@ function Sheet({
     setSaving(next);
     try {
       await actions.setRsvp(block, occurrence.index, value);
-      if (value === "in") toast("You're in! It's locked in.", "success");
+      if (value === "in") toast("You're in! It's confirmed.", "success");
     } catch (error) {
       toastError(error, "Could not save your answer.");
     } finally {
@@ -230,10 +230,7 @@ function Sheet({
               <Avatar person={host} size={22} />
               <span>{isHost ? "You're hosting" : `Hosted by ${host?.name ?? "a friend"}`}</span>
               {status === "locked" && (
-                <span className="ml-auto inline-flex items-center gap-1 font-display text-[8px] uppercase text-locked">
-                  <PixelIcon name="lock" size={10} />
-                  Locked in
-                </span>
+                <span className="ml-auto font-display text-[8px] uppercase text-locked">Confirmed</span>
               )}
             </div>
           )}

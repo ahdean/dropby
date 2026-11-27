@@ -11,7 +11,7 @@
  *
  * Pure: no React, no network. All time-zone work goes through lib/time.
  */
-import { addDays, clipToVisibleHours, dayRange, minutesFromDay, splitByDay, zonedToUtc, type DayKey } from "../time";
+import { addDays, clipToVisibleHours, dayRange, formatSpan, minutesFromDay, splitByDay, zonedToUtc, type DayKey } from "../time";
 import { occurrencesInRange, type Occurrence } from "../recurrence";
 import type { BlockType, CalendarBlock } from "../types";
 import {
@@ -249,21 +249,46 @@ export function buildDayModels(
   });
 }
 
+/** Can a block of type `a` not share time with one of type `b`? */
+function clashes(a: BlockType, b: BlockType): boolean {
+  // Free inside Free is meaningless, two events at once impossible, and you
+  // can't be free while you're hosting. An event inside Free time is fine:
+  // that's hosting something during time you'd said you were free.
+  return a === b || (a === "free" && b === "join");
+}
+
 /**
- * Would a block of this type at this time collide with another of the
- * viewer's blocks of the SAME type on that day? (Free time inside free time is
- * meaningless; a hosted event inside free time is fine.)
+ * Another of the viewer's blocks that a block of this type at this time
+ * would clash with on that day, or undefined.
+ *
+ * `before` is where the block was, when it is being moved or changed: Free
+ * time that already covered one of your events (you hosted something during
+ * it) can still be stretched or shortened; it only may not cover another.
  */
-export function findSameTypeConflict(
+export function findConflict(
   candidate: Interval & { dayKey: DayKey; type: BlockType },
   mine: readonly CalendarItem[],
   ignoreBlockId?: string,
+  before?: Interval & { dayKey: DayKey },
 ): CalendarItem | undefined {
   return mine.find(
     (item) =>
       item.dayKey === candidate.dayKey &&
-      item.block.type === candidate.type &&
       item.block.id !== ignoreBlockId &&
-      overlaps(candidate, item),
+      clashes(candidate.type, item.block.type) &&
+      overlaps(candidate, item) &&
+      !(candidate.type === "free" && item.block.type === "join" && before && before.dayKey === item.dayKey && overlaps(before, item)),
   );
+}
+
+/** Why a block can't go there, in words. */
+export function describeConflict(type: BlockType, conflict: CalendarItem): string {
+  const when = formatSpan(conflict.dayKey, conflict.fullStartMin, conflict.fullEndMin);
+  if (type === "free" && conflict.block.type === "join") {
+    const what = conflict.block.title?.trim() || "an event";
+    return `You're hosting ${what} then (${when}). Free time can't overlap your events.`;
+  }
+  return type === "free"
+    ? `You already have Free time then (${when}). Stretch that block instead.`
+    : `You're already hosting something then (${when}). Move one of them first.`;
 }

@@ -42,7 +42,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           </li>
           <li className="flex items-center gap-3">
             <Swatch kind="locked" />
-            <span><strong className="text-locked">Locked in</strong>: someone is joining your plan. It&apos;s happening!</span>
+            <span><strong className="text-locked">Confirmed</strong>: someone said they&apos;re in. It&apos;s happening!</span>
           </li>
           <li className="flex items-center gap-3">
             <FriendsSwatch />
