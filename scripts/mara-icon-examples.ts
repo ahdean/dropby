@@ -19,6 +19,13 @@ const EXTRA: Record<string, string> = {
   f: "#f6f1d4", // flower petals
   s: "#ffffff", // star / letters
   q: "#2a1a0e", // dark ink for notes and letters
+  u: "#6fc3ff", // a tear
+  R: "#f29aa6", // blush
+  N: "#39ff9c", // neon line
+  "1": "#0f380f", // Game Boy greens, darkest to lightest
+  "2": "#306230",
+  "3": "#8bac0f",
+  "4": "#9bbc0f",
 };
 const PALETTE = { ...art.PALETTE, ...EXTRA };
 
@@ -150,6 +157,273 @@ const ICONS: Icon[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// Set 2: other angles, styles and moods
+// ---------------------------------------------------------------------------
+
+/** Left halves → whole rows, mirrored. */
+function mirror(halves: string[]): string[] {
+  return halves.map((half) => half + [...half].reverse().join(""));
+}
+function setPixels(rows: string[], edits: [number, number, string][]): string[] {
+  const grid = rows.map((row) => [...row]);
+  for (const [y, x, ch] of edits) if (grid[y]?.[x] !== undefined) grid[y][x] = ch;
+  return grid.map((row) => row.join(""));
+}
+function replaceRows(rows: string[], from: number, replacement: string[]): string[] {
+  return rows.map((row, i) => (i >= from && i < from + replacement.length ? replacement[i - from] : row));
+}
+
+/**
+ * Turn a face seen from the front into a three-quarter view looking to the
+ * left: the left half is squeezed into `to` columns, the right half spread
+ * over the rest, so the far eye narrows and the near one widens.
+ */
+function turn(rows: string[], to = 9): string[] {
+  return rows.map((row) => {
+    const half = row.length / 2;
+    let out = "";
+    for (let x = 0; x < row.length; x++) {
+      const src = x < to ? Math.floor((x * half) / to) : half + Math.floor(((x - to) * half) / (row.length - to));
+      out += row[Math.min(row.length - 1, src)];
+    }
+    return out;
+  });
+}
+
+/**
+ * Rotate a sprite by `degrees` into a square of `size`, without the jagged
+ * edges of a plain rotation: rotate at four times the size, then give each
+ * pixel the most common colour of its 4 × 4 block (outline wins ties).
+ */
+function rotate(rows: string[], degrees: number, size: number): string[] {
+  const k = 4;
+  const big = rows.flatMap((row) => Array.from({ length: k }, () => [...row].map((c) => c.repeat(k)).join("")));
+  const turned = rotateNearest(big, degrees, size * k);
+  const out: string[] = [];
+  for (let y = 0; y < size; y++) {
+    let line = "";
+    for (let x = 0; x < size; x++) {
+      const counts = new Map<string, number>();
+      for (let dy = 0; dy < k; dy++) for (let dx = 0; dx < k; dx++) {
+        const c = turned[y * k + dy][x * k + dx];
+        counts.set(c, (counts.get(c) ?? 0) + 1);
+      }
+      const transparent = counts.get(".") ?? 0;
+      counts.delete(".");
+      let best = ".";
+      let bestCount = 0;
+      for (const [c, n] of counts) if (n > bestCount || (n === bestCount && c === "k")) [best, bestCount] = [c, n];
+      line += bestCount >= transparent || bestCount >= 6 ? best : ".";
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+function rotateNearest(rows: string[], degrees: number, size: number): string[] {
+  const h = rows.length;
+  const w = rows[0].length;
+  const a = (degrees * Math.PI) / 180;
+  const out: string[] = [];
+  for (let y = 0; y < size; y++) {
+    let line = "";
+    for (let x = 0; x < size; x++) {
+      const dx = x - size / 2 + 0.5;
+      const dy = y - size / 2 + 0.5;
+      const sx = Math.round(dx * Math.cos(a) + dy * Math.sin(a) + w / 2 - 0.5);
+      const sy = Math.round(-dx * Math.sin(a) + dy * Math.cos(a) + h / 2 - 0.5);
+      line += rows[sy]?.[sx] ?? ".";
+    }
+    out.push(line);
+  }
+  return out;
+}
+
+function upscale2(rows: string[]): string[] {
+  return rows.flatMap((row) => {
+    const wide = [...row].map((c) => c + c).join("");
+    return [wide, wide];
+  });
+}
+
+/** Happy: eyes shut in two smiling arcs, mouth open, rosy cheeks. */
+const happyFront = setPixels(
+  replaceRows(open, 11, mirror([".kdblmmmmmmm", ".kdlmkkkmmmm", ".kdlkmmmkmmm", ".kdblmmmmmml"])),
+  [[16, 3, "R"], [16, 4, "R"], [16, 19, "R"], [16, 20, "R"]],
+);
+
+/** Surprised: wide white eyes with small pupils, an O of a mouth. */
+const surprised = replaceRows(
+  replaceRows(face, 10, mirror([".kdbkkkkkmmm", ".kdkwwwwwkmm", ".kdkwwewwkmm", ".kdkwwwwwkmm", ".kdbkkkkkmml"])),
+  21,
+  mirror([".....kllkkkk", ".....kwlkooo", "......kkwkkk"]),
+);
+
+/** Sad: ears flopped down to the sides, a tear, the corners of the mouth down. */
+const sad = setPixels(
+  replaceRows(
+    replaceRows(face, 0, [
+      "........................",
+      "........................",
+      "........................",
+      "kkk..................kkk",
+      "kbbkk..............kkbbk",
+      "kbppbkk..........kkbppbk",
+      ".kbpppbkkkkkkkkkkbpppbk.",
+      "..kkbppbbbmmmmbbbppbkk..",
+      "....kkbbbbmmmmbbbbkk....",
+    ]),
+    21,
+    mirror([".....klllkkk", ".....kwlkwww"]),
+  ),
+  [[10, 6, "k"], [10, 7, "k"], [10, 16, "k"], [10, 17, "k"], [11, 4, "k"], [11, 19, "k"], [15, 5, "u"], [16, 5, "u"], [17, 5, "u"]],
+);
+
+/** Cool: dark glasses and a sideways smile. */
+const shades = setPixels(
+  replaceRows(face, 11, mirror([".kdkkkkkkkkk", ".kdkskkkkmmm", ".kdkkkkkkmmm", ".kdblmmmmmml"])),
+  [[21, 10, "k"], [21, 11, "k"], [21, 12, "k"], [20, 13, "k"], [21, 13, "l"]],
+);
+
+/** Grumpy: ears pinned back and out, brows down, a frown. */
+const grumpy = setPixels(
+  replaceRows(
+    replaceRows(face, 0, [
+      "........................",
+      "........................",
+      "kkk..................kkk",
+      "kbbkk..............kkbbk",
+      ".kbppbk..........kbppbk.",
+      ".kbpppbk........kbpppbk.",
+      "..kbpppbkkkkkkkkbpppbk..",
+      "...kbppbbbmmmmbbbppbk...",
+      "....kkbbbbmmmmbbbbkk....",
+    ]),
+    21,
+    mirror([".....klllkkk", ".....kwlkwww"]),
+  ),
+  // brows slanting down towards the middle
+  [[10, 4, "k"], [10, 5, "k"], [11, 6, "k"], [11, 7, "k"], [11, 8, "k"], [10, 18, "k"], [10, 19, "k"], [11, 15, "k"], [11, 16, "k"], [11, 17, "k"]],
+);
+
+/** Game Boy: a simpler face in four greens, drawn at half the size and doubled. */
+const gameBoy = upscale2([
+  "..11........11..",
+  ".1221......1221.",
+  ".1231......1321.",
+  ".1231......1321.",
+  ".12311111111321.",
+  "..122222222221..",
+  ".12222222222221.",
+  "1222142222142221",
+  "1222112222112221",
+  "1222333333332221",
+  ".12333333333321.",
+  ".12333311333321.",
+  "..123331133321..",
+  "...1233333321...",
+  "....11333311....",
+  "......1111......",
+]);
+
+/** Neon: only the outline and the eyes, glowing on black. */
+const neon = face.map((row) =>
+  [...row].map((c) => (c === "k" ? "N" : c === "e" ? "N" : c === "h" ? "s" : ".")).join(""),
+);
+
+/** Leaping: legs stretched out front and back, mid-bound. */
+const leap = [
+  ...art.MARA_WALK_A.rows.slice(0, 12),
+  "...kbbk........kbbk.....",
+  "..kbbk..........kbbk....",
+  ".kbbk............kbbk...",
+  "kbbk..............kbbk..",
+  "kkk................kkk..",
+];
+
+const ICONS2: Icon[] = [
+  {
+    name: "11 · Happy",
+    note: "Three-quarter view, eyes smiling",
+    bg: SKY,
+    draw: (g) => stamp(g, turn(happyFront, 7), 5, 5),
+  },
+  {
+    name: "12 · Surprised",
+    note: "Wide eyes, O mouth, ears up",
+    bg: SUNSET,
+    draw: (g) => {
+      stamp(g, surprised, 4, 6);
+      stamp(g, ["qq", "qq", "qq", "qq", "..", "qq"], 27, 2);
+      stamp(g, ["qq", "qq", "qq", "..", "qq"], 1, 3);
+    },
+  },
+  {
+    name: "13 · Grumpy",
+    note: "Ears pinned back, brows down",
+    bg: CREAM,
+    draw: (g) => {
+      stamp(g, grumpy, 4, 5);
+      stamp(g, ["q.q.q", ".qqq.", "q.q.q"], 25, 3);
+    },
+  },
+  {
+    name: "14 · Sad",
+    note: "Ears drooping, one tear",
+    bg: NIGHT,
+    draw: (g) => stamp(g, sad, 4, 4),
+  },
+  {
+    name: "15 · Curious",
+    note: "Head tilted, a question",
+    bg: GRASS,
+    draw: (g) => {
+      stamp(g, rotate(face, -14, 30), 0, 2);
+      stamp(g, [".qqq.", "q...q", "...q.", "..q..", ".....", "..q.."], 25, 1);
+    },
+  },
+  {
+    name: "16 · Cool",
+    note: "Three-quarter view, dark glasses",
+    bg: SUNSET,
+    draw: (g) => stamp(g, turn(shades, 7), 5, 5),
+  },
+  {
+    name: "17 · Game Boy",
+    note: "Four greens, chunky pixels",
+    bg: { fill: "#9bbc0f", hi: "#cfe36b", lo: "#0f380f" },
+    draw: (g) => stamp(g, gameBoy, 0, 0),
+  },
+  {
+    name: "18 · Neon",
+    note: "Just the outline, glowing",
+    bg: { fill: "#05070d", hi: "#1e2a44", lo: "#000000" },
+    draw: (g) => stamp(g, neon, 4, 5),
+  },
+  {
+    name: "19 · Leaping",
+    note: "Excited, mid-bound",
+    bg: GRASS,
+    draw: (g) => {
+      stamp(g, leap, 5, 4);
+      stamp(g, ["qqq", "...", "qqqq", "...", "qq"], 1, 7);
+      stamp(g, ["GGGGGGGGGGGGGGGG"], 8, 27);
+    },
+  },
+  {
+    name: "20 · Shy",
+    note: "Peeking over the edge, blushing",
+    bg: CREAM,
+    draw: (g) => {
+      stamp(g, setPixels(face.slice(0, 17), [[16, 3, "R"], [16, 4, "R"], [16, 19, "R"], [16, 20, "R"]]), 4, 11);
+      stamp(g, ["kkkkkkkkkkkkkkkkkkkkkkkkkkkkkk", "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD", "DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD"], 1, 28);
+      stamp(g, [".kkk.", "kmmmk", "kmkmk"], 7, 26);
+      stamp(g, [".kkk.", "kmmmk", "kmkmk"], 20, 26);
+    },
+  },
+];
+
 function render(icon: Icon): string {
   const grid = blank();
   icon.bg.extra?.(grid);
@@ -170,25 +444,35 @@ function render(icon: Icon): string {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" shape-rendering="crispEdges">${rects}</svg>`;
 }
 
-async function main() {
-  const cards = ICONS.map((icon) => {
-    const svg = render(icon);
-    return `<figure><div class="big">${svg}</div><div class="small">${svg}${svg.replace("<svg", '<svg class="tiny"')}</div><figcaption><b>${icon.name}</b><br>${icon.note}</figcaption></figure>`;
-  }).join("");
-  const html = `<!doctype html><html><head><style>
+function sheet(title: string, icons: Icon[]): string {
+  const cards = icons
+    .map((icon) => {
+      const svg = render(icon);
+      return `<figure><div class="big">${svg}</div><div class="small">${svg}${svg.replace("<svg", '<svg class="tiny"')}</div><figcaption><b>${icon.name}</b><br>${icon.note}</figcaption></figure>`;
+    })
+    .join("");
+  return `<!doctype html><html><head><style>
     body{margin:0;padding:24px;background:#1b1f2e;color:#f0eee2;font:15px/1.35 ui-monospace,monospace}
     h1{font-size:20px;margin:0 0 4px} p{margin:0 0 18px;color:#b3b9c9}
     main{display:grid;grid-template-columns:repeat(5,200px);gap:22px}
     figure{margin:0} .big svg{width:192px;height:192px;display:block;box-shadow:0 0 0 3px #000}
     .small{display:flex;gap:10px;align-items:end;margin-top:8px} .small svg{width:36px;height:36px;box-shadow:0 0 0 2px #000} .small svg.tiny{width:20px;height:20px}
     figcaption{margin-top:6px;color:#b3b9c9} b{color:#f0eee2}
-  </style></head><body><h1>Mara icon ideas</h1><p>Each is a 32 × 32 pixel tile. Big, then at header size and browser-tab size.</p><main>${cards}</main></body></html>`;
+  </style></head><body><h1>${title}</h1><p>Each is a 32 × 32 pixel tile. Big, then at header size and browser-tab size.</p><main>${cards}</main></body></html>`;
+}
+
+async function main() {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: 1180, height: 800 }, deviceScaleFactor: 2 });
-  await page.setContent(html);
-  await page.screenshot({ path: "docs/mara-icon-examples.png", fullPage: true });
+  for (const [file, title, icons] of [
+    ["docs/mara-icon-examples.png", "Mara icon ideas", ICONS],
+    ["docs/mara-icon-examples-2.png", "Mara icon ideas, set 2: angles, styles and moods", ICONS2],
+  ] as const) {
+    await page.setContent(sheet(title, [...icons]));
+    await page.screenshot({ path: file, fullPage: true });
+    console.log("wrote", file);
+  }
   await browser.close();
-  console.log("wrote docs/mara-icon-examples.png");
 }
 
 void main();

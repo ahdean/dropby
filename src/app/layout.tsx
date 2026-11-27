@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   applicationName: "wheet",
   appleWebApp: { capable: true, title: "wheet", statusBarStyle: "black-translucent" },
   formatDetection: { telephone: false },
-  // Browser tab: the small blue door. Home screens: the larger tile.
+  // Browser tab and home screens: the pixel mara on grass (drawn by scripts/make-icons.ts).
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "48x48" },

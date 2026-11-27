@@ -10,7 +10,7 @@
  *
  * Bump VERSION to make every device drop its old cache.
  */
-const VERSION = "wheet-v3";
+const VERSION = "wheet-v4";
 const OFFLINE_URL = "/offline.html";
 const PRECACHE = [OFFLINE_URL, "/icons/icon-192.png"];
 

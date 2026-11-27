@@ -49,7 +49,6 @@ export const THEMES: readonly ThemeInfo[] = [
     colorScheme: "light",
     themeColor: "#79b04a",
     swatch: ["#79b04a", "#fcf5e4", "#2b1d10"],
-    favicon: "/icons/mara-32.png",
   },
 ];
 
