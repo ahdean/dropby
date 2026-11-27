@@ -31,7 +31,6 @@ export const PROP_PALETTE: Record<string, string> = {
   P: "#c2557f", // pink shade
   n: "#3a3a3a", // noir coat
   N: "#6e6e6e", // noir coat, lit
-  t: "#ffe680", // taxi light
 };
 
 export const SNOWMAN = sprite([
@@ -168,17 +167,6 @@ export const DETECTIVE = sprite([
   ".kn.nk.",
   ".kk.kk.",
   "kk...kk",
-]);
-
-/** A taxi from the side (16 × 7), with headlights. */
-export const TAXI = sprite([
-  "....kkkkkk......",
-  "...kyuuyuuyk....",
-  "..kyuuuyuuuyk...",
-  "kkyyyyyyyyyyykkk",
-  "kyyyyyyyyyyyyyyt",
-  "kkkSSkkkkkkSSkkk",
-  "...SS......SS...",
 ]);
 
 /** A pine tree with snow on its branches (11 × 16). */

@@ -78,14 +78,6 @@ export const THEMES: readonly ThemeInfo[] = [
     swatch: ["#c84a5a", "#1f0f2b", "#ffeedd"],
   },
   {
-    id: "city",
-    name: "City at night",
-    description: "A wall of lit windows, midnight-blue panels and a neon-edged frame, with a skyline and a passing taxi.",
-    colorScheme: "dark",
-    themeColor: "#0b1026",
-    swatch: ["#1a2142", "#0d1330", "#ffd76a"],
-  },
-  {
     id: "noir",
     name: "Noir",
     description: "Black and white like an old detective film: blinds, rain and a lamp-lit street. Red is the only colour.",

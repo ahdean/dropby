@@ -17,16 +17,15 @@ import {
   SNOWMAN,
   SNOWY_PINE,
   SUNFLOWER,
-  TAXI,
   UMBRELLA,
 } from "./props";
 
 /**
  * Little animated pixel landscapes for the designs that don't have a
- * hand-drawn scene of their own: Sunset, City at night, Noir, Flowers,
- * Winter, Fall, Summer and Beach. Each is a short recipe made from the same
+ * hand-drawn scene of their own: Sunset, Noir, Flowers, Winter, Fall,
+ * Summer and Beach. Each is a short recipe made from the same
  * pieces: bands of sky, a pixel sun or moon, hills, a skyline, small props
- * (props.ts), and falling or drifting things (snow, leaves, rain, a taxi, a
+ * (props.ts), and falling or drifting things (snow, leaves, rain, a bee, a
  * gull). The motion is in globals.css (search for "ls-"); with "reduce
  * motion" on each is a still picture. Tapping one starts it again.
  */
@@ -34,7 +33,7 @@ import {
 const W = 120;
 const H = 74;
 
-export type LandscapeId = "sunset" | "city" | "noir" | "flowers" | "winter" | "fall" | "summer" | "beach";
+export type LandscapeId = "sunset" | "noir" | "flowers" | "winter" | "fall" | "summer" | "beach";
 
 /** A small deterministic random number generator, so a scene looks the same every time. */
 function random(seed: number) {
@@ -231,28 +230,6 @@ const SCENES: Record<LandscapeId, { label: string; draw: () => ReactNode }> = {
         <Across y={14} from={-10} to={130} dur={14}>
           <Prop art={BIRD} x={0} y={0} palette={silhouette("#1a0a22")} />
           <Prop art={BIRD} x={8} y={4} palette={silhouette("#1a0a22")} />
-        </Across>
-      </>
-    ),
-  },
-  city: {
-    label: "A city skyline at night: windows blink on and off under the moon and stars, and a taxi drives by.",
-    draw: () => (
-      <>
-        <Bands bands={[["#05081a", 12], ["#0b1026", 12], ["#141c40", 12], ["#1e2856", 12], ["#283468", 1]]} />
-        <Particles kind="stars" count={22} seed={4} colors={["#ffffff", "#cfe0ff", "#fff3c4"]} top={0} bottom={30} />
-        <Disc cx={98} cy={13} r={6} fill="#f4f1d0" />
-        <rect x={96} y={10} width={2} height={2} fill="#d9d3a8" />
-        <rect x={100} y={15} width={2} height={1} fill="#d9d3a8" />
-        <Skyline seed={11} base={58} low={16} high={34} fill="#141a38" dark="#1d2448" lit="#9a8a52" litShare={0.18} />
-        <Skyline seed={23} base={62} low={10} high={28} fill="#090d20" dark="#141a33" lit="#ffd76a" litShare={0.34} blinkShare={0.35} />
-        <rect y={62} width={W} height={H - 62} fill="#06081a" />
-        {[4, 20, 36, 52, 68, 84, 100, 116].map((x) => (
-          <rect key={x} x={x} y={68} width={8} height={1} fill="#3a4060" />
-        ))}
-        <Across y={56} from={-20} to={130} dur={7} delay={1}>
-          <rect x={16} y={4} width={6} height={1} fill="#fff3b0" opacity={0.6} />
-          <Prop art={TAXI} x={0} y={0} />
         </Across>
       </>
     ),

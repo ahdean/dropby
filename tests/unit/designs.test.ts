@@ -5,6 +5,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import * as bulldog from "@/components/bulldog/sprites";
+import { DESIGNS_WITH_HELP_PICTURES, DESIGNS_WITH_PICTURES, designGrids, designPictures } from "@/components/designs/design-icons";
 import { LANDSCAPES } from "@/components/designs/LandscapeScene";
 import * as props from "@/components/designs/props";
 import * as art from "@/components/mara/sprites";
@@ -15,7 +16,7 @@ describe("designs", () => {
   it("keep Retro night as the default, and offer the others after it", () => {
     expect(DEFAULT_THEME).toBe("retro");
     expect(THEMES.map((t) => t.id)).toEqual([
-      "retro", "light", "mara", "bulldog", "vintage", "sunset", "city", "noir", "flowers", "winter", "fall", "summer", "beach",
+      "retro", "light", "mara", "bulldog", "vintage", "sunset", "noir", "flowers", "winter", "fall", "summer", "beach",
     ]);
     expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });
@@ -145,5 +146,27 @@ describe("the landscape scenes' pixel props", () => {
     }
     const drawn = new Set(["retro", "light", "mara", "bulldog", "vintage"]);
     expect(LANDSCAPES.sort()).toEqual(THEMES.map((t) => t.id).filter((id) => !drawn.has(id)).sort());
+  });
+});
+
+describe("each design's own logo and help-button picture", () => {
+  it("exist for every design, as even grids", () => {
+    for (const theme of THEMES) {
+      expect(DESIGNS_WITH_PICTURES, theme.id).toContain(theme.id);
+      expect(DESIGNS_WITH_HELP_PICTURES, theme.id).toContain(theme.id);
+      const { logo, help } = designGrids(theme.id);
+      expect([logo.length, logo[0].length], `${theme.id} logo`).toEqual([32, 32]);
+      expect(logo.every((row) => row.length === 32), `${theme.id} logo`).toBe(true);
+      expect(help.every((row) => row.length === help[0].length), `${theme.id} help`).toBe(true);
+      expect(designPictures(theme.id).logo.startsWith("data:image/svg+xml")).toBe(true);
+    }
+  });
+
+  it("are shown one design at a time by the stylesheet", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    expect(css).toContain(`:root[data-theme]:not([data-theme="retro"]) .only-retro`);
+    for (const theme of THEMES.filter((t) => t.id !== "retro")) {
+      expect(css, theme.id).toContain(`:root:not([data-theme="${theme.id}"]) .only-${theme.id}`);
+    }
   });
 });
