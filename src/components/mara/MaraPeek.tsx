@@ -1,32 +1,25 @@
 "use client";
 
-import { useEffect, useState, type RefObject } from "react";
 import { CURIOUS_HEAD } from "./icon-set";
 import { SpriteGroup } from "./PixelArt";
 import { QUESTION } from "./sprites";
 
 /**
- * Now and then a curious mara pops its head up from behind one of the blocks
- * on the calendar, looks one way, then the other, wonders "?", and ducks back
- * down. It is only decoration: it never covers another block, cannot be
- * tapped, and does not appear while a block is being dragged, while the page
- * is in the background, or at all with "reduce motion" switched on.
- *
- * The timing is in globals.css (search for "mara-peek").
+ * A curious mara pops its head up from behind one of the blocks on the
+ * calendar, looks one way, then the other, wonders "?", and ducks back down.
+ * Only decoration: it never covers another block and cannot be tapped.
+ * When it appears is up to CalendarMaras.tsx; the timing of one peek is in
+ * globals.css (search for "mara-peek").
  */
 
-/** How often: the first peek a little while after the calendar opens, then every minute or so. */
-const FIRST_PEEK_MS: [number, number] = [15_000, 30_000];
-const NEXT_PEEK_MS: [number, number] = [45_000, 90_000];
 /** Length of one peek (the CSS animation is the same). */
-const PEEK_MS = 4_200;
+export const PEEK_MS = 4_200;
 
 const HEAD = { rows: CURIOUS_HEAD, width: CURIOUS_HEAD[0].length, height: CURIOUS_HEAD.length };
 /** How much of the head shows above the block: ears and eyes. */
 const SHOWN = 17;
 
-interface Peek {
-  id: number;
+export interface PeekSpot {
   /** Position in the scrolling area (it scrolls along with the calendar). */
   left: number;
   top: number;
@@ -34,16 +27,12 @@ interface Peek {
   flip: boolean;
 }
 
-function between([low, high]: [number, number]): number {
-  return low + Math.random() * (high - low);
-}
-
 function overlaps(a: DOMRect, b: { left: number; top: number; right: number; bottom: number }): boolean {
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
 /** Somewhere along the top of a block on screen with room above it, or null if there is none. */
-function findSpot(root: HTMLElement, headerHeight: number): Omit<Peek, "id"> | null {
+export function findPeekSpot(root: HTMLElement, headerHeight: number): PeekSpot | null {
   const view = root.getBoundingClientRect();
   const beams = [...root.querySelectorAll<HTMLElement>("[data-day-row] .beam:not(.beam-ghost)")].map((element) =>
     element.getBoundingClientRect(),
@@ -73,39 +62,9 @@ function findSpot(root: HTMLElement, headerHeight: number): Omit<Peek, "id"> | n
   return null;
 }
 
-export function MaraPeek({ scroller, headerHeight }: { scroller: RefObject<HTMLElement | null>; headerHeight: number }) {
-  const [peek, setPeek] = useState<Peek | null>(null);
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    let next = 0;
-    let end = 0;
-    const later = (range: [number, number]) => {
-      next = window.setTimeout(tryPeek, between(range));
-    };
-    function tryPeek() {
-      const root = scroller.current;
-      const busy = document.hidden || document.body.classList.contains("dragging");
-      const spot = root && !busy ? findSpot(root, headerHeight) : null;
-      if (!spot) {
-        later([10_000, 20_000]); // try again soon
-        return;
-      }
-      setPeek({ ...spot, id: Date.now() });
-      end = window.setTimeout(() => setPeek(null), PEEK_MS + 100);
-      later(NEXT_PEEK_MS);
-    }
-    later(FIRST_PEEK_MS);
-    return () => {
-      window.clearTimeout(next);
-      window.clearTimeout(end);
-    };
-  }, [headerHeight, scroller]);
-
-  if (!peek) return null;
+export function MaraPeek({ spot: peek }: { spot: PeekSpot }) {
   return (
     <div
-      key={peek.id}
       className="mara-peek pointer-events-none absolute z-[7]"
       style={{ left: peek.left, top: peek.top, width: HEAD.width, height: SHOWN }}
       aria-hidden="true"

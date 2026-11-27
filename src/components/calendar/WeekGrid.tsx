@@ -4,12 +4,17 @@ import { memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useStat
 import { DAY_END_HOUR, DAY_START_HOUR, VISIBLE_HOURS, VISIBLE_MINUTES } from "@/lib/constants";
 import { VISIBLE_BOUNDS } from "@/lib/calendar/intervals";
 import type { CalendarItem, DayModel, FriendFreeCluster, OffscreenEntry } from "@/lib/calendar/model";
-import { addDays, formatDayKey, formatHourShort, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
+import { addDays, formatDayKey, formatHourShort, formatMinuteRange, formatMinutes, weekdayOf, type DayKey } from "@/lib/time";
 import type { Profile } from "@/lib/types";
 import { FriendEventBeam, FriendStack, GhostBeam, MyBeam, OffscreenTab } from "./Beams";
 import { GRID, clampToBounds, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
-import { MaraPeek } from "@/components/mara/MaraPeek";
+import { CalendarMaras } from "@/components/mara/CalendarMaras";
+import type { WalkSpot } from "@/components/mara/MaraWalk";
+
+/** The block a walking mara suggests: this long, in an empty stretch at least this long. */
+const SUGGESTED_MINUTES = 120;
+const EMPTY_STRETCH_MINUTES = 180;
 
 const WEEKDAY_LETTER = ["", "M", "T", "W", "T", "F", "S", "S"];
 const HOURS = Array.from({ length: VISIBLE_HOURS }, (_, i) => DAY_START_HOUR + i);
@@ -293,6 +298,59 @@ export function WeekGrid({
     onOpen: onOpenItem,
   });
 
+  /**
+   * For the mara that walks along an empty stretch and suggests a block: a
+   * stretch of a day on screen (today or later, after now) with nothing in it
+   * for three hours or more, and a two-hour block in the middle of it.
+   */
+  const findWalkSpot = useCallback((): WalkSpot | null => {
+    const root = scroller.current;
+    if (!root) return null;
+    const view = root.getBoundingClientRect();
+    const options: WalkSpot[] = [];
+    for (const day of days) {
+      if (day.dayKey < today) continue;
+      const track = tracks.current.get(day.dayKey);
+      if (!track) continue;
+      const rect = track.getBoundingClientRect();
+      // The whole row on screen, with room above it for the speech bubble.
+      if (rect.width === 0 || rect.top < view.top + GRID.header + 40 || rect.bottom > view.bottom - 4) continue;
+      const taken = [...day.mine, ...day.friendEvents, ...day.friendFree.flatMap((cluster) => cluster.steps)]
+        .map((thing) => [thing.startMin, thing.endMin] as const)
+        .sort((a, b) => a[0] - b[0]);
+      let from = VISIBLE_BOUNDS.min;
+      if (day.dayKey === today) from = Math.max(from, Math.ceil((nowMin + 15) / 60) * 60);
+      const stretches: [number, number][] = [];
+      for (const [start, end] of taken) {
+        if (start > from) stretches.push([from, start]);
+        from = Math.max(from, end);
+      }
+      if (VISIBLE_BOUNDS.max > from) stretches.push([from, VISIBLE_BOUNDS.max]);
+      for (const [a, b] of stretches) {
+        const width = ((b - a) / VISIBLE_MINUTES) * rect.width;
+        if (b - a < EMPTY_STRETCH_MINUTES || width < 110) continue;
+        const start = Math.min(Math.max(Math.round(((a + b) / 2 - SUGGESTED_MINUTES / 2) / 60) * 60, Math.ceil(a / 30) * 30), b - SUGGESTED_MINUTES);
+        const main = laneCenter(day.laneCount, 0);
+        options.push({
+          left: rect.left - view.left - root.clientLeft + root.scrollLeft + fractionOf(a) * rect.width,
+          top: rect.top - view.top - root.clientTop + root.scrollTop,
+          width,
+          height: rect.height,
+          beamTop: main - GRID.beam / 2,
+          beamHeight: GRID.beam,
+          range: { dayKey: day.dayKey, startMin: start, endMin: start + SUGGESTED_MINUTES },
+          rangeLeft: (fractionOf(start) - fractionOf(a)) * rect.width,
+          rangeWidth: (SUGGESTED_MINUTES / VISIBLE_MINUTES) * rect.width,
+          label: formatMinuteRange(start, start + SUGGESTED_MINUTES),
+          areaWidth: root.clientWidth,
+        });
+      }
+    }
+    return options.length > 0 ? options[Math.floor(Math.random() * options.length)] : null;
+  }, [days, nowMin, today]);
+
+  const suggest = useCallback((range: DayRange) => onCreate(range, "tap"), [onCreate]);
+
   // --- how wide is an hour? (decides how much detail the header and tracks show)
   const [hourWidth, setHourWidth] = useState(64);
   useEffect(() => {
@@ -457,8 +515,8 @@ export function WeekGrid({
           {canLoadLater ? "Loading more weeks…" : "That's as far ahead as wheet goes for now (about two years)."}
         </div>
 
-        {/* now and then, a curious mara peeks over one of the blocks */}
-        <MaraPeek scroller={scroller} headerHeight={GRID.header} />
+        {/* now and then a curious mara peeks over a block, or one walks along an empty stretch and suggests a block */}
+        <CalendarMaras scroller={scroller} headerHeight={GRID.header} findWalkSpot={findWalkSpot} onSuggest={suggest} />
       </div>
     </div>
   );

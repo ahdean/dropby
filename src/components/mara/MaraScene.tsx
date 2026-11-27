@@ -1,19 +1,23 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useState, type AnimationEvent } from "react";
 import { SpriteGroup } from "./PixelArt";
 import {
   ALPACA,
   ALPACA_BLINK,
   ALPACA_CHEW,
+  ALPACA_SIT,
+  ALPACA_SIT_BLINK,
   EXCLAMATION,
   FLOWER,
   GRASS_PALETTE,
   GRASS_TILE,
   GRASS_TUFT,
+  HEART,
   MARA_RUN_A,
   MARA_RUN_B,
   MARA_SIT,
+  MARA_SIT_HAPPY,
   MARA_SIT_OPEN,
   MARA_SIT_SURPRISED,
   MARA_WALK_A,
@@ -34,6 +38,18 @@ const ALPACA_Y = GROUND - 40;
 /** The mara's "!", above its head (it is mirrored with the mara when it turns to run). */
 const ALARM_X = 18;
 const ALARM_Y = GROUND - MARA_SIT.height - EXCLAMATION.height - 2;
+/** The heart over the two friends sitting together. */
+const HEART_X = MARA_X + WALK_DISTANCE + 12;
+const HEART_Y = GROUND - MARA_SIT.height - HEART.height - 4;
+
+/**
+ * The two little stories, played in turn at random (the first is always
+ * "fright"): how long each lasts must match its keyframes in globals.css.
+ */
+type Story = "fright" | "cozy";
+const LENGTH: Record<Story, string> = { fright: "14s", cozy: "15s" };
+/** The animation that runs the whole length of a story: when it ends, the next story starts. */
+const STORY_TIMELINES = new Set(["ms-move", "mc-move"]);
 
 const FLOWERS: [number, number][] = [
   [4, 12],
@@ -91,27 +107,47 @@ function Bubble() {
 }
 
 /**
- * A little pixel scene for the Mara design: a small mara walks across the
- * grass to an alpaca, sits down next to it, opens its mouth and says
- * "wheet!". Then it gets a fright ("!"), the alpaca shuffles up close, and
- * the startled mara turns and scurries back to the other side. The alpaca
- * shuffles back, the mara turns round, and it all starts again. The alpaca
- * blinks and chews; the grass sways. Tapping it starts it from the top.
- * With "reduce motion" switched on it is a still picture, mid-"wheet".
- * The timing is in globals.css (search for "ms-").
+ * A little pixel scene for the Mara design, with two stories played in turn,
+ * at random:
+ *
+ *   fright  a small mara walks across the grass to an alpaca, sits down next
+ *           to it and says "wheet!". Then it gets a fright ("!"), the alpaca
+ *           shuffles up close, and the startled mara turns and scurries back
+ *           to the other side. The alpaca shuffles back.
+ *   cozy    the mara walks over and sits; the alpaca shuffles up and sits
+ *           down beside it, and they sit together for a bit (a heart pops
+ *           up). Then the mara gets up and walks back; the alpaca stands up.
+ *
+ * The alpaca blinks and chews; the grass sways. Tapping the scene starts the
+ * story again from the top. With "reduce motion" switched on it is a still
+ * picture, mid-"wheet". The timing is in globals.css (search for "ms-").
  */
 export function MaraScene({ className = "" }: { className?: string }) {
-  const [take, setTake] = useState(0);
+  const [take, setTake] = useState<{ n: number; story: Story }>({ n: 0, story: "fright" });
   const grassId = `grass-${useId().replace(/:/g, "")}`;
+
+  const onAnimationEnd = (event: AnimationEvent) => {
+    if (!STORY_TIMELINES.has(event.animationName)) return;
+    setTake((t) => ({ n: t.n + 1, story: Math.random() < 0.5 ? "fright" : "cozy" }));
+  };
 
   return (
     <button
       type="button"
-      onClick={() => setTake((n) => n + 1)}
+      onClick={() => setTake((t) => ({ ...t, n: t.n + 1 }))}
       className={`mara-scene block w-full overflow-hidden border-2 border-[var(--outline)] ${className}`}
-      aria-label="A pixel mara walks over to an alpaca, sits down and says “wheet!”, then gets a fright and scurries back. Tap to play it again."
+      aria-label="A pixel mara walks over to an alpaca in the grass and sits down beside it. Tap to play it again."
     >
-      <svg key={take} viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" shapeRendering="crispEdges" aria-hidden="true">
+      <svg
+        key={take.n}
+        viewBox={`0 0 ${W} ${H}`}
+        className="block h-auto w-full"
+        shapeRendering="crispEdges"
+        aria-hidden="true"
+        data-story={take.story}
+        style={{ ["--scene-length" as string]: LENGTH[take.story] }}
+        onAnimationEnd={onAnimationEnd}
+      >
         <defs>
           <pattern id={grassId} width={16} height={16} patternUnits="userSpaceOnUse">
             {spriteRuns(GRASS_TILE, GRASS_PALETTE).map((run, i) => (
@@ -125,13 +161,19 @@ export function MaraScene({ className = "" }: { className?: string }) {
           <SpriteGroup key={`${x},${y}`} art={FLOWER} x={x} y={y} palette={GRASS_PALETTE} />
         ))}
 
-        {/* the alpaca (with its shadow on the grass): still, blinking or chewing;
-            it shuffles up to the mara after the "wheet" and back again later */}
+        {/* the alpaca (with its shadow on the grass): standing (still, blinking or
+            chewing) or sitting; it shuffles up to the mara and back again later */}
         <g className="ms-alpaca-move">
           <rect x={ALPACA_X + 4} y={GROUND - 1} width={22} height={2} fill="#5a8e33" />
-          <SpriteGroup art={ALPACA} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca" />
-          <SpriteGroup art={ALPACA_BLINK} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-blink" />
-          <SpriteGroup art={ALPACA_CHEW} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-chew" />
+          <g className="ms-alpaca-standing">
+            <SpriteGroup art={ALPACA} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca" />
+            <SpriteGroup art={ALPACA_BLINK} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-blink" />
+            <SpriteGroup art={ALPACA_CHEW} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-chew" />
+          </g>
+          <g className="ms-alpaca-sitting">
+            <SpriteGroup art={ALPACA_SIT} x={ALPACA_X} y={ALPACA_Y} className="ms-asit" />
+            <SpriteGroup art={ALPACA_SIT_BLINK} x={ALPACA_X} y={ALPACA_Y} className="ms-asit-blink" />
+          </g>
         </g>
 
         {/* the mara: walks over and runs back (moving group), turns round to run
@@ -150,6 +192,7 @@ export function MaraScene({ className = "" }: { className?: string }) {
                 <SpriteGroup art={MARA_SIT} y={GROUND - MARA_SIT.height} className="ms-mouth-shut" />
                 <SpriteGroup art={MARA_SIT_OPEN} y={GROUND - MARA_SIT_OPEN.height} className="ms-mouth-open" />
                 <SpriteGroup art={MARA_SIT_SURPRISED} y={GROUND - MARA_SIT_SURPRISED.height} className="ms-surprised" />
+                <SpriteGroup art={MARA_SIT_HAPPY} y={GROUND - MARA_SIT_HAPPY.height} className="ms-content" />
               </g>
               <g className="ms-run">
                 <g className="ms-hop">
@@ -163,6 +206,7 @@ export function MaraScene({ className = "" }: { className?: string }) {
         </g>
 
         <Bubble />
+        <SpriteGroup art={HEART} x={HEART_X} y={HEART_Y} className="ms-heart" />
 
         {/* taller grass in front, swaying */}
         {TUFTS.map(([x, y], i) => (

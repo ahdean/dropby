@@ -293,8 +293,10 @@
   display: none !important;
 }
 
-/* The mara scene (src/components/mara/MaraScene.tsx). One 14-second loop
-   (the percentages below are of 14s: 1s = 7.143%):
+/* The mara scene (src/components/mara/MaraScene.tsx). Two stories, played in
+   turn at random; each plays once, then the scene picks the next.
+
+   "fright" (the rules without data-story): 14 seconds, so 1s = 7.143%
      0–0.5s     the mara stands at the left
      0.5–4s     it walks over to the alpaca
      4s         it sits; at 4.6s it opens its mouth and "wheet!" pops up
@@ -306,8 +308,8 @@
    The alpaca blinks now and then and chews while the mara is talking. */
 /* (:where keeps this general rule weaker than the specific ones below, such as the quick leg swap.) */
 .mara-scene :where(g[class^="ms-"], g[class*=" ms-"]) {
-  animation-duration: 14s;
-  animation-iteration-count: infinite;
+  animation-duration: var(--scene-length, 14s);
+  animation-iteration-count: 1;
   animation-timing-function: steps(1, end);
 }
 .mara-scene .ms-move { animation-name: ms-move; animation-timing-function: linear; }
@@ -326,11 +328,16 @@
 .mara-scene .ms-alarm { opacity: 0; animation-name: ms-alarm; }
 /* the legs: two steps, swapped quickly the whole time (only seen while walking);
    twice as fast, with a little hop, when running */
-.mara-scene .ms-step-a { animation-name: ms-step-a; animation-duration: 0.36s; }
-.mara-scene .ms-step-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.36s; }
-.mara-scene .ms-run-a { animation-name: ms-step-a; animation-duration: 0.18s; }
-.mara-scene .ms-run-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.18s; }
-.mara-scene .ms-hop { animation-name: ms-hop; animation-duration: 0.36s; }
+.mara-scene .ms-step-a { animation-name: ms-step-a; animation-duration: 0.36s; animation-iteration-count: infinite; }
+.mara-scene .ms-step-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.36s; animation-iteration-count: infinite; }
+.mara-scene .ms-run-a { animation-name: ms-step-a; animation-duration: 0.18s; animation-iteration-count: infinite; }
+.mara-scene .ms-run-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.18s; animation-iteration-count: infinite; }
+.mara-scene .ms-hop { animation-name: ms-hop; animation-duration: 0.36s; animation-iteration-count: infinite; }
+/* only in the "cozy" story */
+.mara-scene .ms-alpaca-sitting,
+.mara-scene .ms-asit-blink,
+.mara-scene .ms-content,
+.mara-scene .ms-heart { opacity: 0; }
 .mara-scene .ms-alpaca-move { animation-name: ms-alpaca-move; }
 .mara-scene .ms-alpaca { animation-name: ms-alpaca; }
 .mara-scene .ms-alpaca-blink { opacity: 0; animation-name: ms-alpaca-blink; }
@@ -344,6 +351,7 @@
 .mara-scene .ms-sway {
   animation-name: ms-sway;
   animation-duration: 1.4s;
+  animation-iteration-count: infinite;
 }
 .mara-scene .ms-sway-late {
   animation-delay: -0.7s;
@@ -390,6 +398,72 @@
   45.714% { opacity: 0; transform: scale(1); }
 }
 @keyframes ms-sway { 0% { transform: translateX(0); } 50% { transform: translateX(1px); } }
+
+/* "cozy": 15 seconds, so 1s = 6.667%
+     0–0.5s     the mara stands at the left
+     0.5–4s     it walks over to the alpaca and sits (4s)
+     4.8–5.4s   the alpaca shuffles up close…
+     6s         …and sits down beside it
+     6.8–9.5s   they sit together, the mara content ("^"), a heart rising
+     11–14.5s   the mara gets up and walks back; it turns round at the end
+     14.6s      the alpaca stands up and shuffles back to its spot */
+.mara-scene svg[data-story="cozy"] .ms-move { animation-name: mc-move; }
+.mara-scene svg[data-story="cozy"] .ms-facing { animation-name: mc-facing; }
+.mara-scene svg[data-story="cozy"] .ms-stand { animation-name: mc-stand; }
+.mara-scene svg[data-story="cozy"] .ms-walk { animation-name: mc-walk; }
+.mara-scene svg[data-story="cozy"] .ms-sit { animation-name: mc-sit; }
+.mara-scene svg[data-story="cozy"] .ms-mouth-shut { animation-name: mc-mouth-shut; }
+.mara-scene svg[data-story="cozy"] .ms-content { animation-name: mc-content; }
+.mara-scene svg[data-story="cozy"] .ms-heart { animation-name: mc-heart; }
+.mara-scene svg[data-story="cozy"] .ms-alpaca-move { animation-name: mc-alpaca-move; }
+.mara-scene svg[data-story="cozy"] .ms-alpaca-standing { animation-name: mc-alpaca-standing; }
+.mara-scene svg[data-story="cozy"] .ms-alpaca-sitting { animation-name: mc-alpaca-sitting; }
+.mara-scene svg[data-story="cozy"] .ms-alpaca { animation-name: mc-alpaca; }
+.mara-scene svg[data-story="cozy"] .ms-alpaca-blink { animation-name: mc-alpaca-blink; }
+.mara-scene svg[data-story="cozy"] .ms-asit { animation-name: mc-asit; }
+.mara-scene svg[data-story="cozy"] .ms-asit-blink { animation-name: mc-asit-blink; }
+/* no "wheet", no fright, no running, no chewing in this one */
+.mara-scene svg[data-story="cozy"] :is(.ms-run, .ms-mouth-open, .ms-surprised, .ms-alarm, .ms-bubble, .ms-alpaca-chew) {
+  animation-name: none;
+}
+
+@keyframes mc-move {
+  0%, 3.333% { transform: translateX(0); }
+  26.667%, 73.333% { transform: translateX(var(--walk, 52px)); }
+  96.667%, 100% { transform: translateX(0); }
+}
+@keyframes mc-facing { 0% { transform: scaleX(1); } 73.333% { transform: scaleX(-1); } 96.667% { transform: scaleX(1); } }
+@keyframes mc-stand { 0% { opacity: 1; } 3.333% { opacity: 0; } 96.667% { opacity: 1; } }
+@keyframes mc-walk { 0% { opacity: 0; } 3.333% { opacity: 1; } 26.667% { opacity: 0; } 73.333% { opacity: 1; } 96.667% { opacity: 0; } }
+@keyframes mc-sit { 0% { opacity: 0; } 26.667% { opacity: 1; } 73.333% { opacity: 0; } }
+@keyframes mc-mouth-shut { 0% { opacity: 1; } 45.333% { opacity: 0; } 63.333% { opacity: 1; } }
+@keyframes mc-content { 0% { opacity: 0; } 45.333% { opacity: 1; } 63.333% { opacity: 0; } }
+@keyframes mc-heart {
+  0% { opacity: 0; transform: translateY(0); }
+  45.333% { opacity: 1; transform: translateY(0); }
+  49.333% { opacity: 1; transform: translateY(-1px); }
+  53.333% { opacity: 1; transform: translateY(-2px); }
+  57.333% { opacity: 1; transform: translateY(-3px); }
+  63.333% { opacity: 0; transform: translateY(-3px); }
+}
+/* two little shuffles of 2px each way */
+@keyframes mc-alpaca-move {
+  0%, 32% { transform: translateX(0); animation-timing-function: steps(2, end); }
+  36%, 97.333% { transform: translateX(-4px); animation-timing-function: steps(2, end); }
+  100% { transform: translateX(0); }
+}
+@keyframes mc-alpaca-standing { 0% { opacity: 1; } 40% { opacity: 0; } 97.333% { opacity: 1; } }
+/* sitting down: a pixel-art "plop" (a frame slightly higher, then down) */
+@keyframes mc-alpaca-sitting {
+  0% { opacity: 0; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+  41.333% { opacity: 1; transform: translateY(0); }
+  97.333% { opacity: 0; }
+}
+@keyframes mc-alpaca { 0% { opacity: 1; } 10% { opacity: 0; } 11% { opacity: 1; } }
+@keyframes mc-alpaca-blink { 0% { opacity: 0; } 10% { opacity: 1; } 11% { opacity: 0; } }
+@keyframes mc-asit { 0% { opacity: 1; } 56.667% { opacity: 0; } 57.667% { opacity: 1; } 84% { opacity: 0; } 85% { opacity: 1; } }
+@keyframes mc-asit-blink { 0% { opacity: 0; } 56.667% { opacity: 1; } 57.667% { opacity: 0; } 84% { opacity: 1; } 85% { opacity: 0; } }
 
 /* Reduce motion: a still picture, the mara sitting by the alpaca, mid-"wheet". */
 @media (prefers-reduced-motion: reduce) {
@@ -448,6 +522,46 @@
   36% { opacity: 1; transform: translateY(-1px); }
   44% { opacity: 1; transform: translateY(0); }
   79% { opacity: 0; }
+}
+
+/* The mara that walks along an empty stretch of the calendar (src/components/mara/MaraWalk.tsx):
+   its legs. Where it goes and when it stops is worked out in the component. */
+.mara-walker .mw-step-a { animation: ms-step-a 0.36s steps(1, end) infinite; }
+.mara-walker .mw-step-b { opacity: 0; animation: ms-step-b 0.36s steps(1, end) infinite; }
+
+/* The mara that pops up from behind a button to point it out
+   (src/components/mara/MaraNudge.tsx), for example "Save & invite". One
+   6-second nudge: up (0–0.4s), the bubble (0.6–5.2s), two nods towards the
+   button while it flashes, and back down (5.4–5.8s). */
+.mara-nudge-rise {
+  transform: translateY(34px);
+  animation: mara-nudge-rise 6s both;
+}
+.mara-nudge-say {
+  opacity: 0;
+  animation: mara-nudge-say 6s steps(1, end) both;
+}
+.mara-nudging > .btn {
+  animation: mara-nudge-flash 6s steps(1, end) both;
+}
+@keyframes mara-nudge-rise {
+  0% { transform: translateY(34px); animation-timing-function: steps(5, end); }
+  6.667% { transform: translateY(0); animation-timing-function: steps(1, end); }
+  /* nods: down a little and back up, twice */
+  25% { transform: translateY(6px); }
+  28% { transform: translateY(0); }
+  45% { transform: translateY(6px); }
+  48% { transform: translateY(0); animation-timing-function: steps(1, end); }
+  90% { transform: translateY(0); animation-timing-function: steps(5, end); }
+  96.667%, 100% { transform: translateY(34px); }
+}
+@keyframes mara-nudge-say { 0% { opacity: 0; } 10% { opacity: 1; } 86.667% { opacity: 0; } }
+@keyframes mara-nudge-flash {
+  0% { outline: 0 solid transparent; }
+  25% { outline: 3px solid var(--color-locked); outline-offset: 2px; }
+  28% { outline: 0 solid transparent; }
+  45% { outline: 3px solid var(--color-locked); outline-offset: 2px; }
+  48% { outline: 0 solid transparent; }
 }
 
 /* Sizes that differ between phones and wider screens. */
@@ -828,27 +942,58 @@ dialog::backdrop {
 
 /* Quick buttons that drop down from a calendar block on hover (src/components/calendar/Beams.tsx).
    Only where there is a mouse; touch screens tap to open the block instead. */
-.hover-actions {
+.hover-actions,
+.hover-bridge {
   display: none;
 }
 @media (hover: hover) and (pointer: fine) {
+  /* The buttons stay a moment (0.3s) after the pointer leaves, so a pointer
+     cutting a corner on its way to them still finds them. */
+  .hover-actions {
+    display: flex;
+    visibility: hidden;
+    transition: visibility 0s linear 0.3s;
+  }
   .has-hover-actions:hover > .hover-actions,
   .has-hover-actions:focus-within > .hover-actions {
-    display: flex;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  /* The invisible strip under the block, as wide as the block (and a little
+     more) and reaching down past the buttons: while the pointer is anywhere
+     in it, the buttons stay. It exists only while the block is hovered. */
+  .has-hover-actions:hover > .hover-bridge {
+    display: block;
+    position: absolute;
+    left: -12px;
+    right: -12px;
+    top: 100%;
+    height: 46px;
   }
   /* Lift the hovered block, and its day's row (a faded past day is a layer of
-     its own), so the buttons sit over the rows below. */
+     its own), so the buttons sit over the rows below; the lift, too, lasts
+     as long as the buttons do. */
+  .has-hover-actions {
+    transition: z-index 0s linear 0.3s;
+  }
   .has-hover-actions:hover,
   .has-hover-actions:focus-within {
     z-index: 25;
+    transition-delay: 0s;
+  }
+  [data-day-row] {
+    position: relative;
+    z-index: 0;
+    transition: z-index 0s linear 0.3s;
   }
   [data-day-row]:has(.has-hover-actions:hover),
   [data-day-row]:has(.has-hover-actions:focus-within) {
-    position: relative;
     z-index: 26;
+    transition-delay: 0s;
   }
 }
-.dragging .hover-actions {
+.dragging .hover-actions,
+.dragging .hover-bridge {
   display: none !important;
 }
 

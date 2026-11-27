@@ -43,6 +43,7 @@ import type { CalendarBlock, Profile } from "@/lib/types";
 import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
 import { DayView } from "./DayView";
+import { ChatPopover, type ChatPopoverRequest } from "./ChatPopover";
 import { BlockSheet, type SheetRequest } from "./EventPeek";
 import { QuickActionsContext, type QuickActions } from "./Beams";
 import { FriendsDialog } from "./FriendsDialog";
@@ -207,6 +208,9 @@ export function CalendarScreen() {
   /** The quick look over the calendar (events, and friends' free time), and which tab it opens on. */
   /** The window of the block that was tapped (or linked to). */
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
+  /** The little chat box under a block (from its hover chat button). */
+  const [chatPop, setChatPop] = useState<ChatPopoverRequest | null>(null);
+  const closeChatPop = useCallback(() => setChatPop(null), []);
 
   // A link such as /?block=<id>&o=2&with=<person> (from a notification, a
   // quoted message or an old event-page link) opens that block's window.
@@ -287,12 +291,9 @@ export function CalendarScreen() {
           })
           .catch((error) => toastError(error, "Could not save your answer."));
       },
-      message: (item) => {
-        if (item.mine) setEditor({ mode: "edit", block: item.block, occurrence: item.occurrence, focusChat: true });
-        else setSheet({ blockId: item.block.id, occurrence: item.occurrence.index, focus: true });
-      },
-      messageCluster: (c) => {
-        if (c.userIds.length === 1) setSheet({ blockId: c.items[0].block.id, occurrence: c.items[0].occurrence.index, focus: true });
+      message: (item, anchor) => setChatPop({ item, anchor }),
+      messageCluster: (c, anchor) => {
+        if (c.userIds.length === 1) setChatPop({ item: c.items[0], anchor });
         else setCluster(c);
       },
     }),
@@ -466,6 +467,7 @@ export function CalendarScreen() {
         )}
       </div>
 
+      <ChatPopover request={chatPop} zone={zone} onClose={closeChatPop} onOpen={openItem} />
       <BlockEditor
         state={editor}
         zone={zone}

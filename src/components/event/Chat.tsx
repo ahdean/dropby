@@ -126,7 +126,18 @@ export function useBlockChat(block: CalendarBlock, occurrence: number) {
 type BlockChatState = ReturnType<typeof useBlockChat>;
 
 /** The messages, newest at the bottom. */
-export function ChatList({ chat, block, zone }: { chat: BlockChatState; block: CalendarBlock; zone: string }) {
+export function ChatList({
+  chat,
+  block,
+  zone,
+  className = "max-h-[45dvh]",
+}: {
+  chat: BlockChatState;
+  block: CalendarBlock;
+  zone: string;
+  /** The list's height limit (it scrolls past it). */
+  className?: string;
+}) {
   const { toastError, confirm } = useFeedback();
   const list = useRef<HTMLDivElement>(null);
   const { userId, items, people } = chat;
@@ -157,7 +168,7 @@ export function ChatList({ chat, block, zone }: { chat: BlockChatState; block: C
   }
 
   return (
-    <div ref={list} className="max-h-[45dvh] space-y-3 overflow-y-auto" role="log" aria-live="polite" aria-label="Messages">
+    <div ref={list} className={`${className} space-y-3 overflow-y-auto`} role="log" aria-live="polite" aria-label="Messages">
       {items.length === 0 && (
         <p className="text-ink-faint">
           {block.type === "join" ? "No messages yet. Say hi, or sort out who brings what." : "No messages yet. Say what you're up for."}

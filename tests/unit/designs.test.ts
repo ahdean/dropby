@@ -64,6 +64,12 @@ describe("the Mara design's pixel art", () => {
     expect(differingRows(art.MARA_SIT, art.MARA_SIT_SURPRISED).every((row) => row >= 5 && row <= 9)).toBe(true);
     expect([art.MARA_RUN_A.height, art.MARA_RUN_B.height]).toEqual([art.MARA_WALK_A.height, art.MARA_WALK_B.height]);
     expect(differingRows(art.MARA_WALK_A, art.MARA_RUN_A).every((row) => row >= 5 && row <= 8)).toBe(true);
+    // Sitting down, the alpaca keeps its size and lines up with the standing one (same height, lowered body).
+    expect([art.ALPACA_SIT.width, art.ALPACA_SIT.height]).toEqual([art.ALPACA.width, art.ALPACA.height]);
+    expect(art.ALPACA_SIT.rows.slice(6, 38)).toEqual(art.ALPACA.rows.slice(0, 32));
+    expect(differingRows(art.ALPACA_SIT, art.ALPACA_SIT_BLINK).every((row) => row >= 6 && row <= 20)).toBe(true);
+    // Content, in the cozy story: only the eye and cheek change.
+    expect(differingRows(art.MARA_SIT, art.MARA_SIT_HAPPY)).toEqual([6, 7, 8]);
     // The "!" and "?" are white with a black outline.
     for (const symbol of [art.EXCLAMATION, art.QUESTION]) expect(symbol.rows.join("")).toMatch(/^[.kw]+$/);
   });

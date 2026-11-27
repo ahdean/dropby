@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from "react";
+import { MaraNudge } from "@/components/mara/MaraNudge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
@@ -358,9 +359,20 @@ function EditorDialog({
           Delete
         </Button>
       )}
-      <Button variant="dark" icon="send" onClick={() => save(true)} disabled={busy}>
-        {editing ? "Save & invite by text" : "Save & invite"}
-      </Button>
+      {/* a mara pops up behind it after a few seconds, to point it out */}
+      <MaraNudge
+        message={
+          <>
+            Psst!
+            <br />
+            Invite friends
+          </>
+        }
+      >
+        <Button variant="dark" icon="send" onClick={() => save(true)} disabled={busy}>
+          {editing ? "Save & invite by text" : "Save & invite"}
+        </Button>
+      </MaraNudge>
       <Button type="submit" form={`${ids}-form`} variant={isJoin ? "join" : "free"} icon="check" busy={busy}>
         Save
       </Button>

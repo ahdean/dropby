@@ -21,6 +21,7 @@ export const PALETTE: Record<string, string> = {
   n: "#4a2a20", // nose
   o: "#6b231f", // inside of the mouth
   t: "#e8817a", // tongue
+  r: "#e0464b", // heart
   // alpaca
   c: "#f4ead6", // wool
   C: "#dccaa6", // wool shade
@@ -209,6 +210,16 @@ export const ALPACA_BLINK = sprite(patch(ALPACA_ROWS, [[8, 3, "k"], [9, 3, "c"],
 /** Chewing: the jaw drops a pixel. */
 export const ALPACA_CHEW = sprite(replaceRows(ALPACA_ROWS, 11, ["kssccccccccccck.............", "kknscccccccccck.............", ".kssscccccccck.............."].map((r) => r.padEnd(28, "."))));
 
+/**
+ * Sitting down the way alpacas rest (lying with the legs tucked under): the
+ * same alpaca six pixels lower, the legs folded away under its body.
+ */
+function kush(rows: string[]): string[] {
+  return [...Array.from({ length: 6 }, () => ".".repeat(28)), ...rows.slice(0, 32), "...kCCCkkkkkkkkkkkkkkkkCCCk.", "...kkkkk..............kkkkk."];
+}
+export const ALPACA_SIT = sprite(kush(ALPACA_ROWS));
+export const ALPACA_SIT_BLINK = sprite(kush(ALPACA_BLINK.rows));
+
 // ---------------------------------------------------------------------------
 // Drawing helpers
 // ---------------------------------------------------------------------------
@@ -337,6 +348,14 @@ const SIT_ROWS = [
 export const MARA_SIT = sprite(SIT_ROWS);
 /** Sitting, mouth a little open. */
 export const MARA_SIT_OPEN = sprite(patch(SIT_ROWS, [[8, 20, "o"], [8, 21, "o"], [9, 19, "o"], [9, 20, "o"]]));
+
+/** Sitting, content: the eye a happy "^", a little pink in the cheek. */
+export const MARA_SIT_HAPPY = sprite(
+  patch(SIT_ROWS, [[6, 15, "b"], [6, 16, "k"], [7, 15, "k"], [7, 16, "b"], [7, 17, "k"], [8, 16, "p"]]),
+);
+
+/** A little heart, for two friends sitting together. */
+export const HEART = sprite([".kk.kk.", "khrkrrk", "krrrrrk", ".krrrk.", "..krk..", "...k..."]);
 
 /** A wide, round, startled eye (4 × 4, top-left corner at row `y`, column `x`). */
 function startledEye(y: number, x: number): [number, number, string][] {

@@ -25,10 +25,10 @@ import type { Ghost } from "./useBlockGestures";
 export interface QuickActions {
   /** Answer a friend's event ("I'm in" / "Can't make it"; the same answer again clears it). */
   rsvp: (item: CalendarItem, status: RsvpStatus) => void;
-  /** Open a block with its message box ready to type in. */
-  message: (item: CalendarItem) => void;
-  /** Friends' free time: one friend opens straight away, several show the list. */
-  messageCluster: (cluster: FriendFreeCluster) => void;
+  /** Open a little chat box under the block (`anchor`), ready to type in. */
+  message: (item: CalendarItem, anchor: HTMLElement) => void;
+  /** Friends' free time: one friend's chat box opens straight away, several show the list. */
+  messageCluster: (cluster: FriendFreeCluster, anchor: HTMLElement) => void;
 }
 
 /** Provided by the calendar screen; the beams below use it for their hover buttons. */
@@ -38,16 +38,23 @@ export const QuickActionsContext = createContext<QuickActions | null>(null);
  * A little row of buttons that drops down while the pointer is over a block
  * (or a keyboard user tabs into it). Hidden on touch screens, where a tap
  * opens the block as usual; see .hover-actions in globals.css.
+ *
+ * Under a block, an invisible strip (the "bridge") as wide as the block and
+ * as tall as the buttons keeps them open while the pointer travels down and
+ * across to them, so a slanting path does not lose them on the way.
  */
-function HoverActions({ place, children }: { place: string; children: ReactNode }) {
+function HoverActions({ place, bridge = true, children }: { place: string; bridge?: boolean; children: ReactNode }) {
   return (
-    <span
-      className={`hover-actions absolute z-[1] gap-1 border-2 border-black bg-panel p-[3px] ${place}`}
-      // Keys pressed here are for these buttons, not for the block underneath.
-      onKeyDown={(event) => event.stopPropagation()}
-    >
-      {children}
-    </span>
+    <>
+      {bridge && <span className="hover-bridge" data-gesture="bridge" aria-hidden="true" />}
+      <span
+        className={`hover-actions absolute z-[1] gap-1 border-2 border-black bg-panel p-[3px] ${place}`}
+        // Keys pressed here are for these buttons, not for the block underneath.
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        {children}
+      </span>
+    </>
   );
 }
 
@@ -62,12 +69,12 @@ function ActionButton({
   label: string;
   active?: boolean;
   activeClass?: string;
-  onClick: () => void;
+  onClick: (button: HTMLElement) => void;
 }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={(event) => onClick(event.currentTarget)}
       aria-label={label}
       title={label}
       aria-pressed={icon === "chat" ? undefined : active}
@@ -76,6 +83,11 @@ function ActionButton({
       <PixelIcon name={icon} size={12} />
     </button>
   );
+}
+
+/** The block a hover button belongs to (the chat box opens under it). */
+function blockOf(button: HTMLElement): HTMLElement {
+  return button.closest<HTMLElement>(".has-hover-actions") ?? button;
 }
 
 /** Where the drop-down sits: under the block (aligned to whichever end keeps it on screen), or inside a tall one. */
@@ -199,8 +211,8 @@ export function MyBeam({
       } ${item.block.type === "join" ? "z-[3]" : "z-[2]"}`}
     >
       {actions && (
-        <HoverActions place={actionsPlace(item, vertical)}>
-          <ActionButton icon="chat" label="Open the chat" onClick={() => actions.message(item)} />
+        <HoverActions place={actionsPlace(item, vertical)} bridge={!vertical}>
+          <ActionButton icon="chat" label="Chat" onClick={(button) => actions.message(item, blockOf(button))} />
         </HoverActions>
       )}
       {/* An end that carries on out of view has no handle to grab, just an arrow. */}
@@ -258,14 +270,14 @@ export function FriendEventBeam({
         {item.block.title && <span className="truncate text-[16px] leading-none text-ink">{item.block.title}</span>}
       </button>
       {actions && (
-        <HoverActions place={actionsPlace(item, vertical)}>
+        <HoverActions place={actionsPlace(item, vertical)} bridge={!vertical}>
           {item.block.rsvp_enabled && (
             <>
               <ActionButton icon="check" label="I'm in" active={myAnswer === "in"} onClick={() => actions.rsvp(item, "in")} />
               <ActionButton icon="x" label="Can't make it" active={myAnswer === "out"} activeClass="tile-stone" onClick={() => actions.rsvp(item, "out")} />
             </>
           )}
-          <ActionButton icon="chat" label="Write a message" onClick={() => actions.message(item)} />
+          <ActionButton icon="chat" label="Chat" onClick={(button) => actions.message(item, blockOf(button))} />
         </HoverActions>
       )}
     </div>
@@ -304,8 +316,8 @@ export function FriendStack({
         <HoverActions place="left-1/2 top-full -translate-x-1/2 mt-[3px]">
           <ActionButton
             icon="chat"
-            label={names.length === 1 ? `Write to ${names[0]} about this` : "Write a message"}
-            onClick={() => actions.messageCluster(cluster)}
+            label={names.length === 1 ? `Chat with ${names[0]} about this` : "Chat"}
+            onClick={(button) => actions.messageCluster(cluster, blockOf(button))}
           />
         </HoverActions>
       )}
