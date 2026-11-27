@@ -337,3 +337,41 @@ const SIT_ROWS = [
 export const MARA_SIT = sprite(SIT_ROWS);
 /** Sitting, mouth a little open. */
 export const MARA_SIT_OPEN = sprite(patch(SIT_ROWS, [[8, 20, "o"], [8, 21, "o"], [9, 19, "o"], [9, 20, "o"]]));
+
+/** A wide, round, startled eye (4 × 4, top-left corner at row `y`, column `x`). */
+function startledEye(y: number, x: number): [number, number, string][] {
+  return [
+    [y, x + 1, "k"], [y, x + 2, "k"],
+    [y + 1, x, "k"], [y + 1, x + 1, "h"], [y + 1, x + 2, "h"], [y + 1, x + 3, "k"],
+    [y + 2, x, "k"], [y + 2, x + 1, "h"], [y + 2, x + 2, "e"], [y + 2, x + 3, "k"],
+    [y + 3, x + 1, "k"], [y + 3, x + 2, "k"],
+  ];
+}
+
+/** Sitting, startled: eye wide open, a little "o" of a mouth. */
+export const MARA_SIT_SURPRISED = sprite(patch(SIT_ROWS, [...startledEye(5, 14), [9, 19, "o"], [9, 20, "o"]]));
+/** Running away, still startled: the two walking steps with the wide eye. */
+export const MARA_RUN_A = sprite(patch(MARA_WALK_A.rows, startledEye(5, 17)));
+export const MARA_RUN_B = sprite(patch(MARA_WALK_B.rows, startledEye(5, 17)));
+
+/**
+ * A pixel symbol, white with a black outline all round (worked out from its
+ * shape): the mara's "!" in the scene and its "?" when it peeks over a block.
+ */
+function outlined(glyph: string[]): Sprite {
+  const at = (x: number, y: number) => glyph[y - 1]?.[x - 1] === "w";
+  const rows: string[] = [];
+  for (let y = 0; y < glyph.length + 2; y++) {
+    let row = "";
+    for (let x = 0; x < glyph[0].length + 2; x++) {
+      let near = false;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) near ||= at(x + dx, y + dy);
+      row += at(x, y) ? "w" : near ? "k" : ".";
+    }
+    rows.push(row);
+  }
+  return sprite(rows);
+}
+
+export const EXCLAMATION = outlined(["w", "w", "w", "w", ".", "w"]);
+export const QUESTION = outlined([".www.", "w...w", "....w", "...w.", "..w..", ".....", "..w.."]);

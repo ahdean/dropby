@@ -1,4 +1,5 @@
-import { isDoorIcon, splitIcons } from "@/lib/event-icon";
+import { maraIconUrl } from "@/components/mara/icon-set";
+import { isDoorIcon, maraIconId, splitIcons } from "@/lib/event-icon";
 import { PixelIcon } from "./PixelIcon";
 
 /**
@@ -21,15 +22,20 @@ export function EventIcon({
   if (icons.length === 0) return null;
   return (
     <span className={`inline-flex shrink-0 items-center gap-[2px] leading-none ${className}`}>
-      {icons.map((icon, index) =>
-        isDoorIcon(icon) ? (
+      {icons.map((icon, index) => {
+        const mara = maraIconId(icon);
+        const maraUrl = mara ? maraIconUrl(mara) : null;
+        return isDoorIcon(icon) ? (
           <PixelIcon key={index} name="doorOpen" size={Math.round(size * 0.9)} className="shrink-0 text-join" />
+        ) : maraUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a tiny pixel picture drawn in the browser
+          <img key={index} src={maraUrl} alt="" width={size} height={size} className="pixelated shrink-0" draggable={false} />
         ) : (
           <span key={index} className="shrink-0 leading-none" style={{ fontSize: size }}>
             {icon}
           </span>
-        ),
-      )}
+        );
+      })}
     </span>
   );
 }

@@ -60,6 +60,12 @@ describe("the Mara design's pixel art", () => {
     expect(differingRows(art.MARA_SIT, art.MARA_SIT_OPEN)).toEqual([8, 9]);
     // Smaller than the alpaca, as a real mara is.
     expect(art.MARA_SIT.height).toBeLessThan(art.ALPACA.height / 1.5);
+    // Startled (after the "wheet"): only the eye and mouth change, sitting and running.
+    expect(differingRows(art.MARA_SIT, art.MARA_SIT_SURPRISED).every((row) => row >= 5 && row <= 9)).toBe(true);
+    expect([art.MARA_RUN_A.height, art.MARA_RUN_B.height]).toEqual([art.MARA_WALK_A.height, art.MARA_WALK_B.height]);
+    expect(differingRows(art.MARA_WALK_A, art.MARA_RUN_A).every((row) => row >= 5 && row <= 8)).toBe(true);
+    // The "!" and "?" are white with a black outline.
+    for (const symbol of [art.EXCLAMATION, art.QUESTION]) expect(symbol.rows.join("")).toMatch(/^[.kw]+$/);
   });
 
   it("is drawn as runs of pixels that cover exactly the coloured ones", () => {

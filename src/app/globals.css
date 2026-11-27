@@ -293,17 +293,20 @@
   display: none !important;
 }
 
-/* The mara scene (src/components/mara/MaraScene.tsx). One 12-second loop:
-     0–0.5s    the mara stands at the left
-     0.5–4s    it walks over to the alpaca
-     4–7.7s    it sits; at 4.6s it opens its mouth and "wheet!" pops up
-     7.7–8s    it gets up and turns round
-     8–11.4s   it walks back
-     11.4–12s  it turns to face the alpaca again
+/* The mara scene (src/components/mara/MaraScene.tsx). One 14-second loop
+   (the percentages below are of 14s: 1s = 7.143%):
+     0–0.5s     the mara stands at the left
+     0.5–4s     it walks over to the alpaca
+     4s         it sits; at 4.6s it opens its mouth and "wheet!" pops up
+     6.4s       it gets a fright: wide eye, "!"
+     7–7.6s     the alpaca shuffles up close
+     7.9–9.5s   the startled mara turns and scurries back, fast
+     11–11.6s   the alpaca shuffles back to its spot
+     12.8s      the mara turns to face the alpaca again
    The alpaca blinks now and then and chews while the mara is talking. */
 /* (:where keeps this general rule weaker than the specific ones below, such as the quick leg swap.) */
 .mara-scene :where(g[class^="ms-"], g[class*=" ms-"]) {
-  animation-duration: 12s;
+  animation-duration: 14s;
   animation-iteration-count: infinite;
   animation-timing-function: steps(1, end);
 }
@@ -315,12 +318,20 @@
 }
 .mara-scene .ms-stand { animation-name: ms-stand; }
 .mara-scene .ms-walk { opacity: 0; animation-name: ms-walk; }
+.mara-scene .ms-run { opacity: 0; animation-name: ms-run; }
 .mara-scene .ms-sit { opacity: 0; animation-name: ms-sit; }
 .mara-scene .ms-mouth-open { opacity: 0; animation-name: ms-mouth-open; }
 .mara-scene .ms-mouth-shut { animation-name: ms-mouth-shut; }
-/* the legs: two steps, swapped quickly the whole time (only seen while walking) */
+.mara-scene .ms-surprised { opacity: 0; animation-name: ms-surprised; }
+.mara-scene .ms-alarm { opacity: 0; animation-name: ms-alarm; }
+/* the legs: two steps, swapped quickly the whole time (only seen while walking);
+   twice as fast, with a little hop, when running */
 .mara-scene .ms-step-a { animation-name: ms-step-a; animation-duration: 0.36s; }
 .mara-scene .ms-step-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.36s; }
+.mara-scene .ms-run-a { animation-name: ms-step-a; animation-duration: 0.18s; }
+.mara-scene .ms-run-b { opacity: 0; animation-name: ms-step-b; animation-duration: 0.18s; }
+.mara-scene .ms-hop { animation-name: ms-hop; animation-duration: 0.36s; }
+.mara-scene .ms-alpaca-move { animation-name: ms-alpaca-move; }
 .mara-scene .ms-alpaca { animation-name: ms-alpaca; }
 .mara-scene .ms-alpaca-blink { opacity: 0; animation-name: ms-alpaca-blink; }
 .mara-scene .ms-alpaca-chew { opacity: 0; animation-name: ms-alpaca-chew; }
@@ -339,29 +350,44 @@
 }
 
 @keyframes ms-move {
-  0%, 4.2% { transform: translateX(0); }
-  33.3%, 66.7% { transform: translateX(var(--walk, 52px)); }
-  95%, 100% { transform: translateX(0); }
+  0%, 3.571% { transform: translateX(0); }
+  28.571%, 56.429% { transform: translateX(var(--walk, 52px)); }
+  67.857%, 100% { transform: translateX(0); }
 }
-@keyframes ms-facing { 0% { transform: scaleX(1); } 64.2% { transform: scaleX(-1); } 95% { transform: scaleX(1); } }
-@keyframes ms-stand { 0% { opacity: 1; } 4.2% { opacity: 0; } 64.2% { opacity: 1; } 66.7% { opacity: 0; } 95% { opacity: 1; } }
-@keyframes ms-walk { 0% { opacity: 0; } 4.2% { opacity: 1; } 33.3% { opacity: 0; } 66.7% { opacity: 1; } 95% { opacity: 0; } }
-@keyframes ms-sit { 0% { opacity: 0; } 33.3% { opacity: 1; } 64.2% { opacity: 0; } }
-@keyframes ms-mouth-open { 0% { opacity: 0; } 38.3% { opacity: 1; } 52% { opacity: 0; } }
-@keyframes ms-mouth-shut { 0% { opacity: 1; } 38.3% { opacity: 0; } 52% { opacity: 1; } }
+@keyframes ms-facing { 0% { transform: scaleX(1); } 56.429% { transform: scaleX(-1); } 91.429% { transform: scaleX(1); } }
+@keyframes ms-stand { 0% { opacity: 1; } 3.571% { opacity: 0; } 67.857% { opacity: 1; } }
+@keyframes ms-walk { 0% { opacity: 0; } 3.571% { opacity: 1; } 28.571% { opacity: 0; } }
+@keyframes ms-run { 0% { opacity: 0; } 56.429% { opacity: 1; } 67.857% { opacity: 0; } }
+@keyframes ms-sit { 0% { opacity: 0; } 28.571% { opacity: 1; } 56.429% { opacity: 0; } }
+@keyframes ms-mouth-open { 0% { opacity: 0; } 32.857% { opacity: 1; } 44.286% { opacity: 0; } }
+@keyframes ms-mouth-shut { 0% { opacity: 1; } 32.857% { opacity: 0; } 44.286% { opacity: 1; } 45.714% { opacity: 0; } }
+@keyframes ms-surprised { 0% { opacity: 0; } 45.714% { opacity: 1; } 56.429% { opacity: 0; } }
+@keyframes ms-alarm {
+  0% { opacity: 0; transform: translateY(0); }
+  45.714% { opacity: 1; transform: translateY(-2px); }
+  46.786% { opacity: 1; transform: translateY(0); }
+  64.286% { opacity: 0; }
+}
 @keyframes ms-step-a { 0% { opacity: 1; } 50% { opacity: 0; } }
 @keyframes ms-step-b { 0% { opacity: 0; } 50% { opacity: 1; } }
-@keyframes ms-alpaca {
-  0% { opacity: 1; } 12% { opacity: 0; } 13.5% { opacity: 1; } 42% { opacity: 0; } 43.5% { opacity: 1; }
-  45% { opacity: 0; } 46.5% { opacity: 1; } 75% { opacity: 0; } 76.5% { opacity: 1; }
+@keyframes ms-hop { 0% { transform: translateY(0); } 50% { transform: translateY(-1px); } }
+/* three little shuffles of 2px each way */
+@keyframes ms-alpaca-move {
+  0%, 50% { transform: translateX(0); animation-timing-function: steps(3, end); }
+  54.286%, 78.571% { transform: translateX(-6px); animation-timing-function: steps(3, end); }
+  82.857%, 100% { transform: translateX(0); }
 }
-@keyframes ms-alpaca-blink { 0% { opacity: 0; } 12% { opacity: 1; } 13.5% { opacity: 0; } 75% { opacity: 1; } 76.5% { opacity: 0; } }
-@keyframes ms-alpaca-chew { 0% { opacity: 0; } 42% { opacity: 1; } 43.5% { opacity: 0; } 45% { opacity: 1; } 46.5% { opacity: 0; } }
+@keyframes ms-alpaca {
+  0% { opacity: 1; } 10.714% { opacity: 0; } 11.786% { opacity: 1; } 35.714% { opacity: 0; } 36.786% { opacity: 1; }
+  37.857% { opacity: 0; } 38.929% { opacity: 1; } 85.714% { opacity: 0; } 86.786% { opacity: 1; }
+}
+@keyframes ms-alpaca-blink { 0% { opacity: 0; } 10.714% { opacity: 1; } 11.786% { opacity: 0; } 85.714% { opacity: 1; } 86.786% { opacity: 0; } }
+@keyframes ms-alpaca-chew { 0% { opacity: 0; } 35.714% { opacity: 1; } 36.786% { opacity: 0; } 37.857% { opacity: 1; } 38.929% { opacity: 0; } }
 @keyframes ms-bubble {
   0% { opacity: 0; transform: scale(0.5); }
-  40% { opacity: 1; transform: scale(0.75); }
-  41% { opacity: 1; transform: scale(1); }
-  60% { opacity: 0; transform: scale(1); }
+  34.286% { opacity: 1; transform: scale(0.75); }
+  35% { opacity: 1; transform: scale(1); }
+  45.714% { opacity: 0; transform: scale(1); }
 }
 @keyframes ms-sway { 0% { transform: translateX(0); } 50% { transform: translateX(1px); } }
 
@@ -373,7 +399,10 @@
   .mara-scene .ms-move { transform: translateX(var(--walk, 52px)); }
   .mara-scene .ms-stand,
   .mara-scene .ms-walk,
+  .mara-scene .ms-run,
   .mara-scene .ms-mouth-shut,
+  .mara-scene .ms-surprised,
+  .mara-scene .ms-alarm,
   .mara-scene .ms-alpaca-blink,
   .mara-scene .ms-alpaca-chew {
     opacity: 0;
@@ -384,6 +413,41 @@
   .mara-scene .ms-bubble {
     opacity: 1;
   }
+}
+
+/* The curious mara that now and then peeks over a block on the calendar
+   (src/components/mara/MaraPeek.tsx). One 4.2-second peek: it pops up
+   (0–0.4s), looks one way, tilts its head the other way (1.9s), wonders "?"
+   (1.2–3.3s), and ducks back down (3.5–3.9s). Nothing shows with "reduce
+   motion" switched on (the component does not start it). */
+.mara-peek-rise {
+  transform: translateY(17px);
+  animation: mara-peek-rise 4.2s both;
+}
+.mara-peek-look {
+  transform-origin: 50% 50%;
+  animation: mara-peek-look 4.2s steps(1, end) both;
+}
+.mara-peek-question {
+  opacity: 0;
+  animation: mara-peek-wonder 4.2s steps(1, end) both;
+}
+@keyframes mara-peek-rise {
+  0% { transform: translateY(17px); animation-timing-function: steps(4, end); }
+  10%, 83% { transform: translateY(0); animation-timing-function: steps(4, end); }
+  /* a quick duck and back up in the middle, as if something moved */
+  55% { transform: translateY(0); animation-timing-function: steps(1, end); }
+  57% { transform: translateY(3px); animation-timing-function: steps(1, end); }
+  62% { transform: translateY(0); animation-timing-function: steps(1, end); }
+  93%, 100% { transform: translateY(17px); }
+}
+@keyframes mara-peek-look { 0% { transform: scaleX(1); } 45% { transform: scaleX(-1); } 70% { transform: scaleX(1); } }
+@keyframes mara-peek-wonder {
+  0% { opacity: 0; transform: translateY(0); }
+  28% { opacity: 1; transform: translateY(0); }
+  36% { opacity: 1; transform: translateY(-1px); }
+  44% { opacity: 1; transform: translateY(0); }
+  79% { opacity: 0; }
 }
 
 /* Sizes that differ between phones and wider screens. */

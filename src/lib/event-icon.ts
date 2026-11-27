@@ -5,16 +5,39 @@
  * default is wheet's own green open door, which is not an emoji: it is stored
  * as the marker below and drawn as a pixel icon wherever the app shows it.
  * In plain text (a text message, a browser tab title) the door emoji stands in.
+ *
+ * The pixel maras (twenty little pictures, components/mara/icon-set.ts) work
+ * the same way: stored as short codes, ":m1:" to ":m20:", drawn as pictures,
+ * and written as 🐾 in plain text. Short codes keep several icons within the
+ * 16-character limit of the database field.
  */
 export const DOOR_ICON = ":door:";
+
+/** A picture icon's code: a word between colons. */
+const PICTURE_CODE = /(:[a-z0-9]+:)/;
 
 export function isDoorIcon(value: string | null | undefined): boolean {
   return (value ?? "").trim() === DOOR_ICON;
 }
 
-/** The icon(s) as plain text, for places that cannot draw the pixel door. */
+/** The code for mara icon number `n` (1–20). */
+export function maraIconCode(n: number): string {
+  return `:m${n}:`;
+}
+
+/** "m12" for ":m12:", or null if this is not a mara icon. */
+export function maraIconId(icon: string | null | undefined): string | null {
+  const match = /^:(m\d{1,2}):$/.exec((icon ?? "").trim());
+  return match ? match[1] : null;
+}
+
+/** The icon(s) as plain text, for places that cannot draw pictures. */
 export function iconAsText(value: string | null | undefined): string {
-  return (value ?? "").trim().split(DOOR_ICON).join("🚪");
+  return (value ?? "")
+    .trim()
+    .split(DOOR_ICON)
+    .join("🚪")
+    .replace(/:m\d{1,2}:/g, "🐾");
 }
 
 // ---------------------------------------------------------------------------
@@ -50,9 +73,10 @@ export function splitIcons(value: string | null | undefined): string[] {
   const text = (value ?? "").trim();
   if (text === "") return [];
   const icons: string[] = [];
-  text.split(DOOR_ICON).forEach((part, index) => {
-    if (index > 0) icons.push(DOOR_ICON);
-    icons.push(...visibleCharacters(part).filter((character) => character.trim() !== ""));
+  // Splitting on a pattern with a group keeps the codes: every odd part is one.
+  text.split(PICTURE_CODE).forEach((part, index) => {
+    if (index % 2 === 1) icons.push(part);
+    else icons.push(...visibleCharacters(part).filter((character) => character.trim() !== ""));
   });
   return icons;
 }

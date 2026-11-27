@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { FAVORITE_ICONS, ICON_GROUPS, MAX_ICONS, iconAsText, joinIcons, splitIcons, toggleIcon } from "@/lib/event-icon";
+import { MARA_ICONS } from "@/components/mara/icon-set";
+import { FAVORITE_ICONS, ICON_GROUPS, MAX_ICONS, iconAsText, joinIcons, maraIconCode, maraIconId, splitIcons, toggleIcon } from "@/lib/event-icon";
 import { EventIcon } from "./EventIcon";
 import { PixelIcon } from "./PixelIcon";
 
@@ -11,9 +12,17 @@ import { PixelIcon } from "./PixelIcon";
  * Tap an icon to add it; tap it again to take it off. The first one is the
  * main icon: it suggests the title and is the one shown where space is tight.
  * There is a short row of favourites (starting with wheet's own green door),
- * a longer list that can be expanded, and a box for typing any other emoji.
- * The lists live in lib/event-icon.ts.
+ * a longer list that can be expanded (with wheet's twenty pixel maras at the
+ * top), and a box for typing any other emoji. The lists live in
+ * lib/event-icon.ts; the maras in components/mara/icon-set.ts.
  */
+/** What an icon is called for screen readers: the mara's name, or the emoji itself. */
+function iconName(icon: string): string {
+  const id = maraIconId(icon);
+  const mara = id ? MARA_ICONS.find((m) => m.id === id) : undefined;
+  return mara ? `mara: ${mara.name}` : iconAsText(icon);
+}
+
 export function EmojiPicker({
   value,
   onChange,
@@ -64,7 +73,7 @@ export function EmojiPicker({
             key={`${icon}-${index}`}
             type="button"
             onClick={() => toggle(icon)}
-            aria-label={`Remove ${iconAsText(icon)}${index === 0 ? " (main icon)" : ""}`}
+            aria-label={`Remove ${iconName(icon)}${index === 0 ? " (main icon)" : ""}`}
             title="Tap to remove"
             className={`tile relative flex shrink-0 items-center justify-center ${index === 0 ? "h-[52px] w-[52px]" : "h-10 w-10"}`}
           >
@@ -78,7 +87,9 @@ export function EmojiPicker({
         ))}
         <span className="text-[17px] text-ink-faint" role="status">
           {full
-            ? `That's the most that fit (${MAX_ICONS}). Remove one to add another.`
+            ? selected.length >= MAX_ICONS
+              ? `That's the most that fit (${MAX_ICONS}). Remove one to add another.`
+              : "No room for another one. Remove one to add another."
             : selected.length > 1
               ? "The first is the main icon."
               : "Tap more icons below to add them."}
@@ -120,6 +131,12 @@ export function EmojiPicker({
 
       {expanded && (
         <div className="slot max-h-60 overflow-y-auto p-2">
+          <div className="mb-2">
+            <div className="label !mb-1">Maras</div>
+            <div className="grid grid-cols-8 gap-1 sm:grid-cols-10">
+              {MARA_ICONS.map((mara, index) => choice(maraIconCode(index + 1), `Mara: ${mara.name}`, mara.id))}
+            </div>
+          </div>
           {ICON_GROUPS.map((group) => (
             <div key={group.label} className="mb-2">
               <div className="label !mb-1">{group.label}</div>

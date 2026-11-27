@@ -9,6 +9,7 @@ import type { Profile } from "@/lib/types";
 import { FriendEventBeam, FriendStack, GhostBeam, MyBeam, OffscreenTab } from "./Beams";
 import { GRID, clampToBounds, fractionOf, laneCenter, minutesAt, percent, rowHeight } from "./geometry";
 import { useBlockGestures, type DayRange, type Ghost } from "./useBlockGestures";
+import { MaraPeek } from "@/components/mara/MaraPeek";
 
 const WEEKDAY_LETTER = ["", "M", "T", "W", "T", "F", "S", "S"];
 const HOURS = Array.from({ length: VISIBLE_HOURS }, (_, i) => DAY_START_HOUR + i);
@@ -455,6 +456,9 @@ export function WeekGrid({
         <div ref={bottomSentinel} className="flex h-12 items-center justify-center px-3 text-center text-[17px] text-ink-faint">
           {canLoadLater ? "Loading more weeks…" : "That's as far ahead as wheet goes for now (about two years)."}
         </div>
+
+        {/* now and then, a curious mara peeks over one of the blocks */}
+        <MaraPeek scroller={scroller} headerHeight={GRID.header} />
       </div>
     </div>
   );

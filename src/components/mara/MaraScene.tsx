@@ -6,12 +6,16 @@ import {
   ALPACA,
   ALPACA_BLINK,
   ALPACA_CHEW,
+  EXCLAMATION,
   FLOWER,
   GRASS_PALETTE,
   GRASS_TILE,
   GRASS_TUFT,
+  MARA_RUN_A,
+  MARA_RUN_B,
   MARA_SIT,
   MARA_SIT_OPEN,
+  MARA_SIT_SURPRISED,
   MARA_WALK_A,
   MARA_WALK_B,
   spriteRuns,
@@ -27,6 +31,9 @@ const WALK_DISTANCE = 52; // used by @keyframes ms-move in globals.css, through 
 const GROUND = 70; // feet of both animals
 const ALPACA_X = 82;
 const ALPACA_Y = GROUND - 40;
+/** The mara's "!", above its head (it is mirrored with the mara when it turns to run). */
+const ALARM_X = 18;
+const ALARM_Y = GROUND - MARA_SIT.height - EXCLAMATION.height - 2;
 
 const FLOWERS: [number, number][] = [
   [4, 12],
@@ -86,7 +93,9 @@ function Bubble() {
 /**
  * A little pixel scene for the Mara design: a small mara walks across the
  * grass to an alpaca, sits down next to it, opens its mouth and says
- * "wheet!", then turns round, walks back, and does it all again. The alpaca
+ * "wheet!". Then it gets a fright ("!"), the alpaca shuffles up close, and
+ * the startled mara turns and scurries back to the other side. The alpaca
+ * shuffles back, the mara turns round, and it all starts again. The alpaca
  * blinks and chews; the grass sways. Tapping it starts it from the top.
  * With "reduce motion" switched on it is a still picture, mid-"wheet".
  * The timing is in globals.css (search for "ms-").
@@ -100,7 +109,7 @@ export function MaraScene({ className = "" }: { className?: string }) {
       type="button"
       onClick={() => setTake((n) => n + 1)}
       className={`mara-scene block w-full overflow-hidden border-2 border-[var(--outline)] ${className}`}
-      aria-label="A pixel mara sitting in the grass next to an alpaca says “wheet!”. Tap to play it again."
+      aria-label="A pixel mara walks over to an alpaca, sits down and says “wheet!”, then gets a fright and scurries back. Tap to play it again."
     >
       <svg key={take} viewBox={`0 0 ${W} ${H}`} className="block h-auto w-full" shapeRendering="crispEdges" aria-hidden="true">
         <defs>
@@ -116,16 +125,17 @@ export function MaraScene({ className = "" }: { className?: string }) {
           <SpriteGroup key={`${x},${y}`} art={FLOWER} x={x} y={y} palette={GRASS_PALETTE} />
         ))}
 
-        {/* the alpaca's shadow on the grass */}
-        <rect x={ALPACA_X + 4} y={GROUND - 1} width={22} height={2} fill="#5a8e33" />
+        {/* the alpaca (with its shadow on the grass): still, blinking or chewing;
+            it shuffles up to the mara after the "wheet" and back again later */}
+        <g className="ms-alpaca-move">
+          <rect x={ALPACA_X + 4} y={GROUND - 1} width={22} height={2} fill="#5a8e33" />
+          <SpriteGroup art={ALPACA} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca" />
+          <SpriteGroup art={ALPACA_BLINK} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-blink" />
+          <SpriteGroup art={ALPACA_CHEW} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-chew" />
+        </g>
 
-        {/* the alpaca: still, blinking, chewing */}
-        <SpriteGroup art={ALPACA} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca" />
-        <SpriteGroup art={ALPACA_BLINK} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-blink" />
-        <SpriteGroup art={ALPACA_CHEW} x={ALPACA_X} y={ALPACA_Y} className="ms-alpaca-chew" />
-
-        {/* the mara: walks over (moving group), turns round to walk back (facing
-            group), and is either walking, standing or sitting (one of each shown) */}
+        {/* the mara: walks over and runs back (moving group), turns round to run
+            (facing group), and is standing, walking, sitting or running (one shown) */}
         <g transform={`translate(${MARA_X} 0)`}>
           <g className="ms-move" style={{ ["--walk" as string]: `${WALK_DISTANCE}px` }}>
             <g className="ms-facing">
@@ -139,7 +149,15 @@ export function MaraScene({ className = "" }: { className?: string }) {
               <g className="ms-sit">
                 <SpriteGroup art={MARA_SIT} y={GROUND - MARA_SIT.height} className="ms-mouth-shut" />
                 <SpriteGroup art={MARA_SIT_OPEN} y={GROUND - MARA_SIT_OPEN.height} className="ms-mouth-open" />
+                <SpriteGroup art={MARA_SIT_SURPRISED} y={GROUND - MARA_SIT_SURPRISED.height} className="ms-surprised" />
               </g>
+              <g className="ms-run">
+                <g className="ms-hop">
+                  <SpriteGroup art={MARA_RUN_A} y={GROUND - MARA_RUN_A.height} className="ms-run-a" />
+                  <SpriteGroup art={MARA_RUN_B} y={GROUND - MARA_RUN_B.height} className="ms-run-b" />
+                </g>
+              </g>
+              <SpriteGroup art={EXCLAMATION} x={ALARM_X} y={ALARM_Y} className="ms-alarm" />
             </g>
           </g>
         </g>

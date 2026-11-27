@@ -14,9 +14,12 @@ import {
   isAutomaticTitle,
   isDoorIcon,
   joinIcons,
+  maraIconCode,
+  maraIconId,
   splitIcons,
   toggleIcon,
 } from "@/lib/event-icon";
+import { MARA_ICONS, maraIconUrl } from "@/components/mara/icon-set";
 import { formatUsPhone, formatUsPhoneInput, normalizeUsPhone } from "@/lib/phone";
 import { rankPlaces } from "@/lib/places";
 import { describeWhen, inviteMessage, inviteUrl, smsHref } from "@/lib/share";
@@ -125,6 +128,25 @@ describe("invite text", () => {
     const family = "👨‍👩‍👧‍👦";
     expect(iconsFit([family, family])).toBe(true);
     expect(iconsFit([family, family, family])).toBe(false);
+  });
+
+  it("stores the pixel maras as short codes, drawn as pictures and written as 🐾", () => {
+    expect(MARA_ICONS).toHaveLength(20);
+    expect(maraIconCode(1)).toBe(":m1:");
+    expect(maraIconId(":m12:")).toBe("m12");
+    expect(maraIconId("🍕")).toBeNull();
+    expect(maraIconId(DOOR_ICON)).toBeNull();
+    expect(splitIcons(`:m1:🍕${DOOR_ICON}:m20:`)).toEqual([":m1:", "🍕", DOOR_ICON, ":m20:"]);
+    expect(iconAsText(`:m3:🍕:m15:`)).toBe("🐾🍕🐾");
+    expect(maraIconUrl("m1")?.startsWith("data:image/svg+xml")).toBe(true);
+    expect(maraIconUrl("m21")).toBeNull();
+    // Each mara is a different picture.
+    expect(new Set(MARA_ICONS.map((m) => maraIconUrl(m.id))).size).toBe(20);
+    // Three maras fit the database field; then there is no room for a fourth.
+    const three = [maraIconCode(18), maraIconCode(19), maraIconCode(20)];
+    expect(iconsFit(three)).toBe(true);
+    expect(toggleIcon(three, maraIconCode(1))).toEqual(three);
+    expect(iconsFit([...three, "🍕"])).toBe(true);
   });
 
   it("offers the door first among the favourite icons, and no icon twice", () => {
