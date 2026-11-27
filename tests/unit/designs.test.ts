@@ -4,13 +4,15 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import * as bulldog from "@/components/bulldog/sprites";
 import * as art from "@/components/mara/sprites";
+import * as vintage from "@/components/vintage/sprites";
 import { DEFAULT_THEME, THEMES, THEME_BOOT_SCRIPT, themeInfo } from "@/lib/themes";
 
 describe("designs", () => {
-  it("keep Retro night as the default, and offer Light and Mara", () => {
+  it("keep Retro night as the default, and offer Light, Mara, Bulldog and Vintage", () => {
     expect(DEFAULT_THEME).toBe("retro");
-    expect(THEMES.map((t) => t.id)).toEqual(["retro", "light", "mara"]);
+    expect(THEMES.map((t) => t.id)).toEqual(["retro", "light", "mara", "bulldog", "vintage"]);
     expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });
 
@@ -79,5 +81,45 @@ describe("the Mara design's pixel art", () => {
     const covered = runs.reduce((sum, run) => sum + run.w, 0);
     const coloured = art.MARA_FACE.rows.join("").replace(/\./g, "").length;
     expect(covered).toBe(coloured);
+  });
+});
+
+describe("the Bulldog and Vintage designs' pixel art", () => {
+  const sets = [
+    ["bulldog", bulldog, bulldog.BULLDOG_PALETTE],
+    ["vintage", vintage, vintage.VINTAGE_PALETTE],
+  ] as const;
+
+  it("only uses colours from their palettes", () => {
+    for (const [name, module, palette] of sets) {
+      for (const [key, value] of Object.entries(module)) {
+        if (typeof value !== "object" || value === null || !("rows" in value)) continue;
+        const scenePalette = key === "BRICK_TILE" ? bulldog.DEN_PALETTE : key === "FLOOR_TILE" ? bulldog.FLOOR_PALETTE : palette;
+        const unknown = [...new Set((value as art.Sprite).rows.join(""))].filter((ch) => ch !== "." && !(ch in scenePalette));
+        expect(unknown, `${name} ${key}`).toEqual([]);
+      }
+    }
+  });
+
+  it("has the bulldog's faces the same size, differing only where they should", () => {
+    const differingRows = (a: art.Sprite, b: art.Sprite) => a.rows.flatMap((row, i) => (row === b.rows[i] ? [] : [i]));
+    const face = bulldog.BULLDOG_FACE;
+    for (const frame of [bulldog.BULLDOG_FACE_BLINK, bulldog.BULLDOG_FACE_LOOK, bulldog.BULLDOG_FACE_WOOF, bulldog.BULLDOG_FACE_PANT]) {
+      expect([frame.width, frame.height]).toEqual([face.width, face.height]);
+    }
+    expect(differingRows(face, bulldog.BULLDOG_FACE_BLINK).every((r) => r >= 8 && r <= 11)).toBe(true); // the eyes
+    expect(differingRows(face, bulldog.BULLDOG_FACE_LOOK).every((r) => r >= 8 && r <= 11)).toBe(true);
+    expect(differingRows(face, bulldog.BULLDOG_FACE_WOOF).every((r) => r >= 16)).toBe(true); // the mouth
+    expect(bulldog.BULLDOG_BODY.width).toBe(face.width + 2);
+  });
+
+  it("swings the pendulum evenly to both sides", () => {
+    // Same shape either side (the light falls from the left, so the brass shading differs).
+    const shape = (rows: string[]) => rows.map((row) => row.replace(/[gG]/g, "#"));
+    const mirrored = shape(vintage.PENDULUM_LEFT.rows).map((row) => [...row].reverse().join(""));
+    const right = shape(vintage.PENDULUM_RIGHT.rows);
+    const differing = mirrored.filter((row, i) => row !== right[i]).length;
+    expect(differing).toBeLessThanOrEqual(3); // a pixel or two where the slanted rod steps
+    expect([vintage.CUCKOO.width, vintage.CUCKOO.height]).toEqual([vintage.CUCKOO_OPEN.width, vintage.CUCKOO_OPEN.height]);
   });
 });

@@ -35,12 +35,15 @@ export function PixelArt({
   size,
   title,
   className = "",
+  palette,
 }: {
   art: Sprite;
   /** Width in CSS pixels; the height follows the sprite's shape. */
   size: number;
   title?: string;
   className?: string;
+  /** Colours for the letters (the mara palette if left out). */
+  palette?: Record<string, string>;
 }) {
   return (
     <svg
@@ -53,7 +56,7 @@ export function PixelArt({
       aria-label={title}
       aria-hidden={title ? undefined : true}
     >
-      <SpriteGroup art={art} />
+      <SpriteGroup art={art} palette={palette} />
     </svg>
   );
 }

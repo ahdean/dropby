@@ -2,7 +2,8 @@
 
 import { Dialog } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
-import { MaraScene } from "@/components/mara/MaraScene";
+import { DesignPicker } from "@/components/profile/DesignPicker";
+import { DesignScene } from "./DesignScene";
 
 /** A friend's free time, as the calendar draws it under your lane: a thin line with their face. */
 function FriendsSwatch() {
@@ -27,10 +28,8 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
   return (
     <Dialog open={open} onClose={onClose} title="How wheet works" footer={<Button variant="free" onClick={onClose}>Got it</Button>}>
       <div className="space-y-4">
-        {/* The Mara design greets you here. */}
-        <div className="only-mara">
-          <MaraScene />
-        </div>
+        {/* Designs with a little scene greet you with it here. */}
+        <DesignScene />
         <ul className="space-y-3">
           <li className="flex items-center gap-3">
             <Swatch kind="free" />
@@ -65,6 +64,12 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <li><span className="text-ink">Places:</span> save the places you use, and pin them from Google Maps so friends go straight there.</li>
           <li><span className="text-ink">Invite someone new:</span> use &quot;Save &amp; invite&quot; on a block. They get a link by text; signing up connects you.</li>
         </ul>
+        <div className="divider" />
+        <section aria-label="Design">
+          <div className="label">Design</div>
+          <p className="mb-2 text-[17px] text-ink-faint">How wheet looks on this device. It changes straight away.</p>
+          <DesignPicker compact />
+        </section>
       </div>
     </Dialog>
   );

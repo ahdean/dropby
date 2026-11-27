@@ -285,11 +285,171 @@
   opacity: 0.5;
 }
 
-/* Pieces that belong to one design only. */
-:root:not([data-theme="mara"]) .only-mara {
+/* -----------------------------------------------------------------------------
+   Design: Bulldog
+   -----------------------------------------------------------------------------
+   A bulldog's den: a brick wall behind everything, dark chocolate panels,
+   tan leather buttons, and the calendar in a red leather frame like its
+   collar. Bright beams, as in Retro night. The help button becomes a pixel
+   bulldog, and the help window has a bulldog with a ball (src/components/bulldog).
+   -------------------------------------------------------------------------- */
+:root[data-theme="bulldog"] {
+  color-scheme: dark;
+
+  --color-void: #3a1912;
+  --color-panel: #221410;
+  --color-panel-2: #2d1b15;
+  --color-panel-3: #3b261d;
+  --color-line: #5e3e2e;
+  --color-edge-hi: #7c5542;
+  --color-edge-lo: #000000;
+
+  --color-ink: #fbefdc;
+  --color-ink-dim: #e3cdb2;
+  --color-ink-faint: #bfa285;
+
+  /* tan leather buttons */
+  --color-stone: #b9774a;
+  --color-stone-hi: #e4ad7c;
+  --color-stone-lo: #6b3d22;
+  --color-stone-ink: #1d0f08;
+
+  --color-free: #5cbcff;
+  --color-free-hi: #e2f4ff;
+  --color-free-lo: #0c64ad;
+  --color-join: #4fe08a;
+  --color-join-hi: #e3ffec;
+  --color-join-lo: #0d7d3c;
+  --color-locked: #ffc93a;
+  --color-locked-hi: #fff5d1;
+  --color-locked-lo: #9b6c00;
+  --color-danger: #ff7f6e;
+
+  --outline: #0d0604;
+  --well: #150b08;
+  --well-edge: #000;
+  --plate: rgb(21 11 8 / 0.85);
+  --beam-base: #0d0604;
+  /* the calendar sits in a red leather collar */
+  --mesh: #a8321f;
+  --mesh-shade: rgb(0 0 0 / 0.45);
+  --mesh-hi: #e0603f;
+  --mesh-lo: #4e1309;
+  --grid-line: rgb(125 85 66 / 0.55);
+  --grid-line-faint: rgb(125 85 66 / 0.25);
+  --weekend: rgb(125 85 66 / 0.14);
+  --backdrop: rgb(10 4 2 / 0.72);
+  --backdrop-lines: rgb(0 0 0 / 0.35);
+  /* a brick wall: a 16 × 8 pixel tile, drawn at double size */
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8' shape-rendering='crispEdges'%3E%3Crect width='16' height='8' fill='%235a2219'/%3E%3Crect x='0' y='0' width='16' height='1' fill='%232a100b'/%3E%3Crect x='0' y='4' width='16' height='1' fill='%232a100b'/%3E%3Crect x='0' y='1' width='1' height='3' fill='%232a100b'/%3E%3Crect x='8' y='5' width='1' height='3' fill='%232a100b'/%3E%3Crect x='1' y='1' width='15' height='1' fill='%236e2c20'/%3E%3Crect x='0' y='5' width='8' height='1' fill='%236e2c20'/%3E%3Crect x='9' y='5' width='7' height='1' fill='%236e2c20'/%3E%3Crect x='1' y='3' width='15' height='1' fill='%234a1b14'/%3E%3Crect x='0' y='7' width='8' height='1' fill='%234a1b14'/%3E%3Crect x='9' y='7' width='7' height='1' fill='%234a1b14'/%3E%3Crect x='5' y='2' width='1' height='1' fill='%234a1b14'/%3E%3Crect x='12' y='6' width='1' height='1' fill='%234a1b14'/%3E%3Crect x='3' y='6' width='1' height='1' fill='%236e2c20'/%3E%3C/svg%3E");
+  --page-pattern-size: 32px 16px;
+}
+:root[data-theme="bulldog"] body {
+  background-color: #5a2219;
+  image-rendering: pixelated;
+}
+:root[data-theme="bulldog"] body * {
+  image-rendering: auto;
+}
+
+/* -----------------------------------------------------------------------------
+   Design: Vintage
+   -----------------------------------------------------------------------------
+   Old and classic: aged paper with a faded diamond wallpaper, ivory panels,
+   brass buttons, a walnut frame round the calendar, and inks in navy, forest
+   green, mustard and oxblood. The help window has a cuckoo clock whose bird
+   says wheet (src/components/vintage).
+   -------------------------------------------------------------------------- */
+:root[data-theme="vintage"] {
+  color-scheme: light;
+
+  --color-void: #dccaa2;
+  --color-panel: #f8f1dd;
+  --color-panel-2: #f0e5c9;
+  --color-panel-3: #e4d5b1;
+  --color-line: #b8a077;
+  --color-edge-hi: #fffbf0;
+  --color-edge-lo: #8a7350;
+  --color-black: #a8936b;
+
+  --color-ink: #2a2118;
+  --color-ink-dim: #4d3f2e;
+  --color-ink-faint: #67563f;
+
+  /* brass buttons */
+  --color-stone: #c9a45c;
+  --color-stone-hi: #efd89c;
+  --color-stone-lo: #7d6025;
+  --color-stone-ink: #231a0e;
+
+  --color-free: #234c80;
+  --color-free-hi: #dbe6f3;
+  --color-free-lo: #1a3a63;
+  --color-join: #2d5d2c;
+  --color-join-hi: #dcecd6;
+  --color-join-lo: #224722;
+  --color-locked: #7a5200;
+  --color-locked-hi: #f9ecc4;
+  --color-locked-lo: #5e3f00;
+  --color-danger: #9e2b25;
+
+  --outline: #3a2c1e;
+  --well: #fffbf1;
+  --well-edge: #8a7350;
+  --plate: rgb(255 251 241 / 0.92);
+  --beam-base: #fffbf1;
+  /* a walnut frame */
+  --mesh: #6b4527;
+  --mesh-shade: rgb(50 30 10 / 0.3);
+  --mesh-hi: #9a6a3e;
+  --mesh-lo: #33200f;
+  --grid-line: rgb(125 100 62 / 0.45);
+  --grid-line-faint: rgb(125 100 62 / 0.2);
+  --weekend: rgb(125 100 62 / 0.08);
+  --backdrop: rgb(42 30 14 / 0.45);
+  --backdrop-lines: rgb(0 0 0 / 0.06);
+  --fill-free: #93b5da;
+  --fill-join: #a3c78e;
+  --fill-locked: #e9c35c;
+  --fill-danger: #d9786d;
+  /* faded wallpaper: a 12-pixel diamond lattice with little flowers, drawn at double size */
+  --page-pattern: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Crect width='12' height='12' fill='%23dccaa2'/%3E%3Crect x='0' y='0' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='11' y='0' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='1' y='1' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='10' y='1' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='9' y='2' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='3' y='3' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='8' y='3' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='4' y='4' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='7' y='4' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='5' y='5' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='6' y='5' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='6' y='6' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='5' y='6' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='7' y='7' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='4' y='7' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='8' y='8' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='3' y='8' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='9' y='9' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='2' y='9' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='1' y='10' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='11' y='11' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='0' y='11' width='1' height='1' fill='%23c7b285'/%3E%3Crect x='6' y='11' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='5' y='0' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='7' y='0' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='6' y='1' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='0' y='5' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='11' y='6' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='1' y='6' width='1' height='1' fill='%23b39d6e'/%3E%3Crect x='0' y='7' width='1' height='1' fill='%23b39d6e'/%3E%3C/svg%3E");
+  --page-pattern-size: 24px 24px;
+}
+:root[data-theme="vintage"] body {
+  background-color: #dccaa2;
+  image-rendering: pixelated;
+}
+:root[data-theme="vintage"] body * {
+  image-rendering: auto;
+}
+:root[data-theme="vintage"] .beam {
+  --core: var(--lo);
+  --body: var(--fill-free);
+}
+:root[data-theme="vintage"] .beam-join {
+  --body: var(--fill-join);
+}
+:root[data-theme="vintage"] .beam-locked {
+  --body: var(--fill-locked);
+}
+:root[data-theme="vintage"] .beam-hollow {
+  box-shadow: none;
+}
+:root[data-theme="vintage"] .btn:disabled {
+  filter: grayscale(0.6);
+  opacity: 0.5;
+}
+
+/* Pieces that belong to one design only (.only-<design>), or to every design but one (.except-<design>). */
+:root:not([data-theme="mara"]) .only-mara,
+:root:not([data-theme="bulldog"]) .only-bulldog,
+:root:not([data-theme="vintage"]) .only-vintage {
   display: none !important;
 }
-:root[data-theme="mara"] .except-mara {
+:root[data-theme="mara"] .except-mara,
+:root[data-theme="bulldog"] .except-bulldog,
+:root[data-theme="vintage"] .except-vintage {
   display: none !important;
 }
 
@@ -562,6 +722,123 @@
   28% { outline: 0 solid transparent; }
   45% { outline: 3px solid var(--color-locked); outline-offset: 2px; }
   48% { outline: 0 solid transparent; }
+}
+
+/* The bulldog scene (src/components/bulldog/BulldogScene.tsx). One 10-second loop (1s = 10%):
+     0–2.4s    the bulldog sits and blinks
+     2–3.2s    a ball rolls in from the right (it watches it) and bounces
+     3.6–5.2s  "woof!"
+     5.2–6.4s  the ball rolls away again (it watches it go)
+     6.6–8.7s  it pants happily, then blinks */
+.bulldog-scene :where(g[class^="bd-"], g[class*=" bd-"]) {
+  animation-duration: 10s;
+  animation-iteration-count: infinite;
+  animation-timing-function: steps(1, end);
+}
+.bulldog-scene .bd-face { animation-name: bd-face; }
+.bulldog-scene .bd-blink { opacity: 0; animation-name: bd-blink; }
+.bulldog-scene .bd-look { opacity: 0; animation-name: bd-look; }
+.bulldog-scene .bd-woof { opacity: 0; animation-name: bd-woof; }
+.bulldog-scene .bd-pant { opacity: 0; animation-name: bd-pant; }
+.bulldog-scene .bd-ball { animation-name: bd-ball; }
+.bulldog-scene .bd-ball-bounce { animation-name: bd-ball-bounce; }
+.bulldog-scene .bd-bubble {
+  opacity: 0;
+  animation-name: bd-bubble;
+  transform-box: fill-box;
+  transform-origin: 0% 100%;
+}
+@keyframes bd-face {
+  0% { opacity: 1; } 10% { opacity: 0; } 11.5% { opacity: 1; } 24% { opacity: 0; } 64% { opacity: 1; }
+  66% { opacity: 0; } 69% { opacity: 1; } 72% { opacity: 0; } 75% { opacity: 1; } 78% { opacity: 0; } 81% { opacity: 1; }
+  84% { opacity: 0; } 87% { opacity: 1; } 92% { opacity: 0; } 93.5% { opacity: 1; }
+}
+@keyframes bd-blink { 0% { opacity: 0; } 10% { opacity: 1; } 11.5% { opacity: 0; } 92% { opacity: 1; } 93.5% { opacity: 0; } }
+@keyframes bd-look { 0% { opacity: 0; } 24% { opacity: 1; } 36% { opacity: 0; } 52% { opacity: 1; } 64% { opacity: 0; } }
+@keyframes bd-woof { 0% { opacity: 0; } 36% { opacity: 1; } 52% { opacity: 0; } }
+@keyframes bd-pant {
+  0% { opacity: 0; } 66% { opacity: 1; } 69% { opacity: 0; } 72% { opacity: 1; } 75% { opacity: 0; }
+  78% { opacity: 1; } 81% { opacity: 0; } 84% { opacity: 1; } 87% { opacity: 0; }
+}
+/* in and out in 2-pixel hops */
+@keyframes bd-ball {
+  0%, 20% { transform: translateX(66px); animation-timing-function: steps(16, end); }
+  32%, 52% { transform: translateX(0); animation-timing-function: steps(16, end); }
+  64%, 100% { transform: translateX(66px); }
+}
+@keyframes bd-ball-bounce {
+  0% { transform: translateY(0); } 32% { transform: translateY(-3px); } 33.5% { transform: translateY(-1px); } 35% { transform: translateY(0); }
+}
+@keyframes bd-bubble {
+  0% { opacity: 0; transform: scale(0.5); }
+  37% { opacity: 1; transform: scale(0.75); }
+  38% { opacity: 1; transform: scale(1); }
+  52% { opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bulldog-scene :where(g[class^="bd-"], g[class*=" bd-"]) {
+    animation: none !important;
+  }
+  .bulldog-scene .bd-face { opacity: 0; }
+  .bulldog-scene .bd-woof,
+  .bulldog-scene .bd-bubble { opacity: 1; }
+}
+
+/* The vintage scene (src/components/vintage/VintageScene.tsx). The pendulum
+   swings all the time (1.6s there and back); once every 12 seconds (1s = 8.333%):
+     4s       the little door opens and the cuckoo slides out
+     4.6–6.2s it opens its beak: "wheet!"
+     6.5s     it goes back in and the door shuts */
+.vintage-scene :where(g[class^="vc-"], g[class*=" vc-"]) {
+  animation-duration: 12s;
+  animation-iteration-count: infinite;
+  animation-timing-function: steps(1, end);
+}
+.vintage-scene .vc-swing-mid { animation-name: vc-swing-mid; animation-duration: 1.6s; }
+.vintage-scene .vc-swing-left { opacity: 0; animation-name: vc-swing-left; animation-duration: 1.6s; }
+.vintage-scene .vc-swing-right { opacity: 0; animation-name: vc-swing-right; animation-duration: 1.6s; }
+.vintage-scene .vc-door { opacity: 0; animation-name: vc-door; }
+.vintage-scene .vc-bird { opacity: 0; animation-name: vc-bird; }
+.vintage-scene .vc-beak-open { opacity: 0; animation-name: vc-beak-open; }
+.vintage-scene .vc-beak-shut { animation-name: vc-beak-shut; }
+.vintage-scene .vc-bubble {
+  opacity: 0;
+  animation-name: vc-bubble;
+  transform-box: fill-box;
+  transform-origin: 0% 80%;
+}
+@keyframes vc-swing-mid { 0% { opacity: 1; } 25% { opacity: 0; } 50% { opacity: 1; } 75% { opacity: 0; } }
+@keyframes vc-swing-right { 0% { opacity: 0; } 25% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes vc-swing-left { 0% { opacity: 0; } 75% { opacity: 1; } }
+@keyframes vc-door { 0% { opacity: 0; } 33.333% { opacity: 1; } 55% { opacity: 0; } }
+/* leaning out of the door in two steps, and back in */
+@keyframes vc-bird {
+  0% { opacity: 0; transform: translateX(0); }
+  34.5% { opacity: 1; transform: translateX(0); }
+  35.5% { opacity: 1; transform: translateX(1px); }
+  36.5% { opacity: 1; transform: translateX(2px); }
+  53% { opacity: 1; transform: translateX(1px); }
+  54% { opacity: 1; transform: translateX(0); }
+  55% { opacity: 0; }
+}
+@keyframes vc-beak-open { 0% { opacity: 0; } 38.333% { opacity: 1; } 51.667% { opacity: 0; } }
+@keyframes vc-beak-shut { 0% { opacity: 1; } 38.333% { opacity: 0; } 51.667% { opacity: 1; } }
+@keyframes vc-bubble {
+  0% { opacity: 0; transform: scale(0.5); }
+  38.333% { opacity: 1; transform: scale(0.75); }
+  39.2% { opacity: 1; transform: scale(1); }
+  52.5% { opacity: 0; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vintage-scene :where(g[class^="vc-"], g[class*=" vc-"]) {
+    animation: none !important;
+  }
+  .vintage-scene .vc-door,
+  .vintage-scene .vc-bird,
+  .vintage-scene .vc-beak-open,
+  .vintage-scene .vc-bubble { opacity: 1; }
+  .vintage-scene .vc-bird { transform: translateX(2px); }
+  .vintage-scene .vc-beak-shut { opacity: 0; }
 }
 
 /* Sizes that differ between phones and wider screens. */

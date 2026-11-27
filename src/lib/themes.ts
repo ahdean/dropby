@@ -9,7 +9,10 @@
  *   1. add an entry below (the first entry is the default);
  *   2. add a `:root[data-theme="<id>"] { ... }` block to globals.css that sets
  *      the colour tokens (copy the "light" block as a starting point);
- *   3. that's it: the picker on the profile page lists it automatically.
+ *   3. that's it: the pickers (profile page, and the bottom of the help
+ *      window) list it automatically. Optional extras: a scene in
+ *      components/shell/DesignScene.tsx and a help-button picture in
+ *      components/shell/Header.tsx, shown with .only-<id> (globals.css).
  */
 export interface ThemeInfo {
   id: string;
@@ -49,6 +52,22 @@ export const THEMES: readonly ThemeInfo[] = [
     colorScheme: "light",
     themeColor: "#79b04a",
     swatch: ["#79b04a", "#fcf5e4", "#2b1d10"],
+  },
+  {
+    id: "bulldog",
+    name: "Bulldog",
+    description: "A brick-walled den, leather buttons, a red collar frame, and a bulldog who wants its ball.",
+    colorScheme: "dark",
+    themeColor: "#3a1912",
+    swatch: ["#5a2219", "#221410", "#fbefdc"],
+  },
+  {
+    id: "vintage",
+    name: "Vintage",
+    description: "Old wallpaper, ivory paper, brass buttons and a walnut frame, with a cuckoo clock that says wheet.",
+    colorScheme: "light",
+    themeColor: "#dccaa2",
+    swatch: ["#dccaa2", "#f8f1dd", "#2a2118"],
   },
 ];
 

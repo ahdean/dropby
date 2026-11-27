@@ -35,7 +35,7 @@ export interface Sprite {
   height: number;
 }
 
-function sprite(rows: string[]): Sprite {
+export function sprite(rows: string[]): Sprite {
   const width = rows[0].length;
   if (rows.some((row) => row.length !== width)) {
     throw new Error(`Sprite rows differ in length: ${rows.map((r) => r.length).join(",")}`);
@@ -44,19 +44,19 @@ function sprite(rows: string[]): Sprite {
 }
 
 /** Left halves → whole rows, mirrored around the middle. */
-function mirror(halves: string[]): string[] {
+export function mirror(halves: string[]): string[] {
   return halves.map((half) => half + [...half].reverse().join(""));
 }
 
 /** Change single pixels: [row, column, character]. */
-function patch(rows: string[], edits: [number, number, string][]): string[] {
+export function patch(rows: string[], edits: [number, number, string][]): string[] {
   const grid = rows.map((row) => [...row]);
   for (const [y, x, value] of edits) grid[y][x] = value;
   return grid.map((row) => row.join(""));
 }
 
 /** Replace whole rows (same width) starting at `from`. */
-function replaceRows(rows: string[], from: number, replacement: string[]): string[] {
+export function replaceRows(rows: string[], from: number, replacement: string[]): string[] {
   return rows.map((row, i) => (i >= from && i < from + replacement.length ? replacement[i - from] : row));
 }
 

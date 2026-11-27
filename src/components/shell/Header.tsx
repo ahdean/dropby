@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
+import { BULLDOG_FACE, BULLDOG_PALETTE } from "@/components/bulldog/sprites";
 import { MARA_MINI } from "@/components/mara/sprites";
 import { PixelArt } from "@/components/mara/PixelArt";
 import { PixelIcon } from "@/components/ui/PixelIcon";
@@ -40,9 +41,10 @@ export function Header() {
             aria-label="How wheet works"
             title="How wheet works"
           >
-            <PixelIcon name="help" size={16} className="except-mara" />
+            <PixelIcon name="help" size={16} className="except-mara except-bulldog" />
             {/* In the Mara design, a mara in profile instead of the question mark. */}
             <PixelArt art={MARA_MINI} size={26} className="only-mara" />
+            <PixelArt art={BULLDOG_FACE} size={26} palette={BULLDOG_PALETTE} className="only-bulldog" />
           </button>
           <Link href="/connections" className="btn tile tile-dark !min-h-[40px] !w-10 !p-0" aria-label="Connections" title="Connections">
             <PixelIcon name="users" size={16} />
