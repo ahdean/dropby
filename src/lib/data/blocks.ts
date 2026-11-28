@@ -3,11 +3,13 @@
 import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo } from "react";
 import { MAX_WEEKS_AHEAD, MAX_WEEKS_BACK } from "../constants";
+import { cleanIdeas, readIdeas } from "../activities";
 import { rankPlaces, type PlaceUse } from "../places";
 import { useHiddenPlaces } from "./saved-places";
 import { shiftSeries } from "../recurrence";
 import { getSupabase } from "../supabase/client";
 import { addDays, startOfWeek, todayKey, zonedToUtc, type DayKey } from "../time";
+import type { BlockIdea } from "../activities";
 import type { BlockDraft, BlockRow, CalendarBlock, RsvpRow, RsvpStatus } from "../types";
 import { keys } from "./keys";
 import { useSession } from "./session";
@@ -151,6 +153,8 @@ function draftColumns(draft: BlockDraft) {
     // Only sent when it is being set or cleared, so the app keeps working on a
     // database where the picture column has not been added yet.
     ...(draft.picture_path !== undefined ? { picture_path: isJoin ? draft.picture_path : null } : {}),
+    // The same for ideas: only sent when there are some, or they changed.
+    ...(draft.ideas !== undefined ? { ideas: cleanIdeas(draft.ideas) } : {}),
     rsvp_enabled: draft.rsvp_enabled,
     audience: draft.audience,
   };
@@ -160,6 +164,12 @@ function draftColumns(draft: BlockDraft) {
 export function isPicturesNotSetUp(error: unknown): boolean {
   const e = error as { code?: string; message?: string } | null;
   return Boolean(e && /picture_path/.test(e.message ?? "") && (e.code === "PGRST204" || e.code === "42703"));
+}
+
+/** True when saving failed because the database file that adds activities and ideas has not been run. */
+export function isIdeasNotSetUp(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | null;
+  return Boolean(e && /ideas/.test(e.message ?? "") && (e.code === "PGRST204" || e.code === "42703"));
 }
 
 /** Make the stored audience lists match the wanted ones: remove what left, add what is new. */
@@ -222,6 +232,8 @@ function draftFromBlock(block: CalendarBlock): BlockDraft {
     location: block.location,
     description: block.description,
     picture_path: block.picture_path,
+    // Only carried over when there are some (so this works before the ideas column exists).
+    ideas: readIdeas(block.ideas).length > 0 ? readIdeas(block.ideas) : undefined,
     rsvp_enabled: block.rsvp_enabled,
     audience: block.audience,
     shared_user_ids: block.shared_user_ids,
@@ -393,6 +405,17 @@ export function useBlockActions() {
       });
     };
 
+    /** Replace the ideas on one of your blocks of Free time. */
+    const setIdeas = (block: CalendarBlock, ideas: BlockIdea[]): Promise<void> => {
+      const cleaned = cleanIdeas(ideas);
+      patchCache((blocks) => blocks.map((b) => (b.id === block.id ? { ...b, ideas: cleaned } : b)));
+      queryClient.setQueryData<CalendarBlock | null>(keys.block(block.id), (old) => (old ? { ...old, ideas: cleaned } : old));
+      return run(block.id, async () => {
+        const { error } = await getSupabase().from("blocks").update({ ideas: cleaned }).eq("id", block.id);
+        if (error) throw error;
+      });
+    };
+
     /** Take yourself off the audience of someone else's block. */
     const leave = (block: CalendarBlock): Promise<void> =>
       run(block.id, async () => {
@@ -400,7 +423,7 @@ export function useBlockActions() {
         if (error) throw error;
       });
 
-    return { create, update, setTimes, remove, removeById, skipOccurrence, endSeriesAt, detachOccurrence, setRsvp, leave, refresh };
+    return { create, update, setTimes, remove, removeById, skipOccurrence, endSeriesAt, detachOccurrence, setRsvp, setIdeas, leave, refresh };
   }, [patchCache, queryClient, refresh, run, userId]);
 }
 

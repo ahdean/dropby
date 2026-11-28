@@ -22,6 +22,9 @@ function isNotSetUp(error: unknown): boolean {
 /** Friendlier wording for the two rejections a person can actually cause. */
 function explain(error: { code?: string; message?: string }): Error {
   if (error.code === "23505") return new Error("You already have a place with that name.");
+  if (/kind/.test(error.message ?? "") && (error.code === "PGRST204" || error.code === "42703")) {
+    return new Error("Place types are not switched on yet: the newest database file has to be run in Supabase (see README).");
+  }
   if (isNotSetUp(error)) {
     return new Error("Saved places are not switched on yet: the newest database file has to be run in Supabase (see README).");
   }
@@ -32,9 +35,10 @@ export function useSavedPlaces() {
   const query = useQuery({
     queryKey: keys.savedPlaces,
     queryFn: async (): Promise<SavedPlace[]> => {
-      const { data, error } = await getSupabase().from("saved_places").select("id, name, address").order("name");
+      // Every column: the place type is only there once the activities database file has been run.
+      const { data, error } = await getSupabase().from("saved_places").select("*").order("name");
       if (error) throw error;
-      return data;
+      return data.map((row) => ({ id: row.id, name: row.name, address: row.address, kind: row.kind ?? null }));
     },
     staleTime: 5 * 60_000,
     // A missing table is a setup step, not something to keep retrying.
@@ -57,21 +61,27 @@ export function useSavedPlaceActions() {
       queryClient.setQueryData<SavedPlace[]>(keys.savedPlaces, (old) => (old ? update(old) : old));
 
     return {
-      add: async (name: string, address: string): Promise<SavedPlace> => {
+      add: async (name: string, address: string, kind: string | null = null): Promise<SavedPlace> => {
         const { data, error } = await getSupabase()
           .from("saved_places")
-          .insert({ name: name.trim(), address: address.trim() })
-          .select("id, name, address")
+          // The type only when there is one, so this works before the activities database file is run.
+          .insert({ name: name.trim(), address: address.trim(), ...(kind ? { kind } : {}) })
+          .select("*")
           .single();
         if (error) throw explain(error);
-        patch((places) => [...places, data].sort((a, b) => a.name.localeCompare(b.name)));
+        const place: SavedPlace = { id: data.id, name: data.name, address: data.address, kind: data.kind ?? null };
+        patch((places) => [...places, place].sort((a, b) => a.name.localeCompare(b.name)));
         void refresh();
-        return data;
+        return place;
       },
 
-      /** Rename it, change its address, or both. */
-      update: async (id: string, fields: { name: string; address: string }): Promise<void> => {
-        const next = { name: fields.name.trim(), address: fields.address.trim() };
+      /** Rename it, change its address or its type. */
+      update: async (id: string, fields: { name: string; address: string; kind?: string | null }): Promise<void> => {
+        const next = {
+          name: fields.name.trim(),
+          address: fields.address.trim(),
+          ...(fields.kind !== undefined ? { kind: fields.kind } : {}),
+        };
         const { error } = await getSupabase().from("saved_places").update(next).eq("id", id);
         if (error) throw explain(error);
         patch((places) => places.map((p) => (p.id === id ? { ...p, ...next } : p)).sort((a, b) => a.name.localeCompare(b.name)));

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChatBox, ChatList, EVERYONE, useBlockChat, type ChatTarget } from "@/components/event/Chat";
+import { IdeasVoting } from "@/components/activities/BlockIdeas";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -233,6 +234,9 @@ function Sheet({
             {isEvent ? block.description : block.title}
           </p>
         )}
+
+        {/* Free time: its ideas, with "I'm up for it" */}
+        {!isEvent && <IdeasVoting block={block} occurrence={occurrence.index} />}
 
         {/* your own block, shown as friends see it (just after saving): back to the editor */}
         {onEdit && (

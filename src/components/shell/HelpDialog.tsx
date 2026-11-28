@@ -62,6 +62,7 @@ export function HelpDialog({ open, onClose }: { open: boolean; onClose: () => vo
           <li><span className="text-ink">See friends&apos; plans:</span> tap a face or an outlined bar for the details. Say &quot;I&apos;m in&quot; to join.</li>
           <li><span className="text-ink">Chat:</span> every block has its own chat, for everyone or privately with one person. It&apos;s at the bottom when you open a block (on a computer, hover a block and click the chat button).</li>
           <li><span className="text-ink">Places:</span> save the places you use, and pin them from Google Maps so friends go straight there.</li>
+          <li><span className="text-ink">Ideas:</span> save activities you like (profile), add a few as ideas to your free time for friends to pick, or tap Ideas above the calendar for things to do when friends are free.</li>
           <li><span className="text-ink">Invite someone new:</span> use &quot;Save &amp; invite&quot; on a block. They get a link by text; signing up connects you.</li>
         </ul>
         <div className="divider" />

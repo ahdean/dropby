@@ -4,6 +4,7 @@ import { DesignPicker } from "./DesignPicker";
 import Link from "next/link";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { PlacesManager } from "@/components/places/PlacesManager";
+import { ActivitiesManager } from "@/components/activities/ActivitiesManager";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { errorMessage, useFeedback } from "@/components/ui/Feedback";
@@ -156,6 +157,10 @@ export function ProfileScreen() {
             Save password
           </Button>
         </form>
+      </Card>
+
+      <Card title="Activities">
+        <ActivitiesManager />
       </Card>
 
       <Card title="Saved places">

@@ -14,7 +14,23 @@ import { describeConflict, expandBlocks, findConflict } from "@/lib/calendar/mod
 import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
 import { PlacesDialog } from "@/components/places/PlacesManager";
-import { draftFromBlock, isPicturesNotSetUp, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
+import { ActivitiesDialog } from "@/components/activities/ActivitiesManager";
+import { IdeasField } from "@/components/activities/BlockIdeas";
+import { IdeaPicker, OptionChip } from "@/components/activities/IdeaPicker";
+import {
+  IDEA_LIBRARY,
+  inSeason,
+  optionFromLibrary,
+  optionsFromActivities,
+  partsOf,
+  placeForEvent,
+  placesFor,
+  readIdeas,
+  type BlockIdea,
+  type IdeaOption,
+} from "@/lib/activities";
+import { useActivities } from "@/lib/data/activities";
+import { draftFromBlock, isIdeasNotSetUp, isPicturesNotSetUp, useBlockActions, useMyPlaces } from "@/lib/data/blocks";
 import { removeEventPictureIfUnused, useEventPictureUpload } from "@/lib/data/event-pictures";
 import { useSavedPlaces } from "@/lib/data/saved-places";
 import { useSession } from "@/lib/data/session";
@@ -29,7 +45,11 @@ import { AvatarStack } from "@/components/ui/Avatar";
 import type { DayRange } from "./useBlockGestures";
 
 export type EditorState =
-  | { mode: "create"; range: DayRange; preset?: { type?: BlockType; emoji?: string; title?: string; audience?: AudienceValue } }
+  | {
+      mode: "create";
+      range: DayRange;
+      preset?: { type?: BlockType; emoji?: string; title?: string; location?: string; audience?: AudienceValue; ideas?: BlockIdea[] };
+    }
   | {
       mode: "edit";
       block: CalendarBlock;
@@ -61,6 +81,8 @@ interface Form {
   pictureFile: File | null;
   rsvp: boolean;
   audience: AudienceValue;
+  /** Ideas of what to do (Free time only). */
+  ideas: BlockIdea[];
 }
 
 
@@ -74,12 +96,13 @@ function initialForm(state: EditorState, zone: string): Form {
       repeat: false,
       title: state.preset?.title ?? "",
       emoji: state.preset?.emoji ?? DOOR_ICON,
-      location: "",
+      location: state.preset?.location ?? "",
       description: "",
       picturePath: null,
       pictureFile: null,
       rsvp: true,
       audience: state.preset?.audience ?? EVERYONE,
+      ideas: state.preset?.ideas ?? [],
     };
   }
   const { block, occurrence } = state;
@@ -99,6 +122,7 @@ function initialForm(state: EditorState, zone: string): Form {
     pictureFile: null,
     rsvp: block.rsvp_enabled,
     audience: { audience: block.audience, userIds: block.shared_user_ids, groupIds: block.shared_group_ids },
+    ideas: readIdeas(block.ideas),
   };
 }
 
@@ -160,7 +184,10 @@ function EditorDialog({
   const uploadPicture = useEventPictureUpload();
   const places = useMyPlaces();
   const { places: savedPlaces } = useSavedPlaces();
+  const { activities } = useActivities();
   const [placesOpen, setPlacesOpen] = useState<"save" | "manage" | null>(null);
+  const [activitiesOpen, setActivitiesOpen] = useState(false);
+  const [planPickerOpen, setPlanPickerOpen] = useState(false);
   const { toast, toastError, choose } = useFeedback();
   const ids = useId();
 
@@ -187,6 +214,44 @@ function EditorDialog({
 
   const editing = state.mode === "edit" ? state : null;
   const isJoin = form.type === "join";
+
+  /** A plan picked from your activities (or the ideas): its icon and name, and its place for a pair. */
+  const choosePlan = (option: IdeaOption) =>
+    setForm((f) => ({
+      ...f,
+      emoji: option.emoji || f.emoji,
+      title: option.title,
+      location: option.place ? placeForEvent(option.place) : f.location,
+    }));
+  const isPlan = (option: IdeaOption) =>
+    sameText(form.title, option.title) && (!option.place || isChosen({ address: option.place.address }));
+  // Your activities and pairs; until you have some, ideas that suit the time of day.
+  const yourOptions = optionsFromActivities(activities, savedPlaces);
+  const timeParts = partsOf(form.startMin, form.endMin);
+  const planOptions =
+    yourOptions.length > 0
+      ? yourOptions
+      : IDEA_LIBRARY.filter((item) => inSeason(item, form.dayKey) && item.times.some((t) => timeParts.includes(t)))
+          .slice(0, 6)
+          .map(optionFromLibrary);
+  // The one chosen: a pair (listed before its activity) when its place is the one in "Where".
+  const planKey = planOptions.find(isPlan)?.key;
+  // With one of your activities as the plan, the saved places that suit it come first.
+  const planActivity = activities.find((a) => sameText(a.name, form.title));
+  const orderedPlaces = planActivity
+    ? (({ suited, others }) => [...suited, ...others])(placesFor(planActivity.place_kinds, savedPlaces))
+    : savedPlaces;
+
+  /** Free time → an event, with one of its ideas as the plan. */
+  const makePlan = (idea: BlockIdea) =>
+    setForm((f) => ({
+      ...f,
+      type: "join",
+      emoji: idea.emoji?.trim() || f.emoji || DOOR_ICON,
+      title: idea.title,
+      location: idea.place ?? f.location,
+    }));
+  const originalIdeas = JSON.stringify(editing ? readIdeas(editing.block.ideas) : []);
 
   // Any time of day, not only the hours the week grid draws; the end may be on the next day.
   const startOptions = useMemo(() => timeOptions(0, 1440 - SNAP_MINUTES, form.startMin), [form.startMin]);
@@ -273,6 +338,8 @@ function EditorDialog({
     audience: f.audience.audience,
     shared_user_ids: f.audience.userIds,
     shared_group_ids: f.audience.groupIds,
+    // Only sent when they changed, so this works before the ideas column exists.
+    ideas: f.type === "free" && JSON.stringify(f.ideas) !== originalIdeas ? f.ideas : undefined,
   });
 
   const save = async (invite: boolean) => {
@@ -328,7 +395,9 @@ function EditorDialog({
       toastError(
         isPicturesNotSetUp(failure)
           ? "Event pictures are not switched on yet: the newest database file has to be run in Supabase (see README)."
-          : failure,
+          : isIdeasNotSetUp(failure)
+            ? "Ideas are not switched on yet: the newest database file has to be run in Supabase (see README)."
+            : failure,
         "Could not save. Please try again.",
       );
     } finally {
@@ -479,6 +548,28 @@ function EditorDialog({
         {isJoin ? (
           <fieldset className="space-y-3">
             <legend className="label">The plan</legend>
+            {/* One tap fills in the icon and title (and the place, for a pair). */}
+            <div>
+              <div className="label">Activity</div>
+              <ul className="flex flex-wrap items-center gap-2">
+                {planOptions.map((option) => (
+                  <li key={option.key} className="max-w-full">
+                    <OptionChip option={option} onPick={choosePlan} pressed={option.key === planKey} />
+                  </li>
+                ))}
+                <li>
+                  <button type="button" className="btn btn-sm tile tile-dark" onClick={() => setPlanPickerOpen(true)}>
+                    <PixelIcon name="bulb" size={11} />
+                    More ideas
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="btn-ghost" onClick={() => setActivitiesOpen(true)}>
+                    Manage
+                  </button>
+                </li>
+              </ul>
+            </div>
             <div>
               <div className="label">Icons</div>
               <EmojiPicker value={form.emoji} onChange={changeIcon} />
@@ -500,7 +591,7 @@ function EditorDialog({
               <div className="mt-2">
                 <div className="label !mb-1">Saved places</div>
                 <ul className="flex flex-wrap items-center gap-2">
-                  {savedPlaces.map((place) => {
+                  {orderedPlaces.map((place) => {
                     const chosen = isChosen(place);
                     return (
                       <li key={place.id} className="max-w-full">
@@ -552,10 +643,28 @@ function EditorDialog({
             />
           </fieldset>
         ) : (
-          <div>
-            <label htmlFor={`${ids}-note`} className="label">Note (optional)</label>
-            <input id={`${ids}-note`} className="field" value={form.title} maxLength={80} placeholder="Down for anything" onChange={(e) => set("title", e.target.value)} />
-          </div>
+          <>
+            <div>
+              <label htmlFor={`${ids}-note`} className="label">Note (optional)</label>
+              <input id={`${ids}-note`} className="field" value={form.title} maxLength={80} placeholder="Down for anything" onChange={(e) => set("title", e.target.value)} />
+            </div>
+            <div>
+              <div className="label flex items-center gap-2">
+                <PixelIcon name="bulb" size={12} />
+                Ideas
+              </div>
+              <IdeasField
+                ideas={form.ideas}
+                onChange={(next) => set("ideas", next)}
+                block={editing?.block ?? null}
+                occurrence={editing?.occurrence.index ?? 0}
+                dayKey={form.dayKey}
+                startMin={form.startMin}
+                endMin={form.endMin}
+                onMakePlan={makePlan}
+              />
+            </div>
+          </>
         )}
 
         <fieldset>
@@ -582,6 +691,10 @@ function EditorDialog({
       {/* The block's chat, at the bottom (outside the form: it has its own message box). */}
       {editing && (
         <EditorChat block={editing.block} occurrence={editing.occurrence} chatTo={editing.chatTo ?? null} focus={Boolean(editing.focusChat)} zone={zone} />
+      )}
+      <ActivitiesDialog open={activitiesOpen} onClose={() => setActivitiesOpen(false)} />
+      {planPickerOpen && (
+        <IdeaPicker title="Pick a plan" allowTyped={false} chosen={[form.title]} onPick={choosePlan} onClose={() => setPlanPickerOpen(false)} />
       )}
       <PlacesDialog
         open={placesOpen !== null}

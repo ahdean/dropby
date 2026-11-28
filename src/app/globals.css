@@ -1827,6 +1827,15 @@ button:disabled {
     background: var(--fill-locked);
     border: 2px solid var(--outline);
   }
+
+  /* A friend's Free time with ideas of what to do: a little bulb by their faces. */
+  .idea-badge {
+    width: 15px;
+    height: 15px;
+    color: #000;
+    background: var(--fill-locked);
+    border: 2px solid var(--outline);
+  }
   .divider {
     height: 2px;
     background: var(--outline);

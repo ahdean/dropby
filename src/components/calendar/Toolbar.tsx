@@ -29,6 +29,7 @@ export function Toolbar({
   onViewChange,
   label,
   onToday,
+  onIdeas,
   onJump,
   today,
   selectedDay,
@@ -41,6 +42,8 @@ export function Toolbar({
   /** Where the calendar is: the month in view, or the selected day. */
   label: string;
   onToday: () => void;
+  /** Open the ideas: things to do, with friends' free time. */
+  onIdeas: () => void;
   /** Go to a date chosen in the date picker. */
   onJump: (day: DayKey) => void;
   today: DayKey;
@@ -108,6 +111,10 @@ export function Toolbar({
             <span className="hidden sm:inline">Day</span>
           </button>
         </div>
+
+        <Button size="sm" variant="dark" icon="bulb" onClick={onIdeas} aria-label="Ideas: things to do with friends" title="Ideas: things to do with friends">
+          <span className="hidden sm:inline">Ideas</span>
+        </Button>
 
         <ul className="ml-auto hidden items-center gap-x-4 lg:flex" aria-label="What the colours mean">
           <LegendItem beam="" label="Free" />

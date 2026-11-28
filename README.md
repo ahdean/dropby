@@ -141,6 +141,7 @@ Files are numbered by date; run any you haven't run yet, oldest first. Running a
 | `20261115000100_saved_places.sql` | Your own list of nicknamed places ("Home") for filling in an event's location |
 | `20261126000100_pictures_and_hidden_places.sql` | Pictures on events, and crossing places out of "Used before" |
 | `20261127000100_block_chats.sql` | A chat in every block (Free time too), one per week, plus private chats inside a block |
+| `20261128000100_activities.sql` | Activities (with favourite spots), a type for each saved place, ideas on Free time and "I'm up for it" |
 
 (Developers: `npm run db:push` applies whatever is pending.)
 
@@ -342,6 +343,16 @@ Inviting someone who isn't on wheet creates an unguessable link and a ready-writ
 - **Grabbing an edge.** Pressing in the empty space right beside one of your blocks grabs that block's edge instead of starting a new block; a tap there opens the block. To make a block that touches another, start further away and drag up to it.
 - **A phone held sideways.** On the calendar the header and toolbar tuck away to leave the height to the calendar; a small button in the corner brings them back.
 
+### Activities and ideas
+
+Things to do together, and where (`src/lib/activities.ts`, screens in `src/components/activities`).
+
+- **Activities.** Profile → **Activities** (or **Manage** next to "Activity" in the editor) holds your own list: "Brunch", "Book club", each with an icon, the kinds of place it happens in ("House or Park") and, if you like, **favourite spots** from your saved places. Each spot makes a **pair** ("Brunch · Joe's Diner"). Add your own, or tap **+** on any of the 80-odd ideas under **Add from … ideas** (Food & drink, At home, Out & about, Active, From afar). Typing a name from the idea list fills in its icon and places. Only you see the list; deleting has Undo.
+- **Place types.** Saved places can have a type: House, Restaurant, Café, Bar, Park, Outdoors, Remote, Gym, Venue, Shops, or your own (**+ Other**, e.g. "Rooftop"). Your own types are offered again everywhere.
+- **Hosting.** The editor's plan starts with an **Activity** row: one tap on an activity fills in the icon and title; a pair fills in the place too. With an activity as the plan, the saved places of its type come first. **More ideas** opens the whole list. (Until you have activities of your own, the row offers ideas that suit the time of day.)
+- **Ideas on Free time.** Free time can carry up to six ideas of what to do: add your activities, pairs or ideas from the list in a tap, or type your own. Friends see them (a bulb by your face on their calendar) and tap **Up for it?** on the ones they'd do; you're notified ("Mika is up for Brunch"), see their faces by each idea (most-picked first), and **Make it the plan** turns the Free time into an event with that idea (icon, title, place) for you to check and save. Picks are per week of a weekly repeat, and an idea taken off takes its picks with it.
+- **The Ideas browser.** **Ideas** in the calendar's toolbar opens cards to flip through (arrows, swipe or the arrow keys). First come ideas for times when friends are free in the next two weeks ("Sam and Mika are free Sun 12 – 4 PM"), each with the idea that fits that time best (your pairs and activities first, then the list; brunch in the morning, at weekends; nothing out of season); then your own activities, then the list, in an order that changes daily. Filters: All, With friends, or a kind of idea. On each card: **Invite them** / **Host it** (a new event with the plan, at that time and shared with those friends; on its own, at the next time it suits), **Add to your free time** (as an idea; or **Be free then too**, new Free time then with the idea on it), **Share** (the phone's share sheet, or copy: "Anyone up for brunch Sunday 12 – 4 PM? 🥞") and, for ideas from the list, **Save** to your activities.
+
 ### Chats in blocks
 
 One tap on a block opens everything about it, over the calendar:
@@ -375,6 +386,7 @@ supabase/migrations/     The database: tables, security rules, triggers. START H
   …500_storage_realtime.sql  avatars bucket, realtime
   2026111400…_direct_messages.sql  private messages (added later; see "Updating the database")
   2026111500…, 2026112600…   saved places; event pictures and hidden places
+  2026112800…_activities.sql activities, place types, ideas on Free time, "I'm up for it"
 
 src/lib/                 Logic with no screens in it (all unit-tested)
   constants.ts             product settings: hours shown, snap, weeks ahead …
@@ -383,6 +395,7 @@ src/lib/                 Logic with no screens in it (all unit-tested)
   calendar/intervals.ts    overlap, snapping, drag maths, stacking
   calendar/model.ts        rows → what the calendar draws
   audience.ts              the "Shared with" list: everyone, groups, people
+  activities.ts            place types, the idea library, ideas on Free time, suggestions
   themes.ts                the designs and how the chosen one is applied
   event-picture.ts         where event pictures are stored
   data/                    reading and writing Supabase (one file per area)
@@ -393,6 +406,7 @@ src/components/
   calendar/                week grid, day view, editor, quick look, sharing picker, invite dialog, drag gestures
   messages/                private conversations and the inbox
   places/                  managing saved places
+  activities/              activities manager, idea picker, ideas on Free time, the Ideas browser
   event/Chat.tsx           a block's chat (comments and private messages), shown in the editor and in calendar/EventPeek.tsx
   connections/, profile/   those pages
   shell/                   header, notifications, help, first-run welcome

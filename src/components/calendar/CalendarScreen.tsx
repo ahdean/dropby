@@ -43,6 +43,8 @@ import {
 import type { CalendarBlock, Profile } from "@/lib/types";
 import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
+import { IdeasBrowser } from "@/components/activities/IdeasBrowser";
+import { hostRange, ideaFromOption, placeForEvent, type FreeWindow, type IdeaOption } from "@/lib/activities";
 import { DayView } from "./DayView";
 import { ChatPopover, type ChatPopoverRequest } from "./ChatPopover";
 import { BlockSheet, type SheetRequest } from "./EventPeek";
@@ -211,6 +213,8 @@ export function CalendarScreen() {
   const [sheet, setSheet] = useState<SheetRequest | null>(null);
   /** The little chat box under a block (from its hover chat button). */
   const [chatPop, setChatPop] = useState<ChatPopoverRequest | null>(null);
+  /** The ideas to browse (from the toolbar). */
+  const [ideasOpen, setIdeasOpen] = useState(false);
   const closeChatPop = useCallback(() => setChatPop(null), []);
 
   // A link such as /?block=<id>&o=2&with=<person> (from a notification, a
@@ -388,6 +392,28 @@ export function CalendarScreen() {
     });
   };
 
+  /** From the ideas: host one, with the friends who are free then (or everyone, for an idea on its own). */
+  const hostIdea = (option: IdeaOption, window: FreeWindow | null) => {
+    setIdeasOpen(false);
+    setEditor({
+      mode: "create",
+      range: hostRange(option, window, now, zone),
+      preset: {
+        type: "join",
+        emoji: option.emoji,
+        title: option.title,
+        location: option.place ? placeForEvent(option.place) : undefined,
+        audience: window ? { audience: "custom", userIds: window.userIds, groupIds: [] } : undefined,
+      },
+    });
+  };
+  /** From the ideas: new Free time (when friends are free, or the next time it fits), with this idea on it. */
+  const freeWithIdea = (option: IdeaOption, window: FreeWindow | null) => {
+    setIdeasOpen(false);
+    const range = window ? { dayKey: window.dayKey, startMin: window.startMin, endMin: window.endMin } : hostRange(option, null, now, zone);
+    setEditor({ mode: "create", range, preset: { type: "free", ideas: [ideaFromOption(option)] } });
+  };
+
   const goToday = () => jumpTo(today);
 
   const label = view === "grid" ? formatMonth(topDay, "short") : formatDayKey(selectedDay);
@@ -418,6 +444,7 @@ export function CalendarScreen() {
         onViewChange={changeView}
         label={label}
         onToday={goToday}
+        onIdeas={() => setIdeasOpen(true)}
         onJump={(day) => jumpTo(day)}
         today={today}
         selectedDay={view === "grid" ? topDay : selectedDay}
@@ -478,6 +505,17 @@ export function CalendarScreen() {
         )}
       </div>
 
+      <IdeasBrowser
+        open={ideasOpen}
+        onClose={() => setIdeasOpen(false)}
+        blocks={blocks}
+        profiles={profiles}
+        zone={zone}
+        today={today}
+        nowMin={nowMin}
+        onHost={hostIdea}
+        onNewFree={freeWithIdea}
+      />
       <ChatPopover request={chatPop} zone={zone} onClose={closeChatPop} onOpen={openItem} />
       <BlockEditor
         state={editor}

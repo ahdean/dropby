@@ -11,6 +11,10 @@ export const keys = {
   savedPlaces: ["saved-places"] as const,
   /** Places the viewer crossed out of "Used before". */
   hiddenPlaces: ["hidden-places"] as const,
+  /** The viewer's own activities. */
+  activities: ["activities"] as const,
+  /** Who is up for which idea on a block, for one week. */
+  ideaVotes: (blockId: string, occurrence: number) => ["block", blockId, "idea-votes", occurrence] as const,
   block: (id: string) => ["block", id] as const,
   blockPeople: (id: string) => ["block", id, "people"] as const,
   /** A block's group chat for one week. */

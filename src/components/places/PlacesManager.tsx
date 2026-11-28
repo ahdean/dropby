@@ -2,6 +2,10 @@
 
 import { useState, type FormEvent } from "react";
 import { LocationField } from "./LocationField";
+import { KindPicker } from "@/components/activities/KindPicker";
+import { ownKinds } from "@/components/activities/ActivitiesManager";
+import { useActivities } from "@/lib/data/activities";
+import { kindEmoji } from "@/lib/activities";
 import { Button, IconButton } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { useFeedback } from "@/components/ui/Feedback";
@@ -28,14 +32,18 @@ function PlaceForm({
   submitLabel: string;
   /** Put the cursor in the name box straight away (after "Save" on a used place). */
   focusName?: boolean;
-  onSubmit: (name: string, address: string) => Promise<void>;
+  /** `kind` is undefined when it was left as it was. */
+  onSubmit: (name: string, address: string, kind: string | null | undefined) => Promise<void>;
   onCancel?: () => void;
   /** Offer the steps for adding the place from Google Maps (the "Add a place" form). */
   mapsSteps?: boolean;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
   const [address, setAddress] = useState(initial?.address ?? "");
+  const [kind, setKind] = useState<string | null>(initial?.kind ?? null);
   const [busy, setBusy] = useState(false);
+  const { places } = useSavedPlaces();
+  const { activities } = useActivities();
   const { toastError } = useFeedback();
   const key = initial?.id ?? "new";
 
@@ -45,10 +53,11 @@ function PlaceForm({
     if (name.trim() === "" || address.trim() === "") return;
     setBusy(true);
     try {
-      await onSubmit(name, address);
-      if (!initial) {
+      await onSubmit(name, address, kind === (initial?.kind ?? null) ? undefined : kind);
+      if (!initial || initial.id === "new") {
         setName("");
         setAddress("");
+        setKind(null);
       }
     } catch (error) {
       toastError(error);
@@ -93,6 +102,12 @@ function PlaceForm({
       />
     </div>
   );
+  const kindField = (
+    <div>
+      <div className="label !mb-1">Type of place (optional)</div>
+      <KindPicker label="Type of place" value={kind ? [kind] : []} onChange={(kinds) => setKind(kinds[0] ?? null)} own={ownKinds(places, activities)} />
+    </div>
+  );
   const buttons = (
     <div className="flex shrink-0 gap-2">
       <Button type="submit" variant="free" icon={initial ? "check" : "plus"} busy={busy} disabled={name.trim() === "" || address.trim() === ""}>
@@ -111,17 +126,19 @@ function PlaceForm({
     return (
       <form onSubmit={submit} className="space-y-2">
         {addressField}
-        <div className="flex items-start gap-2">
-          {nameField}
-          {buttons}
-        </div>
+        {nameField}
+        {kindField}
+        {buttons}
       </form>
     );
   }
   return (
-    <form onSubmit={submit} className="grid items-start gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto]">
-      {nameField}
-      {addressField}
+    <form onSubmit={submit} className="space-y-2">
+      <div className="grid items-start gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+        {nameField}
+        {addressField}
+      </div>
+      {kindField}
       {buttons}
     </form>
   );
@@ -175,7 +192,7 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
       // No "are you sure": deleting is instant, and this brings it straight back.
       toast(`"${place.name}" deleted.`, "info", {
         label: "Undo",
-        onClick: () => void actions.add(place.name, place.address).catch((error) => toastError(error)),
+        onClick: () => void actions.add(place.name, place.address, place.kind ?? null).catch((error) => toastError(error)),
       });
     } catch (error) {
       toastError(error);
@@ -215,19 +232,22 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
                   initial={place}
                   submitLabel="Save"
                   onCancel={() => setEditing(null)}
-                  onSubmit={async (name, address) => {
-                    await actions.update(place.id, { name, address });
+                  onSubmit={async (name, address, kind) => {
+                    await actions.update(place.id, { name, address, kind });
                     setEditing(null);
                   }}
                 />
               </li>
             ) : (
               <li key={place.id} className="flex items-center gap-3 px-3 py-2">
-                <span className="shrink-0 text-join">
-                  <PixelIcon name="pin" size={14} />
+                <span className="flex w-5 shrink-0 justify-center text-join" title={place.kind ?? undefined}>
+                  {place.kind ? <span aria-hidden="true">{kindEmoji(place.kind)}</span> : <PixelIcon name="pin" size={14} />}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-ink">{place.name}</span>
+                  <span className="block truncate text-ink">
+                    {place.name}
+                    {place.kind && <span className="text-[16px] text-ink-faint"> · {place.kind}</span>}
+                  </span>
                   <span className="block truncate text-[17px] text-ink-dim">
                     {splitLocation(place.address).label}
                     {findMapsLink(place.address) && <span className="text-join">{splitLocation(place.address).label ? " · " : ""}map pin</span>}
@@ -282,8 +302,8 @@ export function PlacesManager({ suggestedAddress }: { suggestedAddress?: string 
           focusName={suggestion?.focus}
           submitLabel="Add"
           mapsSteps
-          onSubmit={async (name, address) => {
-            await actions.add(name, address);
+          onSubmit={async (name, address, kind) => {
+            await actions.add(name, address, kind ?? null);
             toast(`"${name.trim()}" saved.`, "success");
             setSuggestion(null);
           }}

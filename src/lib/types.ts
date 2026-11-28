@@ -2,6 +2,7 @@
  * Shapes of the database rows the app reads and writes. Keep in sync with
  * `supabase/migrations`.
  */
+import type { BlockIdea } from "./activities";
 
 export type BlockType = "free" | "join";
 export type AudienceMode = "all_connections" | "custom";
@@ -36,6 +37,11 @@ export interface BlockRow {
    * (Missing altogether until the database file that adds it has been run.)
    */
   picture_path?: string | null;
+  /**
+   * Ideas of what to do, on Free time (see lib/activities.ts). Missing until
+   * the database file that adds activities has been run.
+   */
+  ideas?: unknown;
   rsvp_enabled: boolean;
   audience: AudienceMode;
   created_at: string;
@@ -108,7 +114,8 @@ export type NotificationType =
   | "group_added"
   | "invite_accepted"
   | "dm"
-  | "block_dm";
+  | "block_dm"
+  | "idea_vote";
 
 export interface NotificationRow {
   id: string;
@@ -130,6 +137,8 @@ export interface NotificationRow {
     status?: RsvpStatus;
     preview?: string;
     group_name?: string;
+    /** idea_vote: the icon of the idea that was picked. */
+    idea_emoji?: string | null;
   };
   read_at: string | null;
   created_at: string;
@@ -142,6 +151,28 @@ export interface SavedPlace {
   name: string;
   /** What is put into an event's "Where" field. */
   address: string;
+  /** Its type ("House", "Park", or one of the person's own); null or missing: none. */
+  kind?: string | null;
+}
+
+/** One of a person's activities ("Brunch"), with where it happens. Private to them. */
+export interface Activity {
+  id: string;
+  name: string;
+  /** Its icon(s), stored like an event's (lib/event-icon.ts). */
+  emoji: string | null;
+  /** The kinds of place it happens in ("House", "Park"). Empty: anywhere. */
+  place_kinds: string[];
+  /** Favourite spots for it: ids of the person's saved places. */
+  place_ids: string[];
+}
+
+/** Someone saying "I'm up for this" to an idea on a block of Free time. */
+export interface IdeaVote {
+  block_id: string;
+  occurrence: number;
+  idea_id: string;
+  user_id: string;
 }
 
 /** What a private message quotes: a snapshot of a block, written by the database. */
@@ -210,6 +241,8 @@ export interface BlockDraft {
   description: string | null;
   /** The event's picture. Left out (undefined) to leave it as it is. */
   picture_path?: string | null;
+  /** Ideas on Free time. Left out (undefined) to leave them as they are. */
+  ideas?: BlockIdea[];
   rsvp_enabled: boolean;
   audience: AudienceMode;
   shared_user_ids: string[];

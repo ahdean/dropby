@@ -3,6 +3,7 @@
 import { createContext, useContext, useRef, type CSSProperties, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { Avatar, AvatarStack } from "@/components/ui/Avatar";
 import { EventIcon } from "@/components/ui/EventIcon";
+import { readIdeas } from "@/lib/activities";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { iconAsText } from "@/lib/event-icon";
 import type { BlockStatus, CalendarItem, FriendFreeCluster, OffscreenEntry } from "@/lib/calendar/model";
@@ -166,7 +167,8 @@ function CutMark({ edge, vertical }: { edge: "start" | "end"; vertical: boolean 
 function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }) {
   const { block, status, inCount } = item;
   const text = block.title?.trim();
-  if (!block.emoji && !text && status !== "locked") return null;
+  const ideas = block.type === "free" ? readIdeas(block.ideas).length : 0;
+  if (!block.emoji && !text && status !== "locked" && ideas === 0) return null;
   return (
     <span
       className={`pointer-events-none absolute flex min-w-0 items-center gap-1 ${
@@ -177,6 +179,12 @@ function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }
         <EventIcon value={block.emoji} size={17} max={2} />
         {text && <span className="truncate">{text}</span>}
         {status === "locked" && inCount > 0 && <span className="shrink-0 text-locked">+{inCount}</span>}
+        {ideas > 0 && (
+          <span className="flex shrink-0 items-center gap-[2px] text-locked" title={`${ideas} idea${ideas === 1 ? "" : "s"}`}>
+            <PixelIcon name="bulb" size={10} />
+            {ideas}
+          </span>
+        )}
         {block.repeat_weekly && <PixelIcon name="repeat" size={10} className="shrink-0 text-ink-faint" />}
       </span>
     </span>
@@ -319,7 +327,10 @@ export function FriendFreeTime({
   const names = people.map((p) => p?.name ?? "A friend");
   const from = Math.min(...cluster.items.map((i) => i.fullStartMin));
   const to = Math.max(...cluster.items.map((i) => i.fullEndMin));
-  const label = `${names.join(", ")} ${names.length === 1 ? "is" : "are"} free ${formatDayKey(cluster.dayKey)}, ${formatSpan(cluster.dayKey, from, to)}. Open for details.`;
+  const hasIdeas = cluster.items.some((item) => readIdeas(item.block.ideas).length > 0);
+  const label = `${names.join(", ")} ${names.length === 1 ? "is" : "are"} free ${formatDayKey(cluster.dayKey)}, ${formatSpan(cluster.dayKey, from, to)}${
+    hasIdeas ? ", with ideas of what to do" : ""
+  }. Open for details.`;
   const actions = useContext(QuickActionsContext);
   const zone = useRef<HTMLDivElement>(null);
   /** Where along the stretch the pointer last was (0 = its start, 1 = its end). */
@@ -368,6 +379,12 @@ export function FriendFreeTime({
         style={{ left: facesLeft }}
       >
         <AvatarStack people={people} size={size} max={3} />
+        {/* ideas of what to do: tap to see them and say which you're up for */}
+        {hasIdeas && (
+          <span className="idea-badge absolute -right-2 -top-2 flex items-center justify-center" aria-hidden="true">
+            <PixelIcon name="bulb" size={9} />
+          </span>
+        )}
       </button>
       {actions && (
         <HoverActions place="left-[var(--chat-x)] top-full -translate-x-1/2 mt-[3px]">

@@ -67,6 +67,16 @@ function render(n: NotificationRow, zone: string): Rendered {
         detail: n.data.preview ? `“${n.data.preview}”` : undefined,
         href: n.actor_id ? `/messages?with=${n.actor_id}` : "/messages",
       };
+    case "idea_vote": {
+      const idea = [iconAsText(n.data.idea_emoji), n.data.preview?.trim()].filter(Boolean).join(" ");
+      return {
+        icon: "bulb",
+        tone: "text-locked",
+        text: `${who} is up for ${idea || "one of your ideas"}`,
+        detail: when ? `Your free time · ${when}` : undefined,
+        href: event,
+      };
+    }
     case "connected":
       return { icon: "users", tone: "text-free", text: `${who} connected with you`, href: "/connections" };
     case "group_added":
