@@ -13,16 +13,16 @@ import * as vintage from "@/components/vintage/sprites";
 import { DEFAULT_THEME, THEMES, THEME_BOOT_SCRIPT, themeInfo } from "@/lib/themes";
 
 describe("designs", () => {
-  it("keep Retro night as the default, and offer the others after it", () => {
-    expect(DEFAULT_THEME).toBe("retro");
+  it("keep Light as the default, and offer the others after it", () => {
+    expect(DEFAULT_THEME).toBe("light");
     expect(THEMES.map((t) => t.id)).toEqual([
-      "retro", "light", "mara", "bulldog", "vintage", "sunset", "noir", "flowers", "winter", "fall", "summer", "beach",
+      "light", "retro", "mara", "bulldog", "vintage", "sunset", "noir", "flowers", "winter", "fall", "summer", "beach",
     ]);
     expect(new Set(THEMES.map((t) => t.id)).size).toBe(THEMES.length);
   });
 
   it("fall back to the default for a design that no longer exists", () => {
-    expect(themeInfo("neon").id).toBe("retro");
+    expect(themeInfo("neon").id).toBe("light");
   });
 
   it("point at icon files that exist", () => {
@@ -141,7 +141,7 @@ describe("the landscape scenes' pixel props", () => {
   it("have a scene for every design without a hand-drawn one, and a style block for every design", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     for (const theme of THEMES) {
-      if (theme.id === "retro") continue; // the default lives in :root itself
+      if (theme.id === "retro") continue; // Retro night's colours live in :root itself
       expect(css, theme.id).toContain(`:root[data-theme="${theme.id}"] {`);
     }
     const drawn = new Set(["retro", "light", "mara", "bulldog", "vintage"]);
@@ -164,8 +164,8 @@ describe("each design's own logo and help-button picture", () => {
 
   it("are shown one design at a time by the stylesheet", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
-    expect(css).toContain(`:root[data-theme]:not([data-theme="retro"]) .only-retro`);
-    for (const theme of THEMES.filter((t) => t.id !== "retro")) {
+    expect(css).toContain(`:root[data-theme]:not([data-theme="light"]) .only-light`);
+    for (const theme of THEMES.filter((t) => t.id !== "light")) {
       expect(css, theme.id).toContain(`:root:not([data-theme="${theme.id}"]) .only-${theme.id}`);
     }
   });

@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: { default: "wheet", template: "%s · wheet" },
   description: "See when your friends are free and what they're hosting, at a glance.",
   applicationName: "wheet",
-  appleWebApp: { capable: true, title: "wheet", statusBarStyle: "black-translucent" },
+  appleWebApp: { capable: true, title: "wheet", statusBarStyle: "default" },
   formatDetection: { telephone: false },
   // Browser tab and home screens: the line-drawn mara face (drawn by scripts/make-icons.ts).
   icons: {
@@ -27,11 +27,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#03040a",
+  themeColor: "#e4e7ee", // the default design's (Light); each design sets its own once applied
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  colorScheme: "dark",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

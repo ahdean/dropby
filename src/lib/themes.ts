@@ -30,20 +30,20 @@ export interface ThemeInfo {
 
 export const THEMES: readonly ThemeInfo[] = [
   {
-    id: "retro",
-    name: "Retro night",
-    description: "The original: a black starfield, stone tiles and glowing beams.",
-    colorScheme: "dark",
-    themeColor: "#03040a",
-    swatch: ["#03040a", "#171b2a", "#f0eee2"],
-  },
-  {
     id: "light",
     name: "Light",
-    description: "The same pieces on a bright, paper-light background.",
+    description: "The default: bright and paper-light, stone tiles and clear beams.",
     colorScheme: "light",
     themeColor: "#e4e7ee",
     swatch: ["#e4e7ee", "#ffffff", "#141824"],
+  },
+  {
+    id: "retro",
+    name: "Retro night",
+    description: "A black starfield, stone tiles and glowing beams.",
+    colorScheme: "dark",
+    themeColor: "#03040a",
+    swatch: ["#03040a", "#171b2a", "#f0eee2"],
   },
   {
     id: "mara",

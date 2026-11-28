@@ -15,9 +15,10 @@
    on colour alone. Text colours all meet WCAG AA (4.5:1) on their background.
 
    Designs: the colour tokens in @theme and the surface variables in :root
-   below are the default design ("Retro night"). Every other design (the list
-   is in src/lib/themes.ts) overrides them in a :root[data-theme="…"] block
-   further down; nothing else changes between designs.
+   below are Retro night's. Every other design (the list is in
+   src/lib/themes.ts) overrides them in a :root[data-theme="…"] block further
+   down; nothing else changes between designs. The default design is Light:
+   the page starts with data-theme="light" (src/app/layout.tsx).
    ============================================================================= */
 
 @theme {
@@ -959,9 +960,9 @@
 }
 
 /* Pieces that belong to one design only (.only-<design>), or to every design but one (.except-<design>).
-   Retro night is the design until another is chosen, so .only-retro also shows with no data-theme at all. */
-:root[data-theme]:not([data-theme="retro"]) .only-retro,
-:root:not([data-theme="light"]) .only-light,
+   Light is the design until another is chosen, so .only-light also shows with no data-theme at all. */
+:root:not([data-theme="retro"]) .only-retro,
+:root[data-theme]:not([data-theme="light"]) .only-light,
 :root:not([data-theme="mara"]) .only-mara,
 :root:not([data-theme="bulldog"]) .only-bulldog,
 :root:not([data-theme="vintage"]) .only-vintage,

@@ -209,10 +209,9 @@ const LOGOS: Record<string, () => Grid> = {
 
 const K = "#1d1410";
 
-const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so it needs no little "?" badge)? */ hasQuestionMark: boolean }> = {
+const HELP: Record<string, { grid: () => Grid }> = {
   /** Retro night: an old computer screen asking "?". */
   retro: {
-    hasQuestionMark: true,
     grid: () =>
       picture(
         [
@@ -238,7 +237,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Light: a speech bubble with a question mark. */
   light: {
-    hasQuestionMark: true,
     grid: () =>
       picture(
         [
@@ -263,12 +261,11 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
       ),
   },
   /** Mara: the mara in profile. */
-  mara: { hasQuestionMark: false, grid: () => picture(MARA_MINI.rows, PALETTE) },
+  mara: { grid: () => picture(MARA_MINI.rows, PALETTE) },
   /** Bulldog: the bulldog's face. */
-  bulldog: { hasQuestionMark: false, grid: () => picture(BULLDOG_FACE.rows, BULLDOG_PALETTE) },
+  bulldog: { grid: () => picture(BULLDOG_FACE.rows, BULLDOG_PALETTE) },
   /** Vintage: a brass magnifying glass. */
   vintage: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -294,7 +291,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Sunset: the sun going down into the sea. */
   sunset: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -320,7 +316,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Noir: a detective's fedora. */
   noir: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -346,7 +341,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Flowers: a daisy. */
   flowers: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -372,7 +366,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Winter: a snowflake. */
   winter: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -398,7 +391,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Fall: a maple leaf. */
   fall: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -424,7 +416,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Summer: an ice lolly with a bite out of it. */
   summer: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -450,7 +441,6 @@ const HELP: Record<string, { grid: () => Grid; /** Does it already say "?" (so i
   },
   /** Beach: a beach ball. */
   beach: {
-    hasQuestionMark: false,
     grid: () =>
       picture(
         [
@@ -502,7 +492,6 @@ export interface DesignPictures {
   help: string;
   helpWidth: number;
   helpHeight: number;
-  helpHasQuestionMark: boolean;
 }
 
 const cache = new Map<string, DesignPictures>();
@@ -514,7 +503,7 @@ export function designPictures(id: string): DesignPictures {
   const logo = (LOGOS[id] ?? LOGOS.light)();
   const helpEntry = HELP[id] ?? HELP.light;
   const help = helpEntry.grid();
-  const result = { logo: dataUrl(logo), help: dataUrl(help), helpWidth: help[0].length, helpHeight: help.length, helpHasQuestionMark: helpEntry.hasQuestionMark };
+  const result = { logo: dataUrl(logo), help: dataUrl(help), helpWidth: help[0].length, helpHeight: help.length };
   cache.set(id, result);
   return result;
 }
