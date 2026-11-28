@@ -92,6 +92,13 @@ export function IdeasField({
     onChange([...ideas, idea]);
   };
   const remove = (idea: BlockIdea) => onChange(ideas.filter((i) => i.id !== idea.id));
+  /** In the picker: tap to add, tap again to take it off. */
+  const ideaFor = (option: IdeaOption) => ideas.find((i) => sameIdea(i, { title: option.title, place: option.place?.address ?? null }));
+  const toggle = (option: IdeaOption) => {
+    const existing = ideaFor(option);
+    if (existing) remove(existing);
+    else add(option);
+  };
 
   // One-tap ideas: your own, or (until you have some) ones that suit this time of day.
   const parts = partsOf(startMin, endMin);
@@ -166,7 +173,14 @@ export function IdeasField({
       </p>
 
       {pickerOpen && (
-        <IdeaPicker title="Add an idea" chosen={ideas.map((i) => i.title)} onPick={add} onClose={() => setPickerOpen(false)} />
+        <IdeaPicker
+          title="Ideas"
+          chosen={ideas.filter((i) => !i.place).map((i) => i.title)}
+          isChosen={(option) => Boolean(ideaFor(option))}
+          onPick={toggle}
+          onClose={() => setPickerOpen(false)}
+          note={full ? `${MAX_IDEAS} chosen, the most one block can have` : `${ideas.length} of ${MAX_IDEAS} chosen`}
+        />
       )}
     </div>
   );

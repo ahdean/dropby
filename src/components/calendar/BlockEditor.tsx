@@ -709,7 +709,13 @@ function EditorDialog({
       )}
       <ActivitiesDialog open={activitiesOpen} onClose={() => setActivitiesOpen(false)} />
       {planPickerOpen && (
-        <IdeaPicker title="Pick an activity" chosen={[form.title]} onPick={(option) => choosePlan(option, false)} onClose={() => setPlanPickerOpen(false)} />
+        <IdeaPicker
+          title="Pick an activity"
+          chosen={planKey ? [form.title] : []}
+          isChosen={(option) => option.key === planKey || (Boolean(planKey) && isPlan(option))}
+          onPick={(option) => choosePlan(isPlan(option) && planKey ? { ...option, key: planKey } : option)}
+          onClose={() => setPlanPickerOpen(false)}
+        />
       )}
       <PlacesDialog
         open={placesOpen !== null}

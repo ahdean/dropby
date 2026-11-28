@@ -167,11 +167,12 @@ function CutMark({ edge, vertical }: { edge: "start" | "end"; vertical: boolean 
 function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }) {
   const { block, status, inCount } = item;
   const text = block.title?.trim();
-  const ideas = block.type === "free" ? readIdeas(block.ideas).length : 0;
+  const ideaList = block.type === "free" ? readIdeas(block.ideas) : [];
+  const ideas = ideaList.length;
   if (!block.emoji && !text && status !== "locked" && ideas === 0) return null;
   return (
     <span
-      className={`pointer-events-none absolute flex min-w-0 items-center gap-1 ${
+      className={`@container pointer-events-none absolute flex min-w-0 items-center gap-1 ${
         vertical ? "inset-x-1 top-4 flex-col items-start" : "inset-y-0 left-4 right-4"
       }`}
     >
@@ -179,15 +180,38 @@ function BeamLabel({ item, vertical }: { item: CalendarItem; vertical: boolean }
         <EventIcon value={block.emoji} size={17} max={2} />
         {text && <span className="truncate">{text}</span>}
         {status === "locked" && inCount > 0 && <span className="shrink-0 text-locked">+{inCount}</span>}
-        {ideas > 0 && (
-          <span className="flex shrink-0 items-center gap-[2px] text-locked" title={`${ideas} idea${ideas === 1 ? "" : "s"}`}>
-            <PixelIcon name="bulb" size={10} />
-            {ideas}
-          </span>
-        )}
+        {ideas > 0 && <IdeaMarks ideas={ideaList} roomy={text ? "@min-[230px]:flex" : "@min-[110px]:flex"} short={text ? "@min-[230px]:hidden" : "@min-[110px]:hidden"} />}
         {block.repeat_weekly && <PixelIcon name="repeat" size={10} className="shrink-0 text-ink-faint" />}
       </span>
     </span>
+  );
+}
+
+/**
+ * The ideas on a block of Free time: their icons where there is room (up to
+ * three, then "+2"), otherwise a bulb and how many. `roomy`/`short` are the
+ * container-width classes that switch between the two (the label is a size
+ * container), so they can depend on what else is in the label.
+ */
+function IdeaMarks({ ideas, roomy, short }: { ideas: { title: string; emoji?: string | null }[]; roomy: string; short: string }) {
+  const title = ideas.map((i) => i.title).join(", ");
+  const icons = ideas.filter((i) => i.emoji?.trim()).slice(0, 3);
+  const more = ideas.length - icons.length;
+  return (
+    <>
+      {icons.length > 0 && (
+        <span className={`hidden shrink-0 items-center gap-[3px] ${roomy}`} title={`Ideas: ${title}`}>
+          {icons.map((idea, index) => (
+            <EventIcon key={index} value={idea.emoji} size={15} max={1} />
+          ))}
+          {more > 0 && <span className="text-[15px] text-locked">+{more}</span>}
+        </span>
+      )}
+      <span className={`flex shrink-0 items-center gap-[2px] text-locked ${icons.length > 0 ? short : ""}`} title={`Ideas: ${title}`}>
+        <PixelIcon name="bulb" size={10} />
+        {ideas.length}
+      </span>
+    </>
   );
 }
 
@@ -327,7 +351,10 @@ export function FriendFreeTime({
   const names = people.map((p) => p?.name ?? "A friend");
   const from = Math.min(...cluster.items.map((i) => i.fullStartMin));
   const to = Math.max(...cluster.items.map((i) => i.fullEndMin));
-  const hasIdeas = cluster.items.some((item) => readIdeas(item.block.ideas).length > 0);
+  const clusterIdeas = cluster.items.flatMap((item) => readIdeas(item.block.ideas));
+  const hasIdeas = clusterIdeas.length > 0;
+  // Their ideas' icons (each once, up to three), shown beside the faces where the stretch is long enough.
+  const ideaIcons = [...new Set(clusterIdeas.map((i) => i.emoji?.trim()).filter((e): e is string => Boolean(e)))].slice(0, 3);
   const label = `${names.join(", ")} ${names.length === 1 ? "is" : "are"} free ${formatDayKey(cluster.dayKey)}, ${formatSpan(cluster.dayKey, from, to)}${
     hasIdeas ? ", with ideas of what to do" : ""
   }. Open for details.`;
@@ -366,7 +393,7 @@ export function FriendFreeTime({
     <div
       ref={zone}
       style={{ ...style, ["--chat-x" as string]: facesLeft }}
-      className="has-hover-actions absolute z-[5]"
+      className="@container has-hover-actions absolute z-[5]"
       onMouseEnter={follow}
       onMouseMove={follow}
     >
@@ -379,10 +406,25 @@ export function FriendFreeTime({
         style={{ left: facesLeft }}
       >
         <AvatarStack people={people} size={size} max={3} />
-        {/* ideas of what to do: tap to see them and say which you're up for */}
+        {/* ideas of what to do: their icons beside the faces if there's room, otherwise a bulb; tap to see them */}
         {hasIdeas && (
-          <span className="idea-badge absolute -right-2 -top-2 flex items-center justify-center" aria-hidden="true">
+          <span
+            className={`idea-badge absolute -right-2 -top-2 flex items-center justify-center ${ideaIcons.length > 0 ? "@min-[200px]:hidden" : ""}`}
+            aria-hidden="true"
+          >
             <PixelIcon name="bulb" size={9} />
+          </span>
+        )}
+        {ideaIcons.length > 0 && (
+          <span
+            className={`plate absolute top-1/2 hidden -translate-y-1/2 items-center gap-[3px] !max-w-none !px-1 @min-[200px]:flex ${
+              facesAt < 0.5 ? "left-full ml-1" : "right-full mr-1"
+            }`}
+            aria-hidden="true"
+          >
+            {ideaIcons.map((icon) => (
+              <EventIcon key={icon} value={icon} size={14} max={1} />
+            ))}
           </span>
         )}
       </button>
