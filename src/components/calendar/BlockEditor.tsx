@@ -14,6 +14,8 @@ import { describeConflict, expandBlocks, findConflict } from "@/lib/calendar/mod
 import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
 import { DOOR_ICON, defaultTitleFor, isAutomaticTitle } from "@/lib/event-icon";
 import { PlacesDialog } from "@/components/places/PlacesManager";
+import { PlaceFinder } from "@/components/places/PlaceFinder";
+import { locationForPlace } from "@/lib/places-search";
 import { ActivitiesDialog } from "@/components/activities/ActivitiesManager";
 import { IdeasField } from "@/components/activities/BlockIdeas";
 import { IdeaPicker, OptionChip } from "@/components/activities/IdeaPicker";
@@ -25,6 +27,7 @@ import {
   optionsFromActivities,
   partsOf,
   placeForEvent,
+  placeQueryFor,
   placesFor,
   readIdeas,
   type BlockIdea,
@@ -49,7 +52,15 @@ export type EditorState =
   | {
       mode: "create";
       range: DayRange;
-      preset?: { type?: BlockType; emoji?: string; title?: string; location?: string; audience?: AudienceValue; ideas?: BlockIdea[] };
+      preset?: {
+        type?: BlockType;
+        emoji?: string;
+        title?: string;
+        location?: string;
+        description?: string;
+        audience?: AudienceValue;
+        ideas?: BlockIdea[];
+      };
     }
   | {
       mode: "edit";
@@ -98,7 +109,7 @@ function initialForm(state: EditorState, zone: string): Form {
       title: state.preset?.title ?? "",
       emoji: state.preset?.emoji ?? DOOR_ICON,
       location: state.preset?.location ?? "",
-      description: "",
+      description: state.preset?.description ?? "",
       picturePath: null,
       pictureFile: null,
       rsvp: true,
@@ -189,6 +200,7 @@ function EditorDialog({
   const [placesOpen, setPlacesOpen] = useState<"save" | "manage" | null>(null);
   const [activitiesOpen, setActivitiesOpen] = useState(false);
   const [planPickerOpen, setPlanPickerOpen] = useState(false);
+  const [finderOpen, setFinderOpen] = useState(false);
   const { toast, toastError, choose } = useFeedback();
   const ids = useId();
 
@@ -258,6 +270,10 @@ function EditorDialog({
   // The one chosen: the one just picked; otherwise the one named in the title
   // (a pair, listed before its activity, when its place is the one in "Where").
   const planKey = picked === "none" ? undefined : picked ? picked.key : suggestedOptions.find(isPlan)?.key;
+  /** The activity chosen as the plan, by name (for finding places for it). */
+  const planName = planKey
+    ? ((picked && picked !== "none" && picked.key === planKey ? picked.title : suggestedOptions.find((o) => o.key === planKey)?.title) ?? form.title)
+    : null;
   // One picked from the full list shows in the row too.
   const planOptions =
     picked && picked !== "none" && !suggestedOptions.some((o) => o.key === picked.key) ? [picked, ...suggestedOptions] : suggestedOptions;
@@ -586,6 +602,11 @@ function EditorDialog({
                   <option key={place} value={place} label={locationLabel(place)} />
                 ))}
               </datalist>
+              {/* Real places for the activity (or anything), near Home, from Google Maps. */}
+              <button type="button" className="btn btn-sm tile tile-dark mt-2" onClick={() => setFinderOpen(true)}>
+                <PixelIcon name="globe" size={12} />
+                {planName && placeQueryFor(planName) ? `Find places for ${planName.toLowerCase()} near home` : "Find a place near home"}
+              </button>
               {/* Your own saved places, by nickname. Tapping one fills in its address. */}
               <div className="mt-2">
                 <div className="label !mb-1">Saved places</div>
@@ -708,6 +729,16 @@ function EditorDialog({
         <EditorChat block={editing.block} occurrence={editing.occurrence} chatTo={editing.chatTo ?? null} focus={Boolean(editing.focusChat)} zone={zone} />
       )}
       <ActivitiesDialog open={activitiesOpen} onClose={() => setActivitiesOpen(false)} />
+      {finderOpen && (
+        <PlaceFinder
+          activity={planName}
+          onClose={() => setFinderOpen(false)}
+          onPick={(place) => {
+            set("location", locationForPlace(place));
+            setFinderOpen(false);
+          }}
+        />
+      )}
       {planPickerOpen && (
         <IdeaPicker
           title="Pick an activity"

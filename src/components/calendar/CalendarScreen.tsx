@@ -45,6 +45,7 @@ import { useZone } from "@/lib/zone";
 import { BlockEditor, type EditorState } from "./BlockEditor";
 import { IdeasBrowser } from "@/components/activities/IdeasBrowser";
 import { hostRange, ideaFromOption, placeForEvent, type FreeWindow, type IdeaOption } from "@/lib/activities";
+import { EVENT_MINUTES, eventIcon, type FoundEvent } from "@/lib/events-search";
 import { DayView } from "./DayView";
 import { ChatPopover, type ChatPopoverRequest } from "./ChatPopover";
 import { BlockSheet, type SheetRequest } from "./EventPeek";
@@ -407,6 +408,23 @@ export function CalendarScreen() {
       },
     });
   };
+  /** From the ideas: go to an upcoming event together (an event of your own at its time, with the tickets link). */
+  const hostEvent = (event: FoundEvent, window: FreeWindow | null) => {
+    setIdeasOpen(false);
+    const start = utcToZoned(event.startIso, zone);
+    setEditor({
+      mode: "create",
+      range: { dayKey: start.dayKey, startMin: start.minutes, endMin: start.minutes + EVENT_MINUTES },
+      preset: {
+        type: "join",
+        emoji: eventIcon(event.category),
+        title: event.title.slice(0, 80),
+        location: [event.venue, event.address].filter(Boolean).join(", ").slice(0, 200) || undefined,
+        description: `Tickets: ${event.url}`,
+        audience: window ? { audience: "custom", userIds: window.userIds, groupIds: [] } : undefined,
+      },
+    });
+  };
   /** From the ideas: new Free time (when friends are free, or the next time it fits), with this idea on it. */
   const freeWithIdea = (option: IdeaOption, window: FreeWindow | null) => {
     setIdeasOpen(false);
@@ -515,6 +533,7 @@ export function CalendarScreen() {
         nowMin={nowMin}
         onHost={hostIdea}
         onNewFree={freeWithIdea}
+        onHostEvent={hostEvent}
       />
       <ChatPopover request={chatPop} zone={zone} onClose={closeChatPop} onOpen={openItem} />
       <BlockEditor

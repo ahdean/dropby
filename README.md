@@ -125,6 +125,29 @@ If you named the Twilio Verify service `dropby` in step 4, rename it to `wheet` 
 
 ---
 
+### Step 6 (optional): place suggestions and upcoming events
+
+These switch on **Find a place near home** (real places for an activity, from Google Maps) and the **Events** in Ideas (concerts, games and shows from Ticketmaster and SeatGeek). Each is optional; without a key, that part says it isn't switched on and everything else works. All keys go in Vercel → Project → **Settings → Environment Variables**, then **Redeploy**. They stay on the server; browsers never see them.
+
+**Google Maps (places)**
+
+1. Open [console.cloud.google.com](https://console.cloud.google.com), create a project (any name, e.g. "wheet"), and add a billing account when asked. Google requires one, but gives a free allowance every month; a group of friends searching now and then is unlikely to go past it.
+2. **APIs & Services → Library**, search for **Places API (New)** and click **Enable**.
+3. **APIs & Services → Credentials → Create credentials → API key**. Click the new key; under **API restrictions** choose **Restrict key** and tick **Places API (New)**; save. (Leave "Application restrictions" as None: the key is only used from Vercel's servers.)
+4. Optional but sensible: **APIs & Services → Places API (New) → Quotas**, and lower the requests per day (for example to 300), so a mistake can never run up a bill.
+5. In Vercel add `GOOGLE_MAPS_API_KEY` with the key, and redeploy.
+
+Each "Find a place" search is one Places Text Search (with ratings and opening hours). The place's map spot for **Home** is looked up once and remembered on each device for a month. Google's terms don't allow keeping their results, so nothing from them is stored.
+
+**Ticketmaster and SeatGeek (events)**
+
+- Ticketmaster: sign up at [developer.ticketmaster.com](https://developer.ticketmaster.com), open **My Apps**, and copy the **Consumer Key**. In Vercel add it as `TICKETMASTER_API_KEY`.
+- SeatGeek: sign in at [seatgeek.com/account/develop](https://seatgeek.com/account/develop), create an app, and copy its **Client ID**. In Vercel add it as `SEATGEEK_CLIENT_ID`.
+
+Then redeploy. Either one is enough; with both, a show listed by both appears once.
+
+---
+
 ## Updating the database
 
 Most updates to wheet only change the app, and Vercel deploys them by itself. Now and then a new feature needs a change to the database too. When that happens a new file appears in [`supabase/migrations`](supabase/migrations), and it has to be run once:
@@ -354,7 +377,9 @@ Things to do together, and where (`src/lib/activities.ts`, screens in `src/compo
 - **Place types.** Saved places can have a type: House, Restaurant, Café, Bar, Park, Outdoors, Remote, Gym, Venue, Shops, or your own (**+ Other**, e.g. "Rooftop"). Your own types are offered again. When an idea from the list is the plan, saved places of the sort it usually happens in come first (Brunch: restaurants and cafés).
 - **Hosting.** The editor's plan starts with an **Activity** row, and that is where an event's icon comes from: one tap on an activity gives the event its icon and, unless you typed your own title, its name; a pair fills in the place too. Tap it again to take it off (back to wheet's open door, the icon of an event with no activity). The icon shows next to the title. **More ideas** opens every activity by section, with **+ New activity** to add one of your own and pick it. The list stays open while you choose (tap again to take one off; **Done** closes it), for an event's activity and for Free time's ideas alike. (Until you have activities of your own, the row offers ideas that suit the time of day.)
 - **Ideas on Free time.** Free time can carry up to six ideas of what to do: add your activities, pairs or ideas from the list in a tap, or type your own. Friends see them on the calendar (the ideas' icons on the block, or beside your face on theirs, where there's room; a bulb where there isn't) and tap **Up for it?** on the ones they'd do; you're notified ("Mika is up for Brunch"), see their faces by each idea (most-picked first), and **Make it the plan** turns the Free time into an event with that idea (icon, title, place) for you to check and save. Picks are per week of a weekly repeat, and an idea taken off takes its picks with it.
-- **The Ideas browser.** **Ideas** in the calendar's toolbar opens cards to flip through (arrows, swipe or the arrow keys). First come ideas for times when friends are free in the next two weeks ("Sam and Mika are free Sun 12 – 4 PM"), each with the idea that fits that time best (your pairs and activities first, then the list; brunch in the morning, at weekends; nothing out of season); then your own activities, then the list, in an order that changes daily. Filters: All, With friends, or a kind of idea. On each card: **Invite them** / **Host it** (a new event with the plan, at that time and shared with those friends; on its own, at the next time it suits), **Add to your free time** (as an idea; or **Be free then too**, new Free time then with the idea on it), **Share** (the phone's share sheet, or copy: "Anyone up for brunch Sunday 12 – 4 PM? 🥞") and, for ideas from the list, **Save** to your activities.
+- **Find a place near home.** Under "Where" in the editor, **Find places for bowling near home** (or "Find a place near home" with no activity chosen) asks Google Maps for real places for the activity, around your saved place called **Home** (or one with "home" in its name; San Francisco if there's none). Each comes with its rating, kind, price, distance and whether it's open now; **Use** puts it in "Where" with its map pin, **Maps** opens it, the star saves it to your places. Shortcuts at the top (Brunch, Coffee, Park, Bowling, Climbing…) or a search box ("ramen", "rooftop bar") look for anything else. Each idea from the list knows what to search for (bowling → "bowling alley", park hang → "park"; at-home ideas have nothing to search for); your own activities are searched by name. Needs a Google Maps key (Step 6); `src/lib/places-search.ts`, `src/app/(app)/place-search-actions.ts`, `src/components/places/PlaceFinder.tsx`.
+- **Upcoming events.** Ideas also shows concerts, games and shows near Home in the next two weeks, from Ticketmaster and SeatGeek (whichever has a key, Step 6): under **Events**, and a few mixed in with the ideas. An event that starts while friends are free goes with them ("Mika and Priya are free Mon 7 – 9 PM"). **Invite them** / **Host it** makes an event of your own at its time (three hours), with the venue and the tickets link; **Tickets** opens the listing; **Share** sends it. `src/lib/events-search.ts`, `src/app/(app)/event-search-actions.ts`.
+- **The Ideas browser.** **Ideas** in the calendar's toolbar opens cards to flip through (arrows, swipe or the arrow keys). First come ideas for times when friends are free in the next two weeks ("Sam and Mika are free Sun 12 – 4 PM"), each with the idea that fits that time best (your pairs and activities first, then the list; brunch in the morning, at weekends; nothing out of season); then your own activities, then the list, in an order that changes daily. Filters: All, With friends, or a kind of idea. On each card: **Invite them** / **Host it** (a new event with the plan, at that time and shared with those friends; on its own, at the next time it suits), **Add to your free time** (as an idea; or **Be free then too**, new Free time then with the idea on it), **Share** (the phone's share sheet, or copy: "Anyone up for brunch Sunday 12 – 4 PM? 🥞") and, for ideas from the list, **Save** to your activities. **Places** (for ideas you go out for) shows real places near Home for it; **Host it here** makes the event there.
 
 ### Chats in blocks
 

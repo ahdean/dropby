@@ -619,3 +619,127 @@ export function placeForEvent(place: { name: string; address: string }): string 
   const { label, link } = splitLocation(place.address);
   return label ? place.address : joinLocation(place.name, link);
 }
+
+// ---------------------------------------------------------------------------
+// What to search Google Maps for, to find places for an activity
+// ---------------------------------------------------------------------------
+
+/**
+ * Search words for the ideas in the list that happen somewhere you go: what
+ * Google Maps is asked for ("bowling alley"). Ideas that happen at home or
+ * from afar have none. Anything not listed is searched for by its name.
+ */
+const PLACE_QUERIES: Record<string, string | null> = {
+  brunch: "brunch",
+  coffee: "coffee shop",
+  breakfast: "breakfast",
+  lunch: "lunch",
+  dinner: "dinner restaurant",
+  "dinner-party": null,
+  potluck: "park picnic area",
+  pizza: "pizza",
+  tacos: "tacos",
+  sushi: "sushi",
+  ramen: "ramen",
+  drinks: "cocktail bar",
+  "happy-hour": "happy hour",
+  "wine-night": "wine bar",
+  bake: null,
+  cook: null,
+  "ice-cream": "ice cream",
+  "bubble-tea": "bubble tea",
+  picnic: "park picnic area",
+  bbq: "park with barbecue grills",
+  dessert: "dessert",
+  "late-bite": "late night food",
+  market: "farmers market",
+  "hot-chocolate": "hot chocolate",
+  hangout: "park",
+  tv: null,
+  "movie-night": null,
+  "game-night": "board game cafe",
+  "video-games": "arcade bar",
+  cards: "board game cafe",
+  puzzle: null,
+  karaoke: "karaoke",
+  jam: null,
+  records: "record store",
+  crafts: "craft workshop",
+  knit: "yarn store",
+  "book-club": "bookstore cafe",
+  "plant-swap": "plant nursery",
+  "watch-game": "sports bar",
+  study: "cafe for studying",
+  cowork: "cafe with wifi",
+  "fix-it": null,
+  call: null,
+  "watch-party": null,
+  "online-games": null,
+  walk: "park walking trail",
+  cinema: "movie theater",
+  "live-music": "live music venue",
+  comedy: "comedy club",
+  museum: "museum",
+  trivia: "bar trivia night",
+  bowling: "bowling alley",
+  darts: "bar with darts",
+  dancing: "dance club",
+  thrift: "thrift store",
+  sunset: "sunset viewpoint",
+  stars: "scenic viewpoint",
+  beach: "beach",
+  "road-trip": null,
+  "dog-walk": "dog park",
+  fair: null,
+  camping: "campground",
+  "mini-golf": "mini golf",
+  volunteer: null,
+  run: "running trail",
+  bike: "bike trail",
+  hike: "hiking trail",
+  climb: "climbing gym",
+  yoga: "yoga studio",
+  gym: "gym",
+  swim: "public swimming pool",
+  soccer: "soccer field",
+  basketball: "basketball court",
+  tennis: "tennis court",
+  frisbee: "park",
+  "ping-pong": "ping pong",
+  volleyball: "volleyball court",
+  skate: "roller skating rink",
+  paddle: "kayak rental",
+  ski: "ski resort",
+  "ice-skate": "ice skating rink",
+};
+
+/**
+ * What to search Google Maps for to find places for an activity: the list's
+ * search words for an idea from the list (null when it happens at home or
+ * from afar), or the activity's own name.
+ */
+export function placeQueryFor(name: string | null | undefined): string | null {
+  const text = (name ?? "").trim();
+  if (!text) return null;
+  const known = libraryIdeaNamed(text);
+  if (known) return known.id in PLACE_QUERIES ? PLACE_QUERIES[known.id] : known.name.toLowerCase();
+  return text;
+}
+
+/** A few going-out activities to start a place search from, the given one first. */
+export function placeSearchStarters(first: string | null | undefined): { label: string; query: string; emoji: string }[] {
+  const ids = ["brunch", "coffee", "dinner", "drinks", "hangout", "bowling", "museum", "climb", "karaoke", "live-music", "hike", "mini-golf"];
+  const starters = ids
+    .map((id) => IDEA_LIBRARY.find((item) => item.id === id))
+    .filter((item): item is LibraryIdea => Boolean(item))
+    .map((item) =>
+      item.id === "hangout"
+        ? { label: "Park", query: "park", emoji: "🌳" }
+        : { label: item.name, query: PLACE_QUERIES[item.id] ?? item.name, emoji: item.emoji },
+    );
+  const query = placeQueryFor(first);
+  if (!first || !query) return starters;
+  const known = libraryIdeaNamed(first);
+  const own = { label: first.trim(), query, emoji: known?.emoji ?? "📍" };
+  return [own, ...starters.filter((s) => s.query !== query)];
+}
