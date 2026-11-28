@@ -13,7 +13,6 @@ import {
   MAX_IDEAS,
   buildSuggestions,
   ideaFromOption,
-  kindsLabel,
   optionFromLibrary,
   optionsFromActivities,
   readIdeas,
@@ -215,7 +214,7 @@ function Browser({
 
   const save = async (option: IdeaOption) => {
     try {
-      await activityActions.add({ name: option.title, emoji: option.emoji, place_kinds: option.kinds.slice(0, 2), place_ids: [] });
+      await activityActions.add({ name: option.title, emoji: null, place_kinds: [], place_ids: [], category: option.category });
       toast(`"${option.title}" saved to your activities.`, "success");
     } catch (error) {
       toastError(error);
@@ -278,19 +277,15 @@ function Browser({
                     {card.option.source === "pair" ? "Your pair" : card.option.source === "activity" ? "Your activity" : "Idea"}
                   </div>
                   <h3 className="font-display text-[13px] leading-snug text-ink sm:text-[15px]">{card.option.title}</h3>
-                  <p className="text-ink-dim">
-                    {card.option.place ? (
-                      <>
-                        <PixelIcon name="pin" size={11} className="mr-1 inline text-join" />
-                        {card.option.place.name}
-                        {locationLabel(card.option.place.address) && locationLabel(card.option.place.address) !== card.option.place.name && (
-                          <span className="text-ink-faint"> · {locationLabel(card.option.place.address)}</span>
-                        )}
-                      </>
-                    ) : (
-                      kindsLabel(card.option.kinds) || "Anywhere"
-                    )}
-                  </p>
+                  {card.option.place && (
+                    <p className="text-ink-dim">
+                      <PixelIcon name="pin" size={11} className="mr-1 inline text-join" />
+                      {card.option.place.name}
+                      {locationLabel(card.option.place.address) && locationLabel(card.option.place.address) !== card.option.place.name && (
+                        <span className="text-ink-faint"> · {locationLabel(card.option.place.address)}</span>
+                      )}
+                    </p>
+                  )}
                 </div>
               </div>
 

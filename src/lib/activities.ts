@@ -421,7 +421,8 @@ export function ideaFromOption(option: IdeaOption): BlockIdea {
       id: newIdeaId(),
       title: option.title,
       emoji: option.emoji,
-      kind: option.place ? null : kindsLabel(option.kinds) || null,
+      // Only a particular place (from a pair); kinds of place aren't shown any more.
+      kind: null,
       place: option.place?.address ?? null,
     },
   ])[0];

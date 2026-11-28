@@ -137,7 +137,8 @@ describe("ideas on Free time", () => {
 
   it("come from an activity, a pair, or the library", () => {
     const fromLibrary = ideaFromOption(optionFromLibrary(libraryIdeaNamed("Book club")!));
-    expect(fromLibrary).toMatchObject({ title: "Book club", emoji: "📚", kind: "House, Park or Café" });
+    expect(fromLibrary).toMatchObject({ title: "Book club", emoji: "📚" });
+    expect(fromLibrary.kind).toBeUndefined(); // kinds of place aren't put on ideas
     expect(fromLibrary.id).toMatch(/^[a-z0-9]{4,}$/);
 
     const places = [{ id: "p1", name: "Joe's", address: "Joe's Diner, 1 Main St" }];

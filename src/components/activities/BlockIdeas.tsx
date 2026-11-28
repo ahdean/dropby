@@ -28,9 +28,9 @@ import { locationLabel } from "@/lib/maps";
 import type { DayKey } from "@/lib/time";
 import type { CalendarBlock, IdeaVote, Profile } from "@/lib/types";
 
-/** Where an idea happens, in a few words: the place's name, or the kind of place. */
-export function ideaWhere(idea: Pick<BlockIdea, "kind" | "place">): string {
-  return idea.place ? locationLabel(idea.place) : (idea.kind ?? "");
+/** Where an idea happens: its place, if it has one (a kind of place saved on older ideas isn't shown). */
+export function ideaWhere(idea: Pick<BlockIdea, "place">): string {
+  return idea.place ? locationLabel(idea.place) : "";
 }
 
 /** Who picked one idea. */

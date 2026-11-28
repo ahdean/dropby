@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useId, useState, type FormEvent } from "react";
-import { KindPicker } from "./KindPicker";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { EmojiPicker } from "@/components/ui/EmojiPicker";
@@ -13,7 +12,6 @@ import {
   IDEA_LIBRARY,
   activityCategory,
   activityIcon,
-  kindsLabel,
   libraryIdeaNamed,
   optionFromLibrary,
   optionsFromActivities,
@@ -34,9 +32,9 @@ export function ownKinds(places: readonly SavedPlace[], activities: readonly Act
 const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
- * An activity's details. Only the name is needed; where it happens, favourite
- * spots and an icon are extras: shown straight away when editing, and behind
- * "More options" when adding (`quick`).
+ * An activity's details. Only the name is needed; favourite spots and an icon
+ * are extras: shown straight away when editing, and behind "More options"
+ * when adding (`quick`).
  */
 function ActivityForm({
   initial,
@@ -53,11 +51,9 @@ function ActivityForm({
 }) {
   const ids = useId();
   const { places } = useSavedPlaces();
-  const { activities } = useActivities();
   const { toastError } = useFeedback();
   const [name, setName] = useState(initial?.name ?? "");
   const [emoji, setEmoji] = useState(initial?.emoji ?? "");
-  const [kinds, setKinds] = useState<string[]>(initial?.place_kinds ?? []);
   const [placeIds, setPlaceIds] = useState<string[]>(initial?.place_ids ?? []);
   const [more, setMore] = useState(!quick);
   const [iconsOpen, setIconsOpen] = useState(false);
@@ -69,12 +65,11 @@ function ActivityForm({
     if (name.trim() === "") return;
     setBusy(true);
     try {
-      // A name from the idea list brings its usual places, unless some were chosen.
-      const known = libraryIdeaNamed(name);
       await onSubmit({
         name,
         emoji: emoji || null,
-        place_kinds: kinds.length > 0 || !known ? kinds : known.kinds.slice(0, 2),
+        // Kinds of place are no longer chosen; any saved before are left as they are.
+        place_kinds: initial?.place_kinds ?? [],
         place_ids: placeIds,
         category: initial?.category,
       });
@@ -85,7 +80,8 @@ function ActivityForm({
     }
   };
 
-  const { suited, others } = placesFor(kinds, places);
+  // Places of the sort an idea from the list usually happens in come first (Brunch: restaurants, cafés).
+  const { suited, others } = placesFor(libraryIdeaNamed(name)?.kinds ?? [], places);
   const spot = (place: SavedPlace) => {
     const on = placeIds.includes(place.id);
     return (
@@ -134,15 +130,10 @@ function ActivityForm({
 
       {!more ? (
         <button type="button" className="btn-ghost" onClick={() => setMore(true)}>
-          More options: where, spots, icon
+          {places.length > 0 ? "More options: favourite spots, icon" : "More options: icon"}
         </button>
       ) : (
         <>
-          <div>
-            <div className="label">Where it happens (optional)</div>
-            <KindPicker label="Where it happens" value={kinds} multiple own={ownKinds(places, activities)} onChange={setKinds} />
-          </div>
-
           {places.length > 0 && (
             <div>
               <div className="label">Favourite spots (optional)</div>
@@ -187,7 +178,6 @@ interface Tile {
   key: string;
   name: string;
   icon: string;
-  detail: string;
   /** Yours, when it is in your list. */
   activity?: Activity;
   item?: LibraryIdea;
@@ -227,14 +217,13 @@ export function ActivityShelf({
     // Your own first (ones that aren't ideas from the list), then the list.
     const own = activities
       .filter((a) => !libraryIdeaNamed(a.name) && activityCategory(a) === section)
-      .map((a) => ({ key: `own:${a.id}`, name: a.name, icon: activityIcon(a), detail: kindsLabel(a.place_kinds), activity: a }));
+      .map((a) => ({ key: `own:${a.id}`, name: a.name, icon: activityIcon(a), activity: a }));
     const listed = IDEA_LIBRARY.filter((item) => item.category === section).map((item) => {
       const activity = yours(item.name);
       return {
         key: `idea:${item.id}`,
         name: item.name,
         icon: activity ? activityIcon(activity) : item.emoji,
-        detail: kindsLabel(activity ? activity.place_kinds : item.kinds),
         activity,
         item,
       };
@@ -249,7 +238,7 @@ export function ActivityShelf({
     if (!tile.item) return;
     setBusy(tile.key);
     try {
-      await actions.add({ name: tile.item.name, emoji: null, place_kinds: tile.item.kinds.slice(0, 2), place_ids: [], category: tile.item.category });
+      await actions.add({ name: tile.item.name, emoji: null, place_kinds: [], place_ids: [], category: tile.item.category });
     } catch (error) {
       toastError(error);
     } finally {
@@ -285,10 +274,10 @@ export function ActivityShelf({
       <EventIcon value={tile.icon} size={20} max={1} />
       <span className="min-w-0 flex-1">
         <span className="block truncate text-ink">{tile.name}</span>
-        <span className="block truncate text-[15px] text-ink-faint">
-          {tile.detail || "Anywhere"}
-          {tile.activity && spots(tile.activity).length > 0 && <span className="text-join"> · {spots(tile.activity).join(", ")}</span>}
-        </span>
+        {/* favourite spots, if it has any */}
+        {tile.activity && spots(tile.activity).length > 0 && (
+          <span className="block truncate text-[15px] text-join">{spots(tile.activity).join(", ")}</span>
+        )}
       </span>
     </>
   );

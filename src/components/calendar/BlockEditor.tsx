@@ -261,11 +261,9 @@ function EditorDialog({
   // One picked from the full list shows in the row too.
   const planOptions =
     picked && picked !== "none" && !suggestedOptions.some((o) => o.key === picked.key) ? [picked, ...suggestedOptions] : suggestedOptions;
-  // With one of your activities as the plan, the saved places that suit it come first.
-  const planActivity = activities.find((a) => sameText(a.name, form.title));
-  const orderedPlaces = planActivity
-    ? (({ suited, others }) => [...suited, ...others])(placesFor(planActivity.place_kinds, savedPlaces))
-    : savedPlaces;
+  // With an idea from the list as the plan, saved places of the sort it usually happens in come first (Brunch: restaurants, cafés).
+  const planKinds = libraryIdeaNamed(form.title)?.kinds ?? [];
+  const orderedPlaces = planKinds.length > 0 ? (({ suited, others }) => [...suited, ...others])(placesFor(planKinds, savedPlaces)) : savedPlaces;
 
   /** Free time → an event, with one of its ideas as the plan. */
   const makePlan = (idea: BlockIdea) =>
