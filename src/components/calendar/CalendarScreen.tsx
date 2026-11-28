@@ -110,9 +110,9 @@ export function CalendarScreen() {
     typeof window !== "undefined" && window.localStorage.getItem(VIEW_STORAGE_KEY) === "day" ? "day" : "grid",
   );
   const [weeks, setWeeks] = useState<LoadedWeeks>(() => weeksAround(0));
-  /** The day the week view should scroll to; a new `nonce` repeats the scroll. */
-  const [anchor, setAnchor] = useState<{ day: DayKey; nonce: number }>(() => ({ day: thisWeek, nonce: 0 }));
-  const [topDay, setTopDay] = useState<DayKey>(thisWeek);
+  /** The day the week view should scroll to (today, when it opens); a new `nonce` repeats the scroll. */
+  const [anchor, setAnchor] = useState<{ day: DayKey; nonce: number }>(() => ({ day: today, nonce: 0 }));
+  const [topDay, setTopDay] = useState<DayKey>(today);
   const [selectedDay, setSelectedDay] = useState<DayKey>(today);
 
   // On a phone held sideways the top rows are hidden while the calendar is on
@@ -388,7 +388,7 @@ export function CalendarScreen() {
     });
   };
 
-  const goToday = () => jumpTo(today, thisWeek);
+  const goToday = () => jumpTo(today);
 
   const label = view === "grid" ? formatMonth(topDay, "short") : formatDayKey(selectedDay);
 

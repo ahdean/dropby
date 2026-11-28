@@ -368,15 +368,46 @@ export function WeekGrid({
   const firstDay = days[0]?.dayKey;
   /** What the top of the list looked like after the last render: its first day and where that row sat. */
   const previous = useRef<{ firstDay?: DayKey; firstRowTop: number; nonce: number }>({ firstRowTop: 0, nonce: -1 });
+  /**
+   * After a jump (opening the calendar, "Today", picking a date) the day stays
+   * at the top until the person scrolls: blocks arriving can make the rows
+   * above it taller, which would otherwise push it down out of place.
+   */
+  const holdAnchor = useRef(true);
+  useEffect(() => {
+    const root = scroller.current;
+    if (!root) return;
+    const release = () => {
+      holdAnchor.current = false;
+    };
+    root.addEventListener("wheel", release, { passive: true });
+    root.addEventListener("touchstart", release, { passive: true });
+    root.addEventListener("pointerdown", release);
+    root.addEventListener("keydown", release);
+    return () => {
+      root.removeEventListener("wheel", release);
+      root.removeEventListener("touchstart", release);
+      root.removeEventListener("pointerdown", release);
+      root.removeEventListener("keydown", release);
+    };
+  }, []);
   useLayoutEffect(() => {
     const root = scroller.current;
     if (!root || !firstDay) return;
     const before = previous.current;
     const rowOf = (day: DayKey) => root.querySelector<HTMLElement>(`[data-day-row="${day}"]`);
-    if (before.nonce !== anchor.nonce) {
-      // A jump (opening the calendar, "Today", picking a date): put that day at the top.
+    /** The day's row just under the hour header (with its week's label, for a Monday). */
+    const showAnchor = () => {
       const row = rowOf(anchor.day);
-      if (row) root.scrollTop = Math.max(0, row.offsetTop - GRID.header - 24);
+      const block = row?.parentElement;
+      if (block) root.scrollTop = Math.max(0, block.offsetTop - GRID.header);
+    };
+    if (before.nonce !== anchor.nonce) {
+      // A jump: put that day at the top, and keep it there until the person scrolls.
+      holdAnchor.current = true;
+      showAnchor();
+    } else if (holdAnchor.current) {
+      showAnchor();
     } else if (before.firstDay && firstDay < before.firstDay) {
       // Earlier weeks were added above. The row that used to be first has moved
       // down by exactly their height: scroll by the same amount, so nothing
@@ -385,7 +416,8 @@ export function WeekGrid({
       if (formerFirst) root.scrollTop += formerFirst.offsetTop - before.firstRowTop;
     }
     previous.current = { firstDay, firstRowTop: rowOf(firstDay)?.offsetTop ?? 0, nonce: anchor.nonce };
-  }, [anchor.day, anchor.nonce, firstDay, days.length]);
+    // `days` (not just its length): rows change height when blocks arrive.
+  }, [anchor.day, anchor.nonce, firstDay, days]);
 
   // --- endless scrolling: load more weeks near either end -------------------
   useEffect(() => {
