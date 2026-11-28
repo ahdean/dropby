@@ -5,14 +5,14 @@ import { LocationField } from "@/components/places/LocationField";
 import { MaraNudge } from "@/components/mara/MaraNudge";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
-import { EmojiPicker } from "@/components/ui/EmojiPicker";
+import { EventIcon } from "@/components/ui/EventIcon";
 import { useFeedback } from "@/components/ui/Feedback";
 import { PixelIcon } from "@/components/ui/PixelIcon";
 import { Segmented, Switch } from "@/components/ui/Switch";
 import { joinLocation, locationLabel, splitLocation } from "@/lib/maps";
 import { describeConflict, expandBlocks, findConflict } from "@/lib/calendar/model";
 import { MIN_BLOCK_MINUTES, SNAP_MINUTES } from "@/lib/constants";
-import { DOOR_ICON, defaultTitleFor, isAutomaticTitle, splitIcons } from "@/lib/event-icon";
+import { DOOR_ICON, defaultTitleFor, isAutomaticTitle } from "@/lib/event-icon";
 import { PlacesDialog } from "@/components/places/PlacesManager";
 import { ActivitiesDialog } from "@/components/activities/ActivitiesManager";
 import { IdeasField } from "@/components/activities/BlockIdeas";
@@ -20,6 +20,7 @@ import { IdeaPicker, OptionChip } from "@/components/activities/IdeaPicker";
 import {
   IDEA_LIBRARY,
   inSeason,
+  libraryIdeaNamed,
   optionFromLibrary,
   optionsFromActivities,
   partsOf,
@@ -215,27 +216,51 @@ function EditorDialog({
   const editing = state.mode === "edit" ? state : null;
   const isJoin = form.type === "join";
 
-  /** A plan picked from your activities (or the ideas): its icon and name, and its place for a pair. */
-  const choosePlan = (option: IdeaOption) =>
+  /** A title that was filled in for you (empty, the usual one, or an activity's name), so a new pick may replace it. */
+  const filledIn = (title: string) =>
+    isAutomaticTitle(title) || Boolean(libraryIdeaNamed(title)) || activities.some((a) => sameText(a.name, title));
+  /**
+   * An activity picked as the plan: the event gets its icon, and its name as
+   * the title (unless you typed your own), and for a pair its place. Tapping
+   * the chosen one again takes it off: back to the open door.
+   */
+  const [picked, setPicked] = useState<IdeaOption | "none" | null>(null);
+  const choosePlan = (option: IdeaOption, toggle = true) => {
+    if (toggle && option.key === planKey) {
+      setPicked("none");
+      setForm((f) => ({
+        ...f,
+        emoji: DOOR_ICON,
+        title: sameText(f.title, option.title) ? defaultTitleFor(DOOR_ICON) : f.title,
+        location: option.place && sameText(f.location, placeForEvent(option.place)) ? "" : f.location,
+      }));
+      return;
+    }
+    setPicked(option);
     setForm((f) => ({
       ...f,
-      emoji: option.emoji || f.emoji,
-      title: option.title,
+      emoji: option.emoji || DOOR_ICON,
+      title: filledIn(f.title) ? option.title : f.title,
       location: option.place ? placeForEvent(option.place) : f.location,
     }));
+  };
   const isPlan = (option: IdeaOption) =>
     sameText(form.title, option.title) && (!option.place || isChosen({ address: option.place.address }));
   // Your activities and pairs; until you have some, ideas that suit the time of day.
   const yourOptions = optionsFromActivities(activities, savedPlaces);
   const timeParts = partsOf(form.startMin, form.endMin);
-  const planOptions =
+  const suggestedOptions =
     yourOptions.length > 0
       ? yourOptions
       : IDEA_LIBRARY.filter((item) => inSeason(item, form.dayKey) && item.times.some((t) => timeParts.includes(t)))
           .slice(0, 6)
           .map(optionFromLibrary);
-  // The one chosen: a pair (listed before its activity) when its place is the one in "Where".
-  const planKey = planOptions.find(isPlan)?.key;
+  // The one chosen: the one just picked; otherwise the one named in the title
+  // (a pair, listed before its activity, when its place is the one in "Where").
+  const planKey = picked === "none" ? undefined : picked ? picked.key : suggestedOptions.find(isPlan)?.key;
+  // One picked from the full list shows in the row too.
+  const planOptions =
+    picked && picked !== "none" && !suggestedOptions.some((o) => o.key === picked.key) ? [picked, ...suggestedOptions] : suggestedOptions;
   // With one of your activities as the plan, the saved places that suit it come first.
   const planActivity = activities.find((a) => sameText(a.name, form.title));
   const orderedPlaces = planActivity
@@ -259,16 +284,6 @@ function EditorDialog({
     () => timeOptions(form.startMin + MIN_BLOCK_MINUTES, form.startMin + MAX_BLOCK_MINUTES, form.endMin),
     [form.startMin, form.endMin],
   );
-
-  /**
-   * Icons were added or removed. If the main (first) icon changed, fill in its
-   * usual title, unless the person has typed their own.
-   */
-  const changeIcon = (emoji: string) =>
-    setForm((f) => {
-      const mainChanged = splitIcons(emoji)[0] !== splitIcons(f.emoji)[0];
-      return { ...f, emoji, title: mainChanged && isAutomaticTitle(f.title) ? defaultTitleFor(emoji) : f.title };
-    });
 
   /** Free → Join me: start from the door and its title. A note typed on the Free block is kept as the title. */
   const changeType = (type: BlockType) =>
@@ -303,7 +318,6 @@ function EditorDialog({
   const validate = (f: Form): string | null => {
     if (f.endMin <= f.startMin) return "The end time must be after the start time.";
     if (f.endMin - f.startMin > MAX_BLOCK_MINUTES) return "A block can be at most 24 hours long.";
-    if (f.type === "join" && f.emoji.trim() === "") return "Pick an icon for your event: it's what friends see on their calendar.";
     // This day, and the next one for a block that runs past midnight.
     const mine = expandBlocks(blocks.filter((b) => b.owner_id === userId), userId, zone, f.dayKey, 2);
     // Where it was before this edit (Free time that already covered one of your events may keep doing so).
@@ -331,7 +345,8 @@ function EditorDialog({
     tz: zone,
     repeat_weekly: f.repeat,
     title: f.title,
-    emoji: f.emoji,
+    // The icon comes from the activity picked; without one, wheet's open door.
+    emoji: f.emoji.trim() || DOOR_ICON,
     location: f.location,
     description: f.description,
     rsvp_enabled: f.rsvp,
@@ -548,7 +563,7 @@ function EditorDialog({
         {isJoin ? (
           <fieldset className="space-y-3">
             <legend className="label">The plan</legend>
-            {/* One tap fills in the icon and title (and the place, for a pair). */}
+            {/* One tap fills in the icon and title (and the place, for a pair); the icon comes only from here. */}
             <div>
               <div className="label">Activity</div>
               <ul className="flex flex-wrap items-center gap-2">
@@ -571,12 +586,14 @@ function EditorDialog({
               </ul>
             </div>
             <div>
-              <div className="label">Icons</div>
-              <EmojiPicker value={form.emoji} onChange={changeIcon} />
-            </div>
-            <div>
               <label htmlFor={`${ids}-title`} className="label">Title</label>
-              <input id={`${ids}-title`} className="field" value={form.title} maxLength={80} placeholder="wheet" onChange={(e) => set("title", e.target.value)} />
+              <div className="flex items-stretch gap-2">
+                {/* the event's icon, as friends will see it (it comes from the activity) */}
+                <span className="tile flex w-12 shrink-0 items-center justify-center" title="The icon comes from the activity you pick">
+                  <EventIcon value={form.emoji || DOOR_ICON} size={22} max={2} />
+                </span>
+                <input id={`${ids}-title`} className="field min-w-0 flex-1" value={form.title} maxLength={80} placeholder="wheet" onChange={(e) => set("title", e.target.value)} />
+              </div>
             </div>
             <div>
               <label htmlFor={`${ids}-location`} className="label">Where</label>
@@ -694,7 +711,7 @@ function EditorDialog({
       )}
       <ActivitiesDialog open={activitiesOpen} onClose={() => setActivitiesOpen(false)} />
       {planPickerOpen && (
-        <IdeaPicker title="Pick a plan" allowTyped={false} chosen={[form.title]} onPick={choosePlan} onClose={() => setPlanPickerOpen(false)} />
+        <IdeaPicker title="Pick an activity" chosen={[form.title]} onPick={(option) => choosePlan(option, false)} onClose={() => setPlanPickerOpen(false)} />
       )}
       <PlacesDialog
         open={placesOpen !== null}

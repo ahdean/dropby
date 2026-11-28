@@ -3,7 +3,12 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  IDEA_CATEGORIES,
   IDEA_LIBRARY,
+  activityCategory,
+  activityIcon,
+  guessCategory,
+  isSaved,
   PLACE_KINDS,
   allKinds,
   buildSuggestions,
@@ -89,6 +94,39 @@ describe("the idea library", () => {
   });
 });
 
+describe("sections and icons for your own activities", () => {
+  const own = (fields: Partial<{ name: string; emoji: string | null; place_kinds: string[]; category: string | null }>) => ({
+    name: "Noodle crawl",
+    emoji: null,
+    place_kinds: [],
+    category: null,
+    ...fields,
+  });
+
+  it("keep the section they were added to, or work one out", () => {
+    expect(activityCategory(own({ category: "out" }))).toBe("out");
+    expect(activityCategory(own({ name: "brunch" }))).toBe("food"); // from the idea list
+    expect(activityCategory(own({ place_kinds: ["Bar"] }))).toBe("food");
+    expect(activityCategory(own({ place_kinds: ["Gym"] }))).toBe("active");
+    expect(activityCategory(own({ place_kinds: ["Remote"] }))).toBe("remote");
+    expect(activityCategory(own({ place_kinds: ["House", "Remote"] }))).toBe("home");
+    expect(activityCategory(own({ category: "nonsense" }))).toBe("home");
+    expect(guessCategory(["Park"])).toBe("out");
+  });
+
+  it("don't need an icon: they get the idea list's, or their section's", () => {
+    expect(activityIcon(own({ emoji: "🍜" }))).toBe("🍜");
+    expect(activityIcon(own({ name: "Book club" }))).toBe("📚");
+    expect(activityIcon(own({ category: "active" }))).toBe(IDEA_CATEGORIES.find((c) => c.id === "active")!.emoji);
+    expect(activityIcon(own({}))).toBe("🏠");
+  });
+
+  it("are recognised by name", () => {
+    expect(isSaved([{ name: "Brunch" }], " brunch ")).toBe(true);
+    expect(isSaved([{ name: "Brunch" }], "Lunch")).toBe(false);
+  });
+});
+
 describe("ideas on Free time", () => {
   it("are read safely and stored tidily", () => {
     expect(readIdeas(null)).toEqual([]);
@@ -104,7 +142,7 @@ describe("ideas on Free time", () => {
 
     const places = [{ id: "p1", name: "Joe's", address: "Joe's Diner, 1 Main St" }];
     const [pair, activity] = optionsFromActivities([{ id: "a1", name: "Brunch", emoji: null, place_kinds: ["Restaurant"], place_ids: ["p1", "gone"] }], places);
-    expect(pair).toMatchObject({ source: "pair", title: "Brunch", emoji: "🥞", place: { name: "Joe's" } });
+    expect(pair).toMatchObject({ source: "pair", title: "Brunch", emoji: "🥞", category: "food", place: { name: "Joe's" } });
     expect(activity).toMatchObject({ source: "activity", title: "Brunch", kinds: ["Restaurant"] });
     expect(ideaFromOption(pair)).toMatchObject({ title: "Brunch", place: "Joe's Diner, 1 Main St" });
     expect(ideaFromOption(pair).kind).toBeUndefined();

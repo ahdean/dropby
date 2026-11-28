@@ -100,13 +100,18 @@ export const DAY_PARTS: Record<DayPart, { startMin: number; endMin: number }> = 
 
 export type IdeaCategory = "food" | "home" | "out" | "active" | "remote";
 
-export const IDEA_CATEGORIES: { id: IdeaCategory; label: string }[] = [
-  { id: "food", label: "Food & drink" },
-  { id: "home", label: "At home" },
-  { id: "out", label: "Out & about" },
-  { id: "active", label: "Active" },
-  { id: "remote", label: "From afar" },
+/** The sections, in order, each with the icon an activity of its own gets when none was chosen. */
+export const IDEA_CATEGORIES: { id: IdeaCategory; label: string; emoji: string }[] = [
+  { id: "food", label: "Food & drink", emoji: "🍴" },
+  { id: "home", label: "At home", emoji: "🏠" },
+  { id: "out", label: "Out & about", emoji: "🌳" },
+  { id: "active", label: "Active", emoji: "🏃" },
+  { id: "remote", label: "From afar", emoji: "💬" },
 ];
+
+export function isCategory(value: unknown): value is IdeaCategory {
+  return IDEA_CATEGORIES.some((c) => c.id === value);
+}
 
 export interface LibraryIdea {
   id: string;
@@ -303,6 +308,37 @@ export interface ActivityLike {
   emoji: string | null;
   place_kinds: string[];
   place_ids: string[];
+  /** Its section; missing on activities saved before sections existed. */
+  category?: string | null;
+}
+
+/** A best guess at the section for an activity saved without one, from where it happens. */
+export function guessCategory(kinds: readonly string[]): IdeaCategory {
+  const has = (...labels: string[]) => kinds.some((k) => labels.some((label) => sameKind(k, label)));
+  if (has("Restaurant", "Café", "Bar")) return "food";
+  if (has("Gym")) return "active";
+  if (has("Park", "Outdoors", "Venue", "Shops")) return "out";
+  if (has("Remote") && !has("House")) return "remote";
+  return "home";
+}
+
+/** The section an activity is shown in: its own, the idea list's, or a guess. */
+export function activityCategory(activity: Pick<ActivityLike, "name" | "place_kinds" | "category">): IdeaCategory {
+  if (isCategory(activity.category)) return activity.category;
+  return libraryIdeaNamed(activity.name)?.category ?? guessCategory(activity.place_kinds);
+}
+
+/** An activity's icon: its own, the idea list's, or its section's. */
+export function activityIcon(activity: Pick<ActivityLike, "name" | "emoji" | "place_kinds" | "category">): string {
+  if (activity.emoji?.trim()) return activity.emoji.trim();
+  const known = libraryIdeaNamed(activity.name);
+  if (known) return known.emoji;
+  return IDEA_CATEGORIES.find((c) => c.id === activityCategory(activity))?.emoji ?? "✨";
+}
+
+/** Is this one of the person's activities (by name)? */
+export function isSaved(activities: readonly Pick<ActivityLike, "name">[], name: string): boolean {
+  return activities.some((a) => kindKey(a.name) === kindKey(name));
 }
 
 export interface PlaceLike {
@@ -325,6 +361,7 @@ export interface IdeaOption {
   source: "pair" | "activity" | "library";
   activityId?: string;
   libraryId?: string;
+  category?: IdeaCategory;
   times: DayPart[];
   weekend: boolean;
   minutes: number;
@@ -340,10 +377,11 @@ export function optionsFromActivities(activities: readonly ActivityLike[], place
     const known = libraryIdeaNamed(activity.name);
     const base = {
       title: activity.name,
-      emoji: activity.emoji || known?.emoji || "✨",
+      emoji: activityIcon(activity),
       kinds: activity.place_kinds,
       activityId: activity.id,
       libraryId: known?.id,
+      category: activityCategory(activity),
       times: known?.times ?? ALL_PARTS,
       weekend: known?.weekend ?? false,
       minutes: known?.minutes ?? 120,
@@ -368,6 +406,7 @@ export function optionFromLibrary(item: LibraryIdea): IdeaOption {
     kinds: item.kinds,
     source: "library",
     libraryId: item.id,
+    category: item.category,
     times: item.times,
     weekend: Boolean(item.weekend),
     minutes: item.minutes ?? 120,

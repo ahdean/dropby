@@ -111,6 +111,18 @@ describe("activities", () => {
     expect(row.place_ids).toEqual([park]);
   });
 
+  it("remember the section they were added to", async () => {
+    const [row] = await db.as<{ id: string; category: string | null }>(
+      alex,
+      `insert into public.activities (name, category) values ('Noodle crawl', 'food') returning id, category`,
+    );
+    expect(row.category).toBe("food");
+    await db.as(alex, `update public.activities set category = 'out' where id = $1`, [row.id]);
+    const [after] = await db.as<{ category: string }>(alex, `select category from public.activities where id = $1`, [row.id]);
+    expect(after.category).toBe("out");
+    expect(await db.asError(alex, `insert into public.activities (name, category) values ('Odd', ' ')`)).toMatch(/category_check/);
+  });
+
   it("are capped at 100 per person", async () => {
     const [keen] = await db.createUsers("Keen");
     for (let i = 0; i < 100; i++) await addActivity(keen, `Thing ${i}`);

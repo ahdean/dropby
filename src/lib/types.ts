@@ -165,6 +165,8 @@ export interface Activity {
   place_kinds: string[];
   /** Favourite spots for it: ids of the person's saved places. */
   place_ids: string[];
+  /** Its section ("food", "home"…; see lib/activities.ts). Missing until the sections database file is run. */
+  category?: string | null;
 }
 
 /** Someone saying "I'm up for this" to an idea on a block of Free time. */

@@ -24,11 +24,15 @@ export const ACTIVITIES_NOT_SET_UP =
 
 function explain(error: { code?: string; message?: string }): Error {
   if (error.code === "23505") return new Error("You already have an activity with that name.");
+  if (/category/.test(error.message ?? "") && (error.code === "PGRST204" || error.code === "42703")) {
+    return new Error("Activity sections are not switched on yet: the newest database file has to be run in Supabase (see README).");
+  }
   if (isActivitiesNotSetUp(error)) return new Error(ACTIVITIES_NOT_SET_UP);
   return new Error(error.message ?? "Could not save the activity.");
 }
 
-const COLUMNS = "id, name, emoji, place_kinds, place_ids";
+// Every column: the section is only there once the newest database file has been run.
+const COLUMNS = "*";
 const byName = (a: Activity, b: Activity) => a.name.localeCompare(b.name);
 
 export function useActivities() {
@@ -50,7 +54,7 @@ export function useActivities() {
 }
 const EMPTY: Activity[] = [];
 
-export type ActivityFields = Pick<Activity, "name" | "emoji" | "place_kinds" | "place_ids">;
+export type ActivityFields = Pick<Activity, "name" | "emoji" | "place_kinds" | "place_ids" | "category">;
 
 function tidy(fields: ActivityFields): ActivityFields {
   return {
@@ -58,6 +62,8 @@ function tidy(fields: ActivityFields): ActivityFields {
     emoji: fields.emoji?.trim() || null,
     place_kinds: [...new Set(fields.place_kinds.map((k) => k.trim()).filter(Boolean))].slice(0, 8),
     place_ids: [...new Set(fields.place_ids)].slice(0, 10),
+    // The section only when there is one, so this works before the sections database file is run.
+    ...(fields.category ? { category: fields.category } : {}),
   };
 }
 
