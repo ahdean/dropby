@@ -22,11 +22,13 @@ export function isActivitiesNotSetUp(error: unknown): boolean {
 export const ACTIVITIES_NOT_SET_UP =
   "Activities are not switched on yet: the newest database file has to be run in Supabase (see README).";
 
+/** The section column is missing (its database file has not been run): save without it. */
+function isNoCategory(error: { code?: string; message?: string }): boolean {
+  return /category/.test(error.message ?? "") && (error.code === "PGRST204" || error.code === "42703");
+}
+
 function explain(error: { code?: string; message?: string }): Error {
   if (error.code === "23505") return new Error("You already have an activity with that name.");
-  if (/category/.test(error.message ?? "") && (error.code === "PGRST204" || error.code === "42703")) {
-    return new Error("Activity sections are not switched on yet: the newest database file has to be run in Supabase (see README).");
-  }
   if (isActivitiesNotSetUp(error)) return new Error(ACTIVITIES_NOT_SET_UP);
   return new Error(error.message ?? "Could not save the activity.");
 }
@@ -76,7 +78,15 @@ export function useActivityActions() {
 
     return {
       add: async (fields: ActivityFields): Promise<Activity> => {
-        const { data, error } = await getSupabase().from("activities").insert(tidy(fields)).select(COLUMNS).single();
+        const insert = (row: Partial<ActivityFields>) => getSupabase().from("activities").insert(row).select(COLUMNS).single();
+        const row = tidy(fields);
+        let { data, error } = await insert(row);
+        // Before the sections database file is run: save it without its section (it is worked out instead).
+        if (error && isNoCategory(error)) {
+          const { category: _unused, ...rest } = row;
+          void _unused;
+          ({ data, error } = await insert(rest));
+        }
         if (error) throw explain(error);
         patch((list) => [...list, data as Activity].sort(byName));
         void refresh();
@@ -86,7 +96,12 @@ export function useActivityActions() {
       update: async (id: string, fields: ActivityFields): Promise<void> => {
         const next = tidy(fields);
         patch((list) => list.map((a) => (a.id === id ? { ...a, ...next } : a)).sort(byName));
-        const { error } = await getSupabase().from("activities").update(next).eq("id", id);
+        let { error } = await getSupabase().from("activities").update(next).eq("id", id);
+        if (error && isNoCategory(error)) {
+          const { category: _unused, ...rest } = next;
+          void _unused;
+          ({ error } = await getSupabase().from("activities").update(rest).eq("id", id));
+        }
         void refresh();
         if (error) throw explain(error);
       },

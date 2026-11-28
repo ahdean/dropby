@@ -203,7 +203,7 @@ export function ActivityShelf({
   /** Names already chosen (outlined). */
   chosen?: string[];
 }) {
-  const { activities } = useActivities();
+  const { activities, notSetUp } = useActivities();
   const { places } = useSavedPlaces();
   const actions = useActivityActions();
   const { toast, toastError } = useFeedback();
@@ -286,6 +286,12 @@ export function ActivityShelf({
 
   return (
     <div className="space-y-2">
+      {/* the list can't be saved to yet (picking from it still works) */}
+      {notSetUp && (
+        <p className="text-[16px] text-locked" role="alert">
+          {ACTIVITIES_NOT_SET_UP}
+        </p>
+      )}
       <ul className="flex flex-wrap gap-1" role="tablist" aria-label="Sections">
         {IDEA_CATEGORIES.map((c) => {
           const count = countYours(c.id);

@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button, type ButtonVariant } from "./Button";
 import { Dialog } from "./Dialog";
 
@@ -63,6 +64,29 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   const [question, setQuestion] = useState<Question | null>(null);
   const nextId = useRef(1);
 
+  // A window that is open (a modal <dialog>) is drawn above everything else
+  // and makes the rest of the page unclickable, so messages shown while one
+  // is open go inside the top one; otherwise they would be hidden behind it.
+  const [host, setHost] = useState<Element | null>(null);
+  const showing = toasts.length > 0;
+  useEffect(() => {
+    if (!showing) return;
+    const find = () => {
+      const open = [...document.querySelectorAll("dialog[open]")].filter((d) => d.matches(":modal"));
+      // Windows opened from inside another sit inside it, so the last is the one on top.
+      const top = open[open.length - 1] ?? null;
+      setHost((current) => (current === top ? current : top));
+    };
+    const frame = requestAnimationFrame(find);
+    // Windows opening and closing while a message is showing.
+    const observer = new MutationObserver(find);
+    observer.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["open"] });
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [showing]);
+
   const toast = useCallback((message: string, kind: ToastKind = "info", action?: ToastAction) => {
     const id = nextId.current++;
     setToasts((list) => [...list.slice(-2), { id, message, kind, action }]);
@@ -95,6 +119,11 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     [toast],
   );
 
+  const dismiss = (t: Toast) => {
+    setToasts((list) => list.filter((x) => x.id !== t.id));
+    t.action?.onClick();
+  };
+
   const answer = (value: string | null) => {
     question?.resolve(value);
     setQuestion(null);
@@ -117,35 +146,39 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         {question?.body && <div className="text-ink-dim">{question.body}</div>}
       </Dialog>
 
-      <div
-        className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] flex flex-col items-center gap-2 px-4"
-        role="status"
-        aria-live="polite"
-      >
-        {toasts.map((t) => (
-          <div
-            key={t.id}
-            className={`panel pointer-events-auto max-w-md animate-pop px-4 py-2 text-center ${
-              t.kind === "error" ? "!border-danger text-danger" : t.kind === "success" ? "!border-join text-join" : "text-ink"
-            }`}
-          >
-            {t.message}
-            {t.action && (
-              <button
-                type="button"
-                className="btn btn-sm tile tile-dark ml-3 align-middle"
-                onClick={() => {
-                  setToasts((list) => list.filter((x) => x.id !== t.id));
-                  t.action?.onClick();
-                }}
-              >
-                {t.action.label}
-              </button>
-            )}
-          </div>
-        ))}
-      </div>
+      {/* inside the window on top, if one is open; otherwise over the page */}
+      {host && showing ? createPortal(<ToastList toasts={toasts} onAction={dismiss} />, host) : <ToastList toasts={toasts} onAction={dismiss} />}
     </FeedbackContext>
+  );
+}
+
+function ToastList({ toasts, onAction }: { toasts: Toast[]; onAction: (toast: Toast) => void }) {
+  return (
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[100] flex flex-col items-center gap-2 px-4"
+      role="status"
+      aria-live="polite"
+    >
+      {toasts.map((t) => (
+        <div
+          key={t.id}
+          className={`panel pointer-events-auto max-w-md animate-pop px-4 py-2 text-center ${
+            t.kind === "error" ? "!border-danger text-danger" : t.kind === "success" ? "!border-join text-join" : "text-ink"
+          }`}
+        >
+          {t.message}
+          {t.action && (
+            <button
+              type="button"
+              className="btn btn-sm tile tile-dark ml-3 align-middle"
+              onClick={() => onAction(t)}
+            >
+              {t.action.label}
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -510,89 +510,73 @@ function EditorDialog({
           </p>
         </div>
 
-        <fieldset className="space-y-3">
-          <legend className="label">When</legend>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="col-span-2">
-              <label htmlFor={`${ids}-day`} className="sr-only">Date</label>
-              <input
-                id={`${ids}-day`}
-                type="date"
-                className="field"
-                value={form.dayKey}
-                min={minDay}
-                max={maxDay}
-                required
-                onChange={(e) => e.target.value && set("dayKey", e.target.value)}
-              />
+        {/* second: what it's called */}
+        {isJoin ? (
+          <div>
+            <label htmlFor={`${ids}-title`} className="label">Title</label>
+            <div className="flex items-stretch gap-2">
+              {/* the event's icon, as friends will see it (it comes from the activity, further down) */}
+              <span className="tile flex w-12 shrink-0 items-center justify-center" title="The icon comes from the activity you pick">
+                <EventIcon value={form.emoji || DOOR_ICON} size={22} max={2} />
+              </span>
+              <input id={`${ids}-title`} className="field min-w-0 flex-1" value={form.title} maxLength={80} placeholder="wheet" onChange={(e) => set("title", e.target.value)} />
             </div>
-            <div>
-              <label htmlFor={`${ids}-start`} className="label">From</label>
-              <select id={`${ids}-start`} className="field" value={form.startMin} onChange={(e) => changeStart(Number(e.target.value))}>
+          </div>
+        ) : (
+          <div>
+            <label htmlFor={`${ids}-note`} className="label">Note (optional)</label>
+            <input id={`${ids}-note`} className="field" value={form.title} maxLength={80} placeholder="Down for anything" onChange={(e) => set("title", e.target.value)} />
+          </div>
+        )}
+
+        {/* when: the day, from, to and "Weekly" on one line (on a phone: the day and Weekly, then the times) */}
+        <fieldset>
+          <legend className="label">When</legend>
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor={`${ids}-day`} className="sr-only">Date</label>
+            <input
+              id={`${ids}-day`}
+              type="date"
+              className="field order-1 w-auto min-w-0 flex-1 !text-[20px] sm:w-[9.75rem] sm:flex-none"
+              value={form.dayKey}
+              min={minDay}
+              max={maxDay}
+              required
+              onChange={(e) => e.target.value && set("dayKey", e.target.value)}
+            />
+            <span className="order-3 flex min-w-0 basis-full items-center gap-1 sm:order-2 sm:basis-auto">
+              <label htmlFor={`${ids}-start`} className="sr-only">From</label>
+              <select id={`${ids}-start`} className="field w-auto min-w-0 flex-1 !px-2 !text-[20px] sm:w-[6rem] sm:flex-none" value={form.startMin} onChange={(e) => changeStart(Number(e.target.value))}>
                 {startOptions.map((m) => (
                   <option key={m} value={m}>{formatMinutes(m)}</option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label htmlFor={`${ids}-end`} className="label">To</label>
-              <select id={`${ids}-end`} className="field" value={form.endMin} onChange={(e) => set("endMin", Number(e.target.value))}>
+              <span className="text-ink-dim" aria-hidden="true">–</span>
+              <label htmlFor={`${ids}-end`} className="sr-only">To</label>
+              <select id={`${ids}-end`} className="field w-auto min-w-0 flex-1 !px-2 !text-[20px] sm:w-[6rem] sm:flex-none" value={form.endMin} onChange={(e) => set("endMin", Number(e.target.value))}>
                 {endOptions.map((m) => (
                   <option key={m} value={m}>{endLabel(m)}</option>
                 ))}
               </select>
-            </div>
+            </span>
+            <button
+              type="button"
+              role="checkbox"
+              aria-checked={form.repeat}
+              onClick={() => set("repeat", !form.repeat)}
+              title={form.repeat ? `Every ${formatDayKey(form.dayKey, "long").split(",")[0]} at this time` : "Repeat every week at this time"}
+              className="order-2 flex shrink-0 items-center gap-2 py-1 pr-1 text-ink sm:order-3"
+            >
+              <span className={`tile flex h-8 w-8 shrink-0 items-center justify-center ${form.repeat ? "tile-join" : "tile-dark"}`} aria-hidden="true">
+                {form.repeat && <PixelIcon name="check" size={14} />}
+              </span>
+              Weekly
+            </button>
           </div>
-          <Segmented
-            label="Repeat"
-            value={form.repeat ? "weekly" : "once"}
-            onChange={(v) => set("repeat", v === "weekly")}
-            options={[
-              { value: "once", label: "One-off" },
-              { value: "weekly", label: "Repeat weekly" },
-            ]}
-          />
-          <p className="text-[17px] text-ink-faint">
-            {form.repeat ? `Every ${formatDayKey(form.dayKey, "long").split(",")[0]} at this time` : formatDayKey(form.dayKey, "long")}
-            {form.endMin > 1440 ? `, ending ${formatDayKey(addDays(form.dayKey, 1), "long").split(",")[0]} at ${formatMinutes(form.endMin - 1440)}.` : "."}
-          </p>
         </fieldset>
 
         {isJoin ? (
-          <fieldset className="space-y-3">
-            <legend className="label">The plan</legend>
-            {/* One tap fills in the icon and title (and the place, for a pair); the icon comes only from here. */}
-            <div>
-              <div className="label">Activity</div>
-              <ul className="flex flex-wrap items-center gap-2">
-                {planOptions.map((option) => (
-                  <li key={option.key} className="max-w-full">
-                    <OptionChip option={option} onPick={choosePlan} pressed={option.key === planKey} />
-                  </li>
-                ))}
-                <li>
-                  <button type="button" className="btn btn-sm tile tile-dark" onClick={() => setPlanPickerOpen(true)}>
-                    <PixelIcon name="bulb" size={11} />
-                    More ideas
-                  </button>
-                </li>
-                <li>
-                  <button type="button" className="btn-ghost" onClick={() => setActivitiesOpen(true)}>
-                    Manage
-                  </button>
-                </li>
-              </ul>
-            </div>
-            <div>
-              <label htmlFor={`${ids}-title`} className="label">Title</label>
-              <div className="flex items-stretch gap-2">
-                {/* the event's icon, as friends will see it (it comes from the activity) */}
-                <span className="tile flex w-12 shrink-0 items-center justify-center" title="The icon comes from the activity you pick">
-                  <EventIcon value={form.emoji || DOOR_ICON} size={22} max={2} />
-                </span>
-                <input id={`${ids}-title`} className="field min-w-0 flex-1" value={form.title} maxLength={80} placeholder="wheet" onChange={(e) => set("title", e.target.value)} />
-              </div>
-            </div>
+          <>
             <div>
               <label htmlFor={`${ids}-location`} className="label">Where</label>
               <LocationField id={`${ids}-location`} value={form.location} onChange={(location) => set("location", location)} list={`${ids}-places`} />
@@ -650,36 +634,52 @@ function EditorDialog({
               <label htmlFor={`${ids}-description`} className="label">Details</label>
               <textarea id={`${ids}-description`} className="field" rows={3} value={form.description} maxLength={2000} placeholder="Bring a topping!" onChange={(e) => set("description", e.target.value)} />
             </div>
+            {/* After the details: one tap gives the event an activity's icon and name (and the place, for a pair). */}
+            <div>
+              <div className="label">Activity</div>
+              <ul className="flex flex-wrap items-center gap-2">
+                {planOptions.map((option) => (
+                  <li key={option.key} className="max-w-full">
+                    <OptionChip option={option} onPick={choosePlan} pressed={option.key === planKey} />
+                  </li>
+                ))}
+                <li>
+                  <button type="button" className="btn btn-sm tile tile-dark" onClick={() => setPlanPickerOpen(true)}>
+                    <PixelIcon name="bulb" size={11} />
+                    More ideas
+                  </button>
+                </li>
+                <li>
+                  <button type="button" className="btn-ghost" onClick={() => setActivitiesOpen(true)}>
+                    Manage
+                  </button>
+                </li>
+              </ul>
+            </div>
             <Switch
               checked={form.rsvp}
               onChange={(rsvp) => set("rsvp", rsvp)}
               label="Ask for RSVPs"
               hint={`Guests answer "I'm in" or "Can't make it".`}
             />
-          </fieldset>
-        ) : (
-          <>
-            <div>
-              <label htmlFor={`${ids}-note`} className="label">Note (optional)</label>
-              <input id={`${ids}-note`} className="field" value={form.title} maxLength={80} placeholder="Down for anything" onChange={(e) => set("title", e.target.value)} />
-            </div>
-            <div>
-              <div className="label flex items-center gap-2">
-                <PixelIcon name="bulb" size={12} />
-                Ideas
-              </div>
-              <IdeasField
-                ideas={form.ideas}
-                onChange={(next) => set("ideas", next)}
-                block={editing?.block ?? null}
-                occurrence={editing?.occurrence.index ?? 0}
-                dayKey={form.dayKey}
-                startMin={form.startMin}
-                endMin={form.endMin}
-                onMakePlan={makePlan}
-              />
-            </div>
           </>
+        ) : (
+          <div>
+            <div className="label flex items-center gap-2">
+              <PixelIcon name="bulb" size={12} />
+              Ideas
+            </div>
+            <IdeasField
+              ideas={form.ideas}
+              onChange={(next) => set("ideas", next)}
+              block={editing?.block ?? null}
+              occurrence={editing?.occurrence.index ?? 0}
+              dayKey={form.dayKey}
+              startMin={form.startMin}
+              endMin={form.endMin}
+              onMakePlan={makePlan}
+            />
+          </div>
         )}
 
         <fieldset>
