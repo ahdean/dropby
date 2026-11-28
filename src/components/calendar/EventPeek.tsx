@@ -193,14 +193,6 @@ function Sheet({
   return (
     <Dialog open onClose={onClose} title={title} footer={<ChatBox chat={chat} block={block} to={to} onTo={setTo} autoFocus={focus} />}>
       <div className="space-y-4">
-        {onEdit && (
-          <div className="flex items-center gap-3 border-2 border-dashed border-line px-3 py-2">
-            <span className="min-w-0 flex-1 text-[17px] text-ink-dim">Saved. This is how friends see it.</span>
-            <Button variant="dark" size="sm" icon="edit" onClick={onEdit}>
-              Edit
-            </Button>
-          </div>
-        )}
         {isEvent && <EventPicture path={block.picture_path} className="slot aspect-[16/9] max-h-52 w-full" />}
 
         <div className="space-y-2">
@@ -240,6 +232,13 @@ function Sheet({
           <p className="slot max-h-32 overflow-y-auto whitespace-pre-wrap break-words px-3 py-2 text-ink">
             {isEvent ? block.description : block.title}
           </p>
+        )}
+
+        {/* your own block, shown as friends see it (just after saving): back to the editor */}
+        {onEdit && (
+          <Button variant="dark" icon="edit" onClick={onEdit}>
+            Edit
+          </Button>
         )}
 
         {isEvent && block.rsvp_enabled && (
