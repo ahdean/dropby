@@ -1431,6 +1431,21 @@
   .landscape-scene .ls-across { transform: translateX(calc((var(--from) + var(--to)) / 2)); }
 }
 
+/* Confirmed blocks: the pulse and the glint (see .beam-locked). */
+@keyframes confirmed-pulse {
+  0% { box-shadow: 0 0 0 1px var(--lo), 0 0 10px color-mix(in srgb, var(--body) 55%, transparent); }
+  50% { box-shadow: 0 0 0 2px var(--lo), 0 0 14px 4px color-mix(in srgb, var(--body) 90%, transparent); }
+}
+/* the glint crosses from left to right in the first 1.5 seconds, then waits */
+@keyframes confirmed-glint {
+  0% { background-position: 100% 0; }
+  30%, 100% { background-position: 0% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .beam-locked { animation: none; }
+  .beam-locked::before { display: none; }
+}
+
 /* Sizes that differ between phones and wider screens. */
 :root {
   --header-h: 58px; /* the site header, including its border */
@@ -1694,22 +1709,54 @@ button:disabled {
     --c: var(--color-locked);
     --hi: var(--color-locked-hi);
     --lo: var(--color-locked-lo);
-    /* double core */
+    /* double core, on a richer gold body than the other beams, so it stands out */
     background:
       linear-gradient(to bottom,
         transparent calc(50% - 5px), var(--core) calc(50% - 5px), var(--core) calc(50% - 2px),
         transparent calc(50% - 2px), transparent calc(50% + 2px),
         var(--core) calc(50% + 2px), var(--core) calc(50% + 5px), transparent calc(50% + 5px)),
       linear-gradient(to bottom,
-        color-mix(in srgb, var(--body) 14%, var(--beam-base)),
-        color-mix(in srgb, var(--body) 46%, var(--beam-base)) 50%,
-        color-mix(in srgb, var(--body) 14%, var(--beam-base)));
+        color-mix(in srgb, var(--body) 34%, var(--beam-base)),
+        color-mix(in srgb, var(--body) 72%, var(--beam-base)) 50%,
+        color-mix(in srgb, var(--body) 34%, var(--beam-base)));
   }
   /* A friend's event: hollow, so it reads as "theirs, not mine". */
   .beam-hollow {
     background: color-mix(in srgb, var(--c) 10%, var(--beam-base));
     border: 2px dashed var(--c);
     box-shadow: 0 0 6px color-mix(in srgb, var(--c) 35%, transparent);
+  }
+  /* Confirmed (someone is in): it should catch the eye in every design, also
+     the pale ones where gold blends in. A thin dark-gold edge all round, a
+     slow golden pulse, and now and then a glint sweeping along it, all in
+     whole steps like the rest of the pixel art. (Your own confirmed blocks
+     and friends' alike; with "reduce motion" on, just the edge.) */
+  .beam-locked {
+    box-shadow: 0 0 0 1px var(--lo), 0 0 10px color-mix(in srgb, var(--body) 55%, transparent);
+    animation: confirmed-pulse 2.4s steps(1, end) infinite;
+  }
+  .beam-locked::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    /* over the label too, so it shows even on a short block (it is thin and quick) */
+    z-index: 1;
+    pointer-events: none;
+    /* two slanted bands of bright gold-white: shows on pale and dark gold alike */
+    background: linear-gradient(
+        110deg,
+        transparent 0 43%,
+        color-mix(in srgb, var(--body) 45%, #fff) 43% 44%,
+        #fff 44% 46.5%,
+        color-mix(in srgb, var(--body) 45%, #fff) 46.5% 47.5%,
+        transparent 47.5% 50%,
+        color-mix(in srgb, var(--body) 30%, #fff) 50% 52%,
+        transparent 52%
+      )
+      no-repeat;
+    background-size: 300% 100%;
+    background-position: 100% 0;
+    animation: confirmed-glint 5s steps(24, end) infinite;
   }
   /* The block being drawn or dragged. */
   .beam-ghost {

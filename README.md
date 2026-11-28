@@ -6,7 +6,7 @@ A social availability calendar. Friends show when they're **free** and when they
 
 - **Blue = Free.** "I'm available." Friends see your face on a thin line under their own blocks over that time, and can chat about it.
 - **Green = Join me.** "I'm hosting." Has an emoji, a page like a party invite, RSVPs and a chat.
-- **Gold = Confirmed.** Someone said they're in. It's happening.
+- **Gold = Confirmed.** Someone said they're in. It's happening. Confirmed blocks stand out in every design: a richer gold, a thin dark-gold edge, a slow golden pulse and a glint that sweeps along now and then (only the edge with "reduce motion" on).
 
 Built with Next.js (App Router), TypeScript, Tailwind, and Supabase (database, sign-in, file storage, live updates). Hosted on Vercel.
 
