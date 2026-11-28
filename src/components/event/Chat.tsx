@@ -18,7 +18,7 @@ import type { CalendarBlock, Profile } from "@/lib/types";
  *
  * One list: messages to everyone who can see the block, and, mixed in where
  * they were written, private messages between the viewer and one other
- * person (marked with a lock; only those two can see them). The message box
+ * person (marked "to …" in gold; only those two can see them). The message box
  * has a "To" choice: Everyone, or one person, privately.
  */
 
@@ -193,7 +193,7 @@ export function ChatList({
                   {item.privateWith && (
                     <span className="text-locked">
                       {" "}
-                      · <PixelIcon name="lock" size={10} className="inline" /> {mine ? `to ${other?.name?.split(" ")[0] ?? "them"}` : "to you"}
+                      · {mine ? `to ${other?.name?.split(" ")[0] ?? "them"}` : "to you"}
                     </span>
                   )}{" "}
                   · {formatClock(item.createdAt, zone)}
@@ -296,7 +296,7 @@ export function ChatBox({
             <option value={EVERYONE}>Everyone</option>
             {chat.targets.map((person) => (
               <option key={person.id} value={person.id}>
-                🔒 {person.name.split(" ")[0]}
+                {person.name.split(" ")[0]}
               </option>
             ))}
           </select>

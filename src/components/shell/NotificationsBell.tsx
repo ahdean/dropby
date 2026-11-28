@@ -53,7 +53,7 @@ function render(n: NotificationRow, zone: string): Rendered {
     }
     case "block_dm":
       return {
-        icon: "lock",
+        icon: "chat",
         tone: n.data.block_type === "free" ? "text-free" : "text-join",
         text: n.data.block_type === "free" ? `${who} wrote to you privately about free time` : `${who} wrote to you privately in ${what || "an event"}`,
         detail: n.data.preview ? `“${n.data.preview}”` : undefined,

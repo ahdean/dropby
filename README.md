@@ -350,7 +350,7 @@ One tap on a block opens everything about it, over the calendar:
 - **A friend's block** opens a window with when and where, "I'm in" / "Can't make it" for events, and the chat at the bottom. A friend's free time opens the same window from the list that appears when you tap their faces.
 
 - Comments go to **everyone** who can see the block. A weekly repeat has a separate chat for each week, like its RSVPs.
-- The **To** choice next to the message box sends a message **privately** to one person instead. Private messages appear in the same list with a lock, and only the two people can see them. You can write privately to someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
+- The **To** choice next to the message box sends a message **privately** to one person instead. Private messages appear in the same list in a gold dashed box marked "to …", and only the two people can see them. You can write privately to someone taking part in the block: its host, someone it was shared with by name or through a group, or someone who answered or wrote in its chat. You can always answer someone who wrote to you first, and the host can write to anyone the block is shared with.
 
 Links to a block (from the bell, a quoted message, or an old `/e/…` page link) open the calendar with that block open: the editor for your own (scrolled to the chat), the window for a friend's. A private-message notification sets the message box to answer that person.
 
